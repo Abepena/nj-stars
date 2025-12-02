@@ -130,7 +130,24 @@ nj-stars/
    # Database tables will be created automatically on first run
    ```
 
-6. **Run the server:**
+6. **Seed database with mock data (optional but recommended):**
+   ```bash
+   python seed_data.py
+   ```
+
+   This will populate the database with:
+   - 5 sample users (admin, parents, players)
+   - 5 blog posts
+   - 9 products (merch items)
+   - 8 events (open gyms, tryouts, games)
+   - 3 sample orders
+
+   **Test Accounts:**
+   - Admin: `admin@njstars.com` / `admin123`
+   - Parent: `parent1@example.com` / `parent123`
+   - Player: `player1@example.com` / `player123`
+
+7. **Run the server:**
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
@@ -272,6 +289,42 @@ The service will automatically switch from mock to real data when credentials ar
 ### Stripe Orders
 - Session ID, status, amount, customer email
 - Product metadata, payment intent
+
+## Mock Data & Testing
+
+### Backend Database Seeding
+
+The platform includes a comprehensive seed script to populate your database with realistic test data:
+
+```bash
+cd backend
+python seed_data.py
+```
+
+This creates:
+- **Users**: Admin, parents, and players with different roles
+- **Blog Posts**: 5 sample news articles
+- **Products**: 9 merch items (jerseys, apparel, accessories)
+- **Events**: 8 upcoming events (open gyms, tryouts, games, tournaments)
+- **Orders**: 3 completed purchase orders
+
+The script will clear existing data and repopulate, making it safe to run multiple times during development.
+
+### Frontend Mock Data
+
+For frontend development without a backend connection, mock data is available in `/frontend/src/lib/mock-data.ts`:
+
+```typescript
+import { mockProducts, mockEvents, mockUnifiedFeed } from '@/lib/mock-data'
+
+// Use in components during development
+const products = mockProducts
+```
+
+This allows you to:
+- Develop UI components independently
+- Test responsive designs with realistic data
+- Work offline without backend dependencies
 
 ## Deployment
 
