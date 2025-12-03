@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.routes import (
+    auth,
     blog,
     products,
     events,
@@ -29,6 +30,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 app.include_router(blog.router, prefix=f"{settings.API_V1_STR}/blog", tags=["Blog"])
 app.include_router(products.router, prefix=f"{settings.API_V1_STR}/products", tags=["Products"])
 app.include_router(events.router, prefix=f"{settings.API_V1_STR}/events", tags=["Events"])
