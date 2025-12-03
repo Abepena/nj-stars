@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable standalone output for Docker production builds
+  output: 'standalone',
+
   images: {
     domains: [
       'images.unsplash.com',

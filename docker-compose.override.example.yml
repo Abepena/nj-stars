@@ -1,0 +1,49 @@
+# Docker Compose Override Example
+# Copy this file to docker-compose.override.yml for local customizations
+# This file is automatically loaded by docker-compose and merged with docker-compose.yml
+
+version: '3.8'
+
+services:
+  # Example: Custom backend configuration
+  backend:
+    # Use different port
+    ports:
+      - "8001:8000"
+
+    # Add additional environment variables
+    environment:
+      DEBUG: "true"
+      LOG_LEVEL: "debug"
+
+    # Override command
+    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+
+  # Example: Custom frontend configuration
+  frontend:
+    # Use different port
+    ports:
+      - "3001:3000"
+
+    # Add environment variables
+    environment:
+      NEXT_PUBLIC_DEBUG: "true"
+
+  # Example: Access PostgreSQL from host
+  postgres:
+    ports:
+      - "5433:5432"  # Use different host port to avoid conflicts
+
+  # Example: Add additional services
+  # redis:
+  #   image: redis:alpine
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - njstars-network
+
+# volumes:
+#   # Add custom volumes if needed
+
+# networks:
+#   # Networks are inherited from docker-compose.yml

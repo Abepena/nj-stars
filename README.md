@@ -90,7 +90,44 @@ nj-stars/
 
 ## Getting Started
 
-### Prerequisites
+The NJ Stars platform can be run either with Docker (recommended) or locally.
+
+### 🐳 Quick Start with Docker (Recommended)
+
+**Prerequisites:**
+- Docker and Docker Compose
+- Make (optional but recommended)
+
+**Start the application:**
+```bash
+# Copy environment file
+cp .env.docker.example .env.docker
+
+# Edit with your values (see DOCKER.md for details)
+nano .env.docker
+
+# Build and start all services
+make build && make up
+
+# Seed database with test data (optional)
+make seed
+
+# View logs
+make logs
+```
+
+**Access the application:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+For complete Docker documentation, see **[DOCKER.md](./DOCKER.md)**
+
+---
+
+### 💻 Local Development Setup
+
+**Prerequisites:**
 - Node.js 18+
 - Python 3.10+
 - PostgreSQL 14+
