@@ -350,6 +350,39 @@ This allows you to:
 
 1. **Backend:** Add models → Create API routes → Update main.py
 2. **Frontend:** Create components → Add pages → Connect to API
+3. **Tests:** Write unit and integration tests for new features
+
+### Testing
+
+The platform includes comprehensive test suites with industry-standard coverage (80%+).
+
+**Run all tests:**
+```bash
+./run-tests.sh
+```
+
+**Backend tests:**
+```bash
+cd backend
+pytest                      # Run all tests
+pytest --cov=app            # With coverage
+pytest -m unit              # Unit tests only
+pytest -m integration       # Integration tests only
+```
+
+**Frontend tests:**
+```bash
+cd frontend
+npm test                    # Run all tests
+npm run test:watch          # Watch mode
+npm run test:coverage       # With coverage
+```
+
+**Coverage reports:**
+- Backend: `backend/htmlcov/index.html`
+- Frontend: `frontend/coverage/lcov-report/index.html`
+
+For detailed testing documentation, see [TESTING.md](./TESTING.md)
 
 ### Linting & Formatting
 
