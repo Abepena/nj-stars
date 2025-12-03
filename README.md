@@ -4,6 +4,24 @@ A comprehensive web platform for NJ Stars AAU Basketball Team featuring a public
 
 **🚀 Mobile-Ready:** Complete API separation enables easy extension to iOS/Android apps. See [MOBILE_APP.md](./MOBILE_APP.md) for implementation guide.
 
+## 📚 Documentation Guide
+
+**New here? Start with these guides:**
+
+| Document | Purpose | When to Read |
+|----------|---------|--------------|
+| **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** | Current implementation status and what's working | Read first to understand what's complete |
+| **[NEXT_STEPS.md](./NEXT_STEPS.md)** | Production deployment roadmap and action items | Read before launching to production |
+| **[DOCKER.md](./DOCKER.md)** | Docker setup and deployment guide | When deploying with Docker |
+| **[TESTING.md](./TESTING.md)** | Testing guide and best practices | When running or writing tests |
+| **[MOBILE_APP.md](./MOBILE_APP.md)** | Mobile app extension guide | When building iOS/Android apps |
+| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | System architecture and design | For understanding technical decisions |
+| **README.md** (this file) | General overview and quick start | For local development setup |
+
+**Quick Start:** For fastest setup, jump to [🐳 Quick Start with Docker](#-quick-start-with-docker-recommended)
+
+---
+
 ## Tech Stack
 
 ### Frontend
