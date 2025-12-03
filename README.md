@@ -2,6 +2,8 @@
 
 A comprehensive web platform for NJ Stars AAU Basketball Team featuring a public-facing website, e-commerce merch store, and protected member portal with role-based access control.
 
+**🚀 Mobile-Ready:** Complete API separation enables easy extension to iOS/Android apps. See [MOBILE_APP.md](./MOBILE_APP.md) for implementation guide.
+
 ## Tech Stack
 
 ### Frontend
