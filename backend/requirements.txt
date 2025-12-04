@@ -1,20 +1,40 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-sqlalchemy==2.0.25
-psycopg2-binary==2.9.9
-alembic==1.13.1
-pydantic==2.5.3
-pydantic-settings==2.1.0
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
-stripe==8.0.0
-requests==2.31.0
-python-dotenv==1.0.0
+# Django Core
+Django==5.0.1
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
 
-# Testing
+# Wagtail CMS
+wagtail==6.0
+wagtail-modeladmin==2.0.0
+
+# Authentication
+django-allauth==0.61.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# Payments
+stripe==8.0.0
+
+# Print-on-Demand Integration
+requests==2.31.0
+
+# Environment & Configuration
+python-decouple==3.8
+
+# Image Processing
+Pillow==10.2.0
+
+# Server
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Development & Testing
 pytest==7.4.4
+pytest-django==4.7.0
 pytest-cov==4.1.0
-pytest-asyncio==0.23.3
-httpx==0.26.0
-faker==22.6.0
+factory-boy==3.3.0
+faker==22.0.0
+
+# Utilities
+python-dateutil==2.8.2
