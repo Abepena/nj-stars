@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
+    'allauth.socialaccount.providers.apple',
 
     # Third party - API
     'rest_framework',
@@ -122,8 +123,8 @@ STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET')
 
-# Printful
-PRINTFUL_API_KEY = config('PRINTFUL_API_KEY', default='')
+# Print-on-Demand (Future - Phase 2)
+# PRINTIFY_API_KEY = config('PRINTIFY_API_KEY', default='')
 
 # Instagram
 INSTAGRAM_ACCESS_TOKEN = config('INSTAGRAM_ACCESS_TOKEN', default='')
@@ -150,6 +151,13 @@ SOCIALACCOUNT_PROVIDERS = {
     'facebook': {
         'METHOD': 'oauth2',
         'SCOPE': ['email', 'public_profile'],
+    },
+    'apple': {
+        'APP': {
+            'client_id': config('APPLE_CLIENT_ID', default=''),
+            'secret': config('APPLE_KEY_ID', default=''),
+            'key': config('APPLE_PRIVATE_KEY', default=''),
+        }
     }
 }
 
@@ -231,8 +239,8 @@ STRIPE_PUBLIC_KEY=pk_test_...
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Printful
-PRINTFUL_API_KEY=your-printful-key
+# Print-on-Demand (Phase 2 - Future)
+# PRINTIFY_API_KEY=your-printify-key
 
 # Instagram (optional)
 INSTAGRAM_ACCESS_TOKEN=
@@ -243,6 +251,9 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 FACEBOOK_APP_ID=
 FACEBOOK_APP_SECRET=
+APPLE_CLIENT_ID=
+APPLE_KEY_ID=
+APPLE_PRIVATE_KEY=
 
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000
@@ -398,7 +409,14 @@ from django.contrib.contenttypes.models import ContentType
 User = get_user_model()
 
 class SubscriptionPlan(models.Model):
-    """Subscription plans for recurring memberships"""
+    """Subscription plans for recurring memberships
+
+    Typical Bergen County AAU Basketball Pricing (2024-2025):
+    - Monthly: $175/month (flexible, month-to-month)
+    - Seasonal: $475 for 3-month season (save $50 vs monthly)
+    - Annual: $1,800/year (save $300 vs monthly)
+    - Team Dues (one-time): $950 per season (secures team spot, must pay by deadline)
+    """
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
     description = models.TextField()
@@ -407,10 +425,15 @@ class SubscriptionPlan(models.Model):
         max_length=20,
         choices=[
             ('monthly', 'Monthly'),
-            ('seasonal', 'Seasonal (3 months)'),
+            ('seasonal', 'Seasonal'),
             ('annual', 'Annual'),
+            ('one_time', 'One-Time (Team Dues)'),
         ]
     )
+
+    # For team dues payment option
+    is_team_dues = models.BooleanField(default=False, help_text="One-time season payment to secure team spot")
+    payment_deadline = models.DateField(null=True, blank=True, help_text="Deadline for team dues payment")
 
     # Stripe integration
     stripe_price_id = models.CharField(max_length=255, help_text="Stripe Price ID")
@@ -529,12 +552,12 @@ class Product(models.Model):
     stripe_price_id = models.CharField(max_length=255, blank=True)
     stripe_product_id = models.CharField(max_length=255, blank=True)
 
-    # Printful integration
-    printful_sync_product_id = models.CharField(max_length=100, blank=True, help_text="Printful Sync Product ID")
-    printful_sync_variant_id = models.CharField(max_length=100, blank=True, help_text="Printful Sync Variant ID")
+    # Print-on-Demand integration (Phase 2 - Printify)
+    printify_product_id = models.CharField(max_length=100, blank=True, help_text="Printify Product ID (Phase 2)")
+    printify_variant_id = models.CharField(max_length=100, blank=True, help_text="Printify Variant ID (Phase 2)")
 
-    # Inventory (managed by Printful if integrated)
-    manage_inventory = models.BooleanField(default=False, help_text="Manage inventory locally (False = Printful managed)")
+    # Inventory management (simple for MVP, Printify sync in Phase 2)
+    manage_inventory = models.BooleanField(default=True, help_text="Track inventory locally")
     stock_quantity = models.IntegerField(default=0)
 
     # Categorization
@@ -611,8 +634,8 @@ class Order(models.Model):
     shipping_zip = models.CharField(max_length=20)
     shipping_country = models.CharField(max_length=100, default='US')
 
-    # Printful tracking
-    printful_order_id = models.CharField(max_length=100, blank=True)
+    # Shipping tracking (Printify integration in Phase 2)
+    printify_order_id = models.CharField(max_length=100, blank=True, help_text="Printify Order ID (Phase 2)")
     tracking_number = models.CharField(max_length=255, blank=True)
     tracking_url = models.URLField(max_length=500, blank=True)
 
@@ -643,8 +666,8 @@ class OrderItem(models.Model):
     # Quantity
     quantity = models.IntegerField(default=1)
 
-    # Printful
-    printful_item_id = models.CharField(max_length=100, blank=True)
+    # Print-on-Demand tracking (Phase 2)
+    printify_line_item_id = models.CharField(max_length=100, blank=True, help_text="Printify Line Item ID (Phase 2)")
 
     class Meta:
         ordering = ['id']
@@ -901,7 +924,8 @@ class PlayerProfile(models.Model):
     # Bio
     bio = RichTextField(blank=True)
 
-    # Stats (optional)
+    # Stats (Phase 2 - Nice to have, not MVP priority)
+    # Keeping in model for future use, but not emphasized in first launch
     ppg = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, verbose_name="Points per game")
     rpg = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, verbose_name="Rebounds per game")
     apg = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True, verbose_name="Assists per game")
@@ -1088,71 +1112,43 @@ class StripeWebhookView(APIView):
 
 ---
 
-## Phase 6: Printful Integration
+## Phase 6: Simple Product Management (Printify Integration - Phase 2)
 
-### Service (`apps/payments/services/printful.py`)
+**Note:** Per user request, we're starting with simple inventory management. Printify integration will be added after core features are validated.
+
+### Product Management (Phase 1 - MVP)
+
+For now, products will be managed with:
+- Manual product entry in Django admin
+- Image URLs (can upload to media folder)
+- Simple inventory tracking
+- Direct Stripe checkout
+
+### Printify Integration (Phase 2 - Future Enhancement)
+
+**To be implemented after core features work:**
 
 ```python
-import requests
-from django.conf import settings
+# apps/payments/services/printify.py (FUTURE)
 
-class PrintfulService:
-    """Printful API integration for print-on-demand"""
+class PrintifyService:
+    """Printify API integration for print-on-demand"""
 
-    BASE_URL = 'https://api.printful.com'
+    BASE_URL = 'https://api.printify.com/v1'
 
-    def __init__(self):
-        self.api_key = settings.PRINTFUL_API_KEY
-        self.headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Content-Type': 'application/json',
-        }
-
-    def get_products(self):
-        """Get all synced products from Printful"""
-        response = requests.get(
-            f'{self.BASE_URL}/store/products',
-            headers=self.headers
-        )
-        return response.json()
-
-    def create_order(self, order_data):
-        """Create order in Printful for fulfillment"""
-        response = requests.post(
-            f'{self.BASE_URL}/orders',
-            headers=self.headers,
-            json=order_data
-        )
-        return response.json()
-
-    def get_order_status(self, printful_order_id):
-        """Get order status from Printful"""
-        response = requests.get(
-            f'{self.BASE_URL}/orders/{printful_order_id}',
-            headers=self.headers
-        )
-        return response.json()
-
-    def sync_products(self):
-        """Sync Printful products to our database"""
-        from apps.payments.models import Product
-
-        products = self.get_products()
-
-        for printful_product in products.get('result', []):
-            # Create or update product in our database
-            Product.objects.update_or_create(
-                printful_sync_product_id=printful_product['id'],
-                defaults={
-                    'name': printful_product['name'],
-                    'description': printful_product.get('description', ''),
-                    # ... map other fields
-                }
-            )
-
-# Singleton instance
-printful_service = PrintfulService()
+    # Implementation details in NEXT_STEPS.md
+    # - Product sync
+    # - Order creation
+    # - Fulfillment tracking
 ```
+
+**Advantages of Printify (per user research):**
+- Better API documentation
+- More competitive pricing
+- Wider product selection
+- Easier integration
+
+This will be fully documented in Phase 2 implementation.
 
 ---
 
