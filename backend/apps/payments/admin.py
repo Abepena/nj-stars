@@ -7,7 +7,8 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
     list_display = ['name', 'price', 'billing_period', 'is_active', 'is_team_dues']
     list_filter = ['billing_period', 'is_active', 'is_team_dues']
     search_fields = ['name', 'description']
-    prepopulated_fields = {'slug': ('title',)}
+    # Slug should derive from the plan name
+    prepopulated_fields = {'slug': ('name',)}
 
 
 @admin.register(Subscription)

@@ -38,7 +38,8 @@ export function NewsFeed() {
     fetchFeed()
   }, [])
 
-  if (loading) {
+  // Show skeleton cards if loading or no data available
+  if (loading || feedItems.length === 0) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -67,7 +68,7 @@ function FeedCard({ item }: { item: FeedItem }) {
   const formattedDate = format(new Date(item.published_date), "MMM dd, yyyy")
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="overflow-hidden hover:shadow-lg hover:bg-muted hover:-translate-y-0.5 transition-all duration-300">
       {item.image_url && (
         <div className="relative h-48 w-full">
           <Image
@@ -76,41 +77,46 @@ function FeedCard({ item }: { item: FeedItem }) {
             fill
             className="object-cover"
           />
-          {item.type === "instagram" && (
-            <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-              Instagram
-            </div>
-          )}
         </div>
       )}
       <CardHeader>
-        <CardTitle className="line-clamp-2">{item.title}</CardTitle>
-        <CardDescription>
+        <div className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">
+          {item.type === "blog" ? "BLOG" : "INSTAGRAM"}
+        </div>
+        <CardTitle className="line-clamp-2 text-xl font-bold">{item.title}</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground">
           {item.author && <span>{item.author} • </span>}
           {formattedDate}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {item.excerpt && (
-          <p className="text-sm text-muted-foreground line-clamp-3">
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
             {item.excerpt}
           </p>
         )}
         {item.type === "instagram" && item.content && (
-          <p className="text-sm text-muted-foreground line-clamp-3">
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
             {item.content}
           </p>
         )}
-        {item.type === "instagram" && item.permalink && (
-          <a
-            href={item.permalink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline text-sm mt-2 inline-block"
-          >
-            View on Instagram →
-          </a>
-        )}
+        <div className="flex gap-2">
+          {item.type === "instagram" && (
+            <span className="inline-block px-3 py-1 rounded text-xs font-semibold bg-accent/10 text-accent border border-accent/30">
+              Instagram
+            </span>
+          )}
+          {item.permalink && (
+            <a
+              href={item.permalink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary/80 text-sm inline-flex items-center gap-1 transition-colors"
+            >
+              View Post →
+            </a>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

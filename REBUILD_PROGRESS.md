@@ -1,7 +1,7 @@
 # Django + Wagtail Rebuild - Progress Report
 
-> **Last Updated:** December 4, 2024
-> **Status:** Phase 2 Complete, Phase 3 In Progress
+> **Last Updated:** December 4, 2024 (updated with Phase 4 start)
+> **Status:** Phase 2 Complete, Phase 3 In Progress, Phase 4 Started
 
 ---
 
@@ -85,14 +85,15 @@
 **Estimated Time:** 1-2 hours
 
 ---
+### Phase 4: Wagtail CMS Pages 🔄 STARTED
+**Done:**
+- Added Wagtail page models: `HomePage`, `BlogIndexPage`, `BlogPage`, `TeamPage`, `PlayerProfile`
 
-### Phase 4: Wagtail CMS Pages
-**Tasks:**
-- Create HomePage model with StreamFields
-- Create BlogPage and BlogIndexPage models
-- Create TeamPage with PlayerProfile
+**Next Tasks:**
 - Configure Wagtail API v2
 - Test Wagtail admin interface
+
+**Estimated Time:** 1-2 hours
 
 **Estimated Time:** 1-2 hours
 

@@ -35,6 +35,11 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-njstars}:${POSTGRES_PASSWORD:-njstars_dev_password}@postgres:5432/${POSTGRES_DB:-njstars}
+      DB_NAME: ${POSTGRES_DB:-njstars}
+      DB_USER: ${POSTGRES_USER:-njstars}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-njstars_dev_password}
+      DB_HOST: postgres
+      DB_PORT: 5432
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30

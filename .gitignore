@@ -3,6 +3,7 @@
 .env.local
 .env.docker
 .env.production
+secrets.local.md
 
 # Docker volumes
 postgres_data/
