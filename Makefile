@@ -1,5 +1,8 @@
 .PHONY: help build up down restart logs shell-backend shell-frontend seed test clean
 
+# Use docker-compose if available, otherwise fall back to docker compose
+DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi)
+
 # Default target
 help:
 	@echo "NJ Stars Platform - Docker Commands"
@@ -38,117 +41,117 @@ help:
 
 # Development commands
 build:
-	docker-compose build
+	$(DOCKER_COMPOSE) build
 
 up:
-	docker-compose up -d
+	$(DOCKER_COMPOSE) up -d
 
 down:
-	docker-compose down
+	$(DOCKER_COMPOSE) down
 
 restart:
-	docker-compose restart
+	$(DOCKER_COMPOSE) restart
 
 logs:
-	docker-compose logs -f
+	$(DOCKER_COMPOSE) logs -f
 
 logs-backend:
-	docker-compose logs -f backend
+	$(DOCKER_COMPOSE) logs -f backend
 
 logs-frontend:
-	docker-compose logs -f frontend
+	$(DOCKER_COMPOSE) logs -f frontend
 
 logs-postgres:
-	docker-compose logs -f postgres
+	$(DOCKER_COMPOSE) logs -f postgres
 
 # Database commands
 seed:
-	docker-compose exec backend python seed_data.py
+	$(DOCKER_COMPOSE) exec backend python seed_data.py
 
 db-shell:
-	docker-compose exec postgres psql -U njstars -d njstars
+	$(DOCKER_COMPOSE) exec postgres psql -U njstars -d njstars
 
 db-reset:
 	@echo "WARNING: This will delete all data!"
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose down -v; \
-		docker-compose up -d postgres; \
+		$(DOCKER_COMPOSE) down -v; \
+		$(DOCKER_COMPOSE) up -d postgres; \
 		sleep 5; \
-		docker-compose up -d backend frontend; \
+		$(DOCKER_COMPOSE) up -d backend frontend; \
 	fi
 
 # Testing commands
 test:
 	@echo "Running backend tests..."
-	docker-compose exec backend pytest
+	$(DOCKER_COMPOSE) exec backend pytest
 	@echo ""
 	@echo "Running frontend tests..."
-	docker-compose exec frontend npm test
+	$(DOCKER_COMPOSE) exec frontend npm test
 
 test-backend:
-	docker-compose exec backend pytest --cov=app
+	$(DOCKER_COMPOSE) exec backend pytest --cov=app
 
 test-frontend:
-	docker-compose exec frontend npm test
+	$(DOCKER_COMPOSE) exec frontend npm test
 
 test-backend-watch:
-	docker-compose exec backend pytest --watch
+	$(DOCKER_COMPOSE) exec backend pytest --watch
 
 test-frontend-watch:
-	docker-compose exec frontend npm run test:watch
+	$(DOCKER_COMPOSE) exec frontend npm run test:watch
 
 # Shell access
 shell-backend:
-	docker-compose exec backend /bin/bash
+	$(DOCKER_COMPOSE) exec backend /bin/bash
 
 shell-frontend:
-	docker-compose exec frontend /bin/sh
+	$(DOCKER_COMPOSE) exec frontend /bin/sh
 
 shell-postgres:
-	docker-compose exec postgres /bin/bash
+	$(DOCKER_COMPOSE) exec postgres /bin/bash
 
 # Cleanup commands
 clean:
-	docker-compose down -v --rmi all --remove-orphans
+	$(DOCKER_COMPOSE) down -v --rmi all --remove-orphans
 
 prune:
 	docker system prune -af --volumes
 
 # Production commands
 prod-build:
-	docker-compose -f docker-compose.prod.yml build
+	$(DOCKER_COMPOSE) -f docker-compose.prod.yml build
 
 prod-up:
-	docker-compose -f docker-compose.prod.yml up -d
+	$(DOCKER_COMPOSE) -f docker-compose.prod.yml up -d
 
 prod-down:
-	docker-compose -f docker-compose.prod.yml down
+	$(DOCKER_COMPOSE) -f docker-compose.prod.yml down
 
 prod-logs:
-	docker-compose -f docker-compose.prod.yml logs -f
+	$(DOCKER_COMPOSE) -f docker-compose.prod.yml logs -f
 
 # Status
 status:
-	docker-compose ps
+	$(DOCKER_COMPOSE) ps
 
 # Stop specific service
 stop-backend:
-	docker-compose stop backend
+	$(DOCKER_COMPOSE) stop backend
 
 stop-frontend:
-	docker-compose stop frontend
+	$(DOCKER_COMPOSE) stop frontend
 
 stop-postgres:
-	docker-compose stop postgres
+	$(DOCKER_COMPOSE) stop postgres
 
 # Restart specific service
 restart-backend:
-	docker-compose restart backend
+	$(DOCKER_COMPOSE) restart backend
 
 restart-frontend:
-	docker-compose restart frontend
+	$(DOCKER_COMPOSE) restart frontend
 
 restart-postgres:
-	docker-compose restart postgres
+	$(DOCKER_COMPOSE) restart postgres

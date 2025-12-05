@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NJ Stars Elite - Design Preview</title>
+    <style>
+      /* CSS Variables - Design System */
+      :root {
+        /* Primary - Muted Jersey Red */
+        --primary: #c13847;
+        --primary-hover: #d4233d;
+        --primary-muted: #8a2a35;
+
+        /* Accent - Hot Pink (titles/accents) */
+        --accent: #e03083;
+        --accent-hover: #ff3d96;
+        --accent-muted: #b8266a;
+
+        /* Supporting Accents for statuses */
+        --info: #5b7aa3;
+        --info-hover: #6c8fbd;
+        --info-muted: #3f5c7d;
+
+        --success: #4ca982;
+        --success-hover: #5fb894;
+        --success-muted: #3b8667;
+
+        --warning: #d49b54;
+        --warning-hover: #e2ae6a;
+        --warning-muted: #b67d3f;
+
+        /* Secondary - Vibrant Teal */
+        --secondary: #06b6d4;
+        --secondary-hover: #22d3ee;
+        --secondary-muted: #0891b2;
+
+        /* Tertiary - Warm Amber (for highlights/badges) */
+        --tertiary: #f59e0b;
+        --tertiary-hover: #fbbf24;
+        --tertiary-muted: #d97706;
+
+        /* Dark Mode (Default) - Warm Paper */
+        --bg-primary: #1a1614;
+        --bg-secondary: #231f1d;
+        --bg-tertiary: #2d2927;
+
+        --text-primary: #e8e3df;
+        --text-secondary: #b8b0a8;
+        --text-tertiary: #8a8479;
+
+        --border-subtle: #3a3531;
+        --border-default: #4a443f;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2),
+          0 2px 4px -1px rgba(0, 0, 0, 0.12);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.25),
+          0 4px 6px -2px rgba(0, 0, 0, 0.15);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        padding: 40px 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 3rem;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+        background: linear-gradient(
+          135deg,
+          var(--text-primary) 0%,
+          var(--accent) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .subtitle {
+        color: var(--text-secondary);
+        font-size: 1.25rem;
+        margin-bottom: 48px;
+      }
+
+      /* Color Palette Display */
+      .palette-section {
+        margin-bottom: 64px;
+      }
+
+      .palette-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .color-swatch {
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .color-preview {
+        height: 100px;
+        width: 100%;
+      }
+
+      .color-info {
+        padding: 12px;
+        background: var(--bg-secondary);
+      }
+
+      .color-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+
+      .color-value {
+        font-family: "SF Mono", monospace;
+        font-size: 12px;
+        color: var(--text-tertiary);
+      }
+
+      /* Section Headers */
+      .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+      }
+
+      .section-desc {
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+      }
+
+      /* Button Components */
+      .btn-group {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 24px;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 200ms ease;
+        text-decoration: none;
+        display: inline-block;
+        border: none;
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-hover) 100%
+        );
+        color: white;
+        box-shadow: 0 2px 4px rgba(224, 48, 131, 0.25);
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(
+          135deg,
+          var(--primary-hover) 0%,
+          var(--primary) 100%
+        );
+        box-shadow: 0 4px 8px rgba(224, 48, 131, 0.35);
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: var(--text-primary);
+        border: 1.5px solid var(--border-default);
+      }
+
+      .btn-secondary:hover {
+        background: var(--bg-tertiary);
+        border-color: var(--primary-muted);
+      }
+
+      /* Card Components */
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      .card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .card:hover {
+        background: var(--bg-tertiary);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+      }
+
+      .card-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--primary);
+        margin-bottom: 12px;
+      }
+
+      .card-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .card-meta {
+        font-size: 14px;
+        color: var(--text-tertiary);
+        margin-bottom: 16px;
+      }
+
+      .card-description {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        line-height: 1.6;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .badge-amber {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--tertiary);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .badge-teal {
+        background: rgba(6, 182, 212, 0.15);
+        color: var(--secondary);
+        border: 1px solid rgba(6, 182, 212, 0.3);
+      }
+
+      .badge-info {
+        background: rgba(91, 122, 163, 0.15);
+        color: var(--info);
+        border: 1px solid rgba(91, 122, 163, 0.3);
+      }
+
+      .badge-success {
+        background: rgba(76, 169, 130, 0.15);
+        color: var(--success);
+        border: 1px solid rgba(76, 169, 130, 0.3);
+      }
+
+      .badge-warning {
+        background: rgba(212, 155, 84, 0.15);
+        color: var(--warning);
+        border: 1px solid rgba(212, 155, 84, 0.3);
+      }
+
+      /* Toasts */
+      .toast-stack {
+        display: grid;
+        gap: 12px;
+        max-width: 420px;
+      }
+
+      .toast {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 12px 14px;
+        box-shadow: var(--shadow-sm);
+        display: grid;
+        gap: 4px;
+      }
+
+      .toast-title {
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .toast-body {
+        color: var(--text-secondary);
+        font-size: 13px;
+      }
+
+      .toast-info {
+        border-left: 4px solid var(--info);
+      }
+
+      .toast-success {
+        border-left: 4px solid var(--success);
+      }
+
+      .toast-warning {
+        border-left: 4px solid var(--warning);
+      }
+
+      .toast-error {
+        border-left: 4px solid var(--primary);
+      }
+
+      /* Typography Examples */
+      .typography-example {
+        margin-bottom: 32px;
+      }
+
+      .display-1 {
+        font-size: 4rem;
+        font-weight: 900;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+
+      .heading-1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .heading-2 {
+        font-size: 2rem;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+
+      .body-text {
+        font-size: 16px;
+        line-height: 1.7;
+        color: var(--text-secondary);
+      }
+
+      .small-text {
+        font-size: 14px;
+        color: var(--text-tertiary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>NJ Stars Elite</h1>
+      <p class="subtitle">Design System Preview - Campaign Pink + Teal</p>
+
+      <!-- Color Palette -->
+      <section class="palette-section">
+        <h2 class="section-title">🎨 Color Palette</h2>
+        <p class="section-desc">
+          Muted red primary with hot-pink accent, plus teal, amber, and status
+          accents on warm dark paper
+        </p>
+
+        <div class="palette-grid">
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #c13847"></div>
+            <div class="color-info">
+              <div class="color-name">Primary Red</div>
+              <div class="color-value">#c13847</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #d4233d"></div>
+            <div class="color-info">
+              <div class="color-name">Primary Hover</div>
+              <div class="color-value">#d4233d</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #1a1614"></div>
+            <div class="color-info">
+              <div class="color-name">BG Primary</div>
+              <div class="color-value">#1a1614</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #231f1d"></div>
+            <div class="color-info">
+              <div class="color-name">BG Secondary</div>
+              <div class="color-value">#231f1d</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #e8e3df"></div>
+            <div class="color-info">
+              <div class="color-name">Text Primary</div>
+              <div class="color-value">#e8e3df</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #06b6d4"></div>
+            <div class="color-info">
+              <div class="color-name">Secondary Teal</div>
+              <div class="color-value">#06b6d4</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #f59e0b"></div>
+            <div class="color-info">
+              <div class="color-name">Tertiary Amber</div>
+              <div class="color-value">#f59e0b</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #e03083"></div>
+            <div class="color-info">
+              <div class="color-name">Accent Hot Pink</div>
+              <div class="color-value">#e03083</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #5b7aa3"></div>
+            <div class="color-info">
+              <div class="color-name">Info Slate</div>
+              <div class="color-value">#5b7aa3</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #4ca982"></div>
+            <div class="color-info">
+              <div class="color-name">Success Laurel</div>
+              <div class="color-value">#4ca982</div>
+            </div>
+          </div>
+
+          <div class="color-swatch">
+            <div class="color-preview" style="background: #d49b54"></div>
+            <div class="color-info">
+              <div class="color-name">Warning Ochre</div>
+              <div class="color-value">#d49b54</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Buttons -->
+      <section style="margin-bottom: 64px">
+        <h2 class="section-title">🔘 Buttons</h2>
+        <p class="section-desc">Confident CTAs with subtle elevation</p>
+
+        <div class="btn-group">
+          <button class="btn btn-primary">Register for Tryouts</button>
+          <button class="btn btn-secondary">View Schedule</button>
+          <button class="btn btn-primary">Join the Team</button>
+          <button class="btn btn-secondary">Contact Coach</button>
+        </div>
+      </section>
+
+      <!-- Tags & Toasts -->
+      <section style="margin-bottom: 64px">
+        <h2 class="section-title">🏷️ Tags & Toasts</h2>
+        <p class="section-desc">Status accents for chips and inline notices.</p>
+
+        <div
+          style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px"
+        >
+          <span class="badge badge-teal">Info</span>
+          <span class="badge badge-info">Schedule Update</span>
+          <span class="badge badge-success">Payment Confirmed</span>
+          <span class="badge badge-warning">Roster Pending</span>
+          <span class="badge badge-amber">Featured</span>
+        </div>
+
+        <div class="toast-stack">
+          <div class="toast toast-info">
+            <div class="toast-title">Schedule Updated</div>
+            <div class="toast-body">Saturday skills moved to 10:00 AM.</div>
+          </div>
+          <div class="toast toast-success">
+            <div class="toast-title">Payment Received</div>
+            <div class="toast-body">Spring tournament dues confirmed.</div>
+          </div>
+          <div class="toast toast-warning">
+            <div class="toast-title">Roster Pending</div>
+            <div class="toast-body">Coach reviewing final player slots.</div>
+          </div>
+          <div class="toast toast-error">
+            <div class="toast-title">Action Needed</div>
+            <div class="toast-body">Consent form missing signature.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cards -->
+      <section style="margin-bottom: 64px">
+        <h2 class="section-title">🃏 Cards</h2>
+        <p class="section-desc">
+          Paper-like elevation with smooth interactions
+        </p>
+
+        <div class="card-grid">
+          <div class="card">
+            <div class="card-label">TRYOUT</div>
+            <h3 class="card-title">Winter Tryouts 2025</h3>
+            <div class="card-meta">Dec 15, 2024 • 6:00 PM</div>
+            <p class="card-description">
+              Open tryouts for the 2025 season. All skill levels welcome.
+              Register early to secure your spot.
+            </p>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px">
+              <span class="badge badge-amber">Featured</span>
+              <span class="badge badge-teal">12 Spots Left</span>
+            </div>
+            <button class="btn btn-primary" style="width: 100%">
+              Register Now
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-label">TOURNAMENT</div>
+            <h3 class="card-title">Spring Championship</h3>
+            <div class="card-meta">Mar 20-22, 2025</div>
+            <p class="card-description">
+              Three-day tournament featuring top AAU teams from across the
+              region. Championship game on Sunday.
+            </p>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px">
+              <span class="badge badge-teal">Team Event</span>
+            </div>
+            <button class="btn btn-secondary" style="width: 100%">
+              View Details
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-label">OPEN GYM</div>
+            <h3 class="card-title">Saturday Skills Session</h3>
+            <div class="card-meta">Every Saturday • 9:00 AM</div>
+            <p class="card-description">
+              Drop-in skills training for all players. Work on fundamentals,
+              shooting, and game situations.
+            </p>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px">
+              <span class="badge badge-teal">Recurring</span>
+            </div>
+            <button class="btn btn-secondary" style="width: 100%">
+              Learn More
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Typography -->
+      <section style="margin-bottom: 64px">
+        <h2 class="section-title">📝 Typography</h2>
+        <p class="section-desc">Clear hierarchy with comfortable reading</p>
+
+        <div class="typography-example">
+          <div class="display-1" style="margin-bottom: 16px">
+            Display Heading
+          </div>
+          <div class="heading-1" style="margin-bottom: 16px">
+            Heading Level 1
+          </div>
+          <div class="heading-2" style="margin-bottom: 16px">
+            Heading Level 2
+          </div>
+          <p class="body-text" style="margin-bottom: 16px">
+            This is body text with comfortable line-height (1.7) for extended
+            reading. The warm off-white color (#e8e3df) provides excellent
+            contrast against the dark paper-like background while remaining easy
+            on the eyes.
+          </p>
+          <p class="small-text">This is small text for captions and labels.</p>
+        </div>
+      </section>
+
+      <!-- Hero Example -->
+      <section style="margin-bottom: 64px">
+        <h2 class="section-title">🏀 Hero Section Example</h2>
+
+        <div
+          style="
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 64px 32px;
+            text-align: center;
+          "
+        >
+          <div
+            style="
+              font-size: 3.5rem;
+              font-weight: 900;
+              line-height: 1.1;
+              letter-spacing: -0.02em;
+              margin-bottom: 16px;
+            "
+          >
+            Build Champions<br />On and Off the Court
+          </div>
+          <div
+            style="
+              font-size: 1.25rem;
+              color: var(--text-secondary);
+              margin-bottom: 32px;
+              max-width: 600px;
+              margin-left: auto;
+              margin-right: auto;
+            "
+          >
+            Elite AAU basketball training for athletes in Bergen County, NJ.
+            Join our winning tradition.
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 16px;
+              justify-content: center;
+              flex-wrap: wrap;
+            "
+          >
+            <button class="btn btn-primary">Register for Tryouts →</button>
+            <button class="btn btn-secondary">View Schedule</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

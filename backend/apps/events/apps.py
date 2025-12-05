@@ -3,4 +3,5 @@ from django.apps import AppConfig
 
 class EventsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "events"
+    # Use full dotted path so Django can discover the app correctly
+    name = "apps.events"

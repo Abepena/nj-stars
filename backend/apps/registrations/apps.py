@@ -3,4 +3,5 @@ from django.apps import AppConfig
 
 class RegistrationsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "registrations"
+    # Use full dotted path so Django can discover the app correctly
+    name = "apps.registrations"

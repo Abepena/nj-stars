@@ -115,8 +115,8 @@ The NJ Stars platform can be run either with Docker (recommended) or locally.
 ### 🐳 Quick Start with Docker (Recommended)
 
 **Prerequisites:**
-- Docker and Docker Compose
-- Make (optional but recommended)
+- Docker Desktop (includes `docker compose`) or Docker Engine with Compose plugin
+- Make (optional but recommended; if unavailable, run the `docker compose` commands shown below)
 
 **Start the application:**
 ```bash
@@ -128,6 +128,10 @@ nano .env.docker
 
 # Build and start all services
 make build && make up
+
+# If make is not installed, run:
+docker compose build
+docker compose up -d
 
 # Seed database with test data (optional)
 make seed
@@ -143,13 +147,17 @@ make logs
 
 For complete Docker documentation, see **[DOCKER.md](./DOCKER.md)**
 
+### VS Code Dev Container (optional)
+- Install the **Dev Containers** and **Docker** extensions on your host VS Code.
+- Command Palette → “Dev Containers: Open Folder in Container…” → choose this repo. The `.devcontainer/devcontainer.json` reuses the Docker Compose stack and will auto-install extensions listed there (Claude is included; replace `your.codex.extension.id` with your Codex extension ID to install it automatically).
+
 ---
 
 ### 💻 Local Development Setup
 
 **Prerequisites:**
 - Node.js 18+
-- Python 3.10+
+- Python 3.11
 - PostgreSQL 14+
 - Stripe Account
 - Google OAuth Credentials (optional)
@@ -162,9 +170,9 @@ For complete Docker documentation, see **[DOCKER.md](./DOCKER.md)**
    cd backend
    ```
 
-2. **Create virtual environment:**
+2. **Create virtual environment (Python 3.11):**
    ```bash
-   python -m venv venv
+   python3.11 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 

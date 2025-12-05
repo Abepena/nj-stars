@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckoutButton } from "@/components/checkout-button"
+import { PageHeader } from "@/components/page-header"
+import { LayoutShell } from "@/components/layout-shell"
 
 interface Product {
   id: number
@@ -38,41 +39,12 @@ export default function ShopPage() {
   }, [])
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-primary">
-            NJ Stars
-          </Link>
-          <div className="flex gap-4 items-center">
-            <Link href="/news" className="hover:text-primary transition-colors">
-              News
-            </Link>
-            <Link href="/shop" className="hover:text-primary transition-colors font-semibold">
-              Shop
-            </Link>
-            <Link href="/events" className="hover:text-primary transition-colors">
-              Events
-            </Link>
-            <Link href="/portal/login">
-              <Button>Portal Login</Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <LayoutShell>
+      <PageHeader
+        title="Merch Store"
+        subtitle="Show your NJ Stars pride with official team merchandise."
+      />
 
-      {/* Page Header */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Merch Store</h1>
-          <p className="text-xl">
-            Show your NJ Stars pride with official team merchandise
-          </p>
-        </div>
-      </section>
-
-      {/* Products Grid */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           {loading ? (
@@ -146,15 +118,6 @@ export default function ShopPage() {
           )}
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-muted py-8">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground">
-            © {new Date().getFullYear()} NJ Stars Basketball. All rights reserved.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </LayoutShell>
   )
 }

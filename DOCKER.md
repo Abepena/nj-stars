@@ -20,9 +20,9 @@ Complete guide for running the NJ Stars Basketball platform using Docker contain
 
 Before you begin, ensure you have the following installed:
 
-- **Docker** (20.10 or later)
-- **Docker Compose** (2.0 or later)
+- **Docker** (20.10 or later) with the Compose plugin (`docker compose`) or the legacy `docker-compose` binary
 - **Make** (optional, but recommended)
+- Backend image uses **Python 3.11** (set in `backend/Dockerfile`).
 
 ### Installing Docker
 
@@ -74,6 +74,7 @@ make logs     # View logs
 ```
 
 **Using Docker Compose:**
+If you have the new Compose plugin, replace `docker-compose` with `docker compose`.
 ```bash
 docker-compose build
 docker-compose up -d

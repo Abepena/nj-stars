@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/page-header"
+import { LayoutShell } from "@/components/layout-shell"
 import { format } from "date-fns"
 
 interface Event {
@@ -49,41 +50,12 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-primary">
-            NJ Stars
-          </Link>
-          <div className="flex gap-4 items-center">
-            <Link href="/news" className="hover:text-primary transition-colors">
-              News
-            </Link>
-            <Link href="/shop" className="hover:text-primary transition-colors">
-              Shop
-            </Link>
-            <Link href="/events" className="hover:text-primary transition-colors font-semibold">
-              Events
-            </Link>
-            <Link href="/portal/login">
-              <Button>Portal Login</Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <LayoutShell>
+      <PageHeader
+        title="Events Calendar"
+        subtitle="Open gyms, tryouts, games, and tournaments for NJ Stars athletes."
+      />
 
-      {/* Page Header */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Events Calendar</h1>
-          <p className="text-xl">
-            Open Gyms, Tryouts, Games, and More
-          </p>
-        </div>
-      </section>
-
-      {/* Events List */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           {loading ? (
@@ -177,15 +149,6 @@ export default function EventsPage() {
           )}
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-muted py-8">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground">
-            © {new Date().getFullYear()} NJ Stars Basketball. All rights reserved.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </LayoutShell>
   )
 }
