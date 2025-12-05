@@ -1,7 +1,7 @@
 # Django + Wagtail Rebuild - Progress Report
 
-> **Last Updated:** December 4, 2024 (updated with Phase 4 start)
-> **Status:** Phase 2 Complete, Phase 3 In Progress, Phase 4 Started
+> **Last Updated:** December 5, 2024
+> **Status:** Phase 2 Complete, Phase 3 In Progress, Phase 4 Started, Frontend Updates In Progress
 
 ---
 
@@ -95,20 +95,38 @@
 
 **Estimated Time:** 1-2 hours
 
-**Estimated Time:** 1-2 hours
+---
+
+### Frontend Development 🔄 IN PROGRESS
+**Recent Progress (December 5, 2024):**
+- ✅ Page layouts refactored and improved
+- ✅ Homepage sections componentized for reusability
+- ✅ Homepage styling completed to desired look and feel
+- 🔄 Component library being built out
+
+**Note:** Frontend work is progressing in parallel with backend rebuild. Components are being prepared to integrate with Django/Wagtail API once Phase 5 is complete.
 
 ---
 
-### Phase 5: Django REST Framework API
-**Tasks:**
-- Events API (list, retrieve, register endpoint)
-- Products API (list, retrieve)
-- Subscriptions API (list plans, create subscription)
-- Payments API (create checkout, webhooks)
-- Instagram API (get posts from cache)
-- Wagtail pages API integration
+### Phase 5: Django REST Framework API ✅ PARTIALLY COMPLETE
+**Done:**
+- ✅ Events API (list, retrieve with filtering & search)
+- ✅ Products API (list, retrieve with filtering & search)
+- ✅ Subscription Plans API (list, retrieve)
+- ✅ Seed data created and loaded (7 events, 7 products, 4 plans)
 
-**Estimated Time:** 2-3 hours
+**API Endpoints Available:**
+- `GET /api/events/` - List all events (filterable by event_type, searchable)
+- `GET /api/events/{slug}/` - Get single event
+- `GET /api/payments/products/` - List all products (filterable by category)
+- `GET /api/payments/products/{slug}/` - Get single product
+- `GET /api/payments/subscription-plans/` - List all subscription plans
+- `GET /api/payments/subscription-plans/{slug}/` - Get single plan
+
+**Remaining Tasks:**
+- Event registration endpoint
+- Payments/Checkout integration (Phase 6)
+- Instagram API integration
 
 ---
 

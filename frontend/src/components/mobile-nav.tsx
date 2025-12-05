@@ -46,14 +46,14 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm">
         <SheetHeader className="border-b border-border pb-4">
-          <div className="flex justify-center">
+          <Link href="/" className="flex justify-center">
             <Image
               src="/brand/logos/Text Logo.svg"
               alt="NJ Stars"
               width={160}
               height={50}
             />
-          </div>
+          </Link>
         </SheetHeader>
         <nav className="flex flex-col gap-4 mt-8">
           {navLinks.map((link) => (

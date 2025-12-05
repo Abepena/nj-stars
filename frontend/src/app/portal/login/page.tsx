@@ -145,7 +145,11 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <Button type="submit" disabled={loading} className="w-full">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-br from-foreground/40 to-accent text-background font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>

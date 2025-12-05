@@ -66,7 +66,7 @@ export function CheckoutButton({
       onClick={handleCheckout}
       disabled={loading}
       size="lg"
-      className="w-full"
+      className="w-full bg-gradient-to-br from-foreground/40 to-accent text-background font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {loading ? "Processing..." : `Buy Now - $${price.toFixed(2)}`}
     </Button>

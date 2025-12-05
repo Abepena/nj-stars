@@ -2,8 +2,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { MobileNav } from "@/components/mobile-nav"
+import { ShoppingCart } from "lucide-react"
 
 const links = [
   { href: "/news", label: "News" },
@@ -13,6 +15,7 @@ const links = [
 
 export function SiteHeader() {
   const pathname = usePathname()
+  const { data: session } = useSession()
 
   const linkClasses = (href: string) =>
     [
@@ -23,8 +26,8 @@ export function SiteHeader() {
   return (
     <nav className="border-b border-border">
       <div className="container mx-auto px-4 py-2 relative">
-        <div className="flex items-center justify-center md:justify-start">
-          {/* Logo - text centered on mobile, icon appears from md up */}
+        <div className="flex items-center justify-start">
+          {/* Logo - left aligned on all screen sizes, icon hidden on mobile */}
           <Link
             href="/"
             className="flex items-center gap-1 hover:scale-105 transition-transform"
@@ -41,7 +44,7 @@ export function SiteHeader() {
               alt="NJ Stars"
               width={160}
               height={50}
-              className="block mx-auto md:mx-0"
+              className="block"
             />
           </Link>
         </div>
@@ -53,15 +56,49 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          <Link href="/portal/login">
-            <Button className="bg-gradient-to-br from-foreground/40 to-accent text-background font-semibold hover:shadow-lg hover:scale-105 transition-transform">
-              Portal Login
+
+          {/* Shopping Cart */}
+          <Link href="/shop">
+            <Button variant="ghost" size="icon" className="h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+              <ShoppingCart className="h-5 w-5 text-accent" />
             </Button>
           </Link>
+
+          {/* Sign In or Portal */}
+          {!session ? (
+            <Link href="/portal/login">
+              <Button variant="ghost" size="sm" className="text-sm font-medium text-accent hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+                Sign In
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/portal/login">
+              <Button className="bg-gradient-to-br from-foreground/40 to-accent text-background font-semibold hover:shadow-lg hover:scale-105 transition-transform">
+                Portal
+              </Button>
+            </Link>
+          )}
         </div>
 
-        {/* Mobile Navigation - visible on mobile only, positioned on right */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 md:hidden">
+        {/* Mobile Navigation & Actions - visible on mobile only, positioned on right */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
+          {/* Shopping Cart */}
+          <Link href="/shop">
+            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+            </Button>
+          </Link>
+
+          {/* Sign In Link - only show if not authenticated */}
+          {!session && (
+            <Link href="/portal/login">
+              <Button variant="ghost" size="sm" className="text-sm text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+                Sign In
+              </Button>
+            </Link>
+          )}
+
+          {/* Mobile Menu */}
           <MobileNav />
         </div>
       </div>

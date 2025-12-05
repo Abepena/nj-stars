@@ -22,7 +22,7 @@ export function Hero() {
             <Link href="/events">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-gradient-to-br from-foreground/40 to-accent text-background font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-transform px-8"
+                className="w-full sm:w-auto bg-gradient-to-br from-foreground/40 to-accent text-background font-bold hover:text-foreground hover:scale-105 transition-transform px-8"
               >
                 Register for Tryouts →
               </Button>
@@ -31,7 +31,7 @@ export function Hero() {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full sm:w-auto border-border hover:bg-muted hover:border-accent/50 hover:text-accent transition-colors"
+                className="text-foreground w-full sm:w-auto border-border hover:bg-muted hover:text-accent  hover:scale-105 transition-all px-8"
               >
                 View Schedule
               </Button>
