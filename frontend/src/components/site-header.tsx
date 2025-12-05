@@ -59,8 +59,8 @@ export function SiteHeader() {
 
           {/* Shopping Cart */}
           <Link href="/shop">
-            <Button variant="ghost" size="icon" className="h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
-              <ShoppingCart className="h-5 w-5 text-accent" />
+            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+              <ShoppingCart className="h-5 w-5 text-accent transition-colors group-hover:text-foreground" />
             </Button>
           </Link>
 
@@ -84,15 +84,15 @@ export function SiteHeader() {
         <div className="absolute right-4 top-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
           {/* Shopping Cart */}
           <Link href="/shop">
-            <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
-              <ShoppingCart className="h-5 w-5 text-primary" />
+            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+              <ShoppingCart className="h-5 w-5 text-accent transition-colors group-hover:text-foreground" />
             </Button>
           </Link>
 
           {/* Sign In Link - only show if not authenticated */}
           {!session && (
             <Link href="/portal/login">
-              <Button variant="ghost" size="sm" className="text-sm text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+              <Button variant="ghost" size="sm" className="text-sm text-accent hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
                 Sign In
               </Button>
             </Link>
