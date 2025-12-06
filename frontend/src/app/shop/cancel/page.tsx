@@ -1,48 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PageHeader } from "@/components/page-header"
 import { LayoutShell } from "@/components/layout-shell"
-import { LoadingSpinner } from "@/components/loading-spinner"
 
-export default function SuccessPage() {
-  const searchParams = useSearchParams()
-  const sessionId = searchParams.get("session_id")
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Simulate a brief loading period
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 800)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (loading) {
-    return (
-      <LayoutShell>
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <LoadingSpinner size="lg" text="Confirming your purchase..." />
-        </div>
-      </LayoutShell>
-    )
-  }
-
+export default function CancelPage() {
   return (
     <LayoutShell>
       <section className="py-16">
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
-              {/* Success Icon */}
-              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+              {/* Cancel Icon */}
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center">
                 <svg
-                  className="w-10 h-10 text-success"
+                  className="w-10 h-10 text-warning"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -51,32 +24,25 @@ export default function SuccessPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M5 13l4 4L19 7"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                   />
                 </svg>
               </div>
-              <CardTitle className="text-3xl">Order Successful!</CardTitle>
+              <CardTitle className="text-3xl">Checkout Canceled</CardTitle>
               <CardDescription className="text-base mt-2">
-                Thank you for your purchase
+                Your order was not completed
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
               <p className="text-center text-text-secondary">
-                Your order has been confirmed and you will receive an email confirmation shortly.
+                No charges were made. You can continue shopping or try again when you're ready.
               </p>
-
-              {sessionId && (
-                <div className="bg-bg-tertiary p-4 rounded-lg">
-                  <p className="text-sm text-text-secondary mb-2 text-center">Order Reference</p>
-                  <p className="font-mono text-sm break-all text-center text-text-accent">{sessionId}</p>
-                </div>
-              )}
 
               <div className="flex flex-col gap-3 pt-4">
                 <Link href="/shop" className="block">
                   <Button className="w-full bg-gradient-to-br from-foreground/40 to-primary text-background font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
-                    Continue Shopping
+                    Back to Shop
                   </Button>
                 </Link>
 

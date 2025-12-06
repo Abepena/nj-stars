@@ -19,8 +19,8 @@ export function SiteHeader() {
 
   const linkClasses = (href: string) =>
     [
-      "hover:text-accent transition-colors font-medium",
-      pathname === href ? "text-accent" : "",
+      "text-foreground hover:text-foreground/80 transition-colors ease-in-out font-medium",
+      pathname === href ? "border-b-2 border-primary" : "",
     ].join(" ").trim()
 
   return (
@@ -30,7 +30,7 @@ export function SiteHeader() {
           {/* Logo - left aligned on all screen sizes, icon hidden on mobile */}
           <Link
             href="/"
-            className="flex items-center gap-1 hover:scale-105 transition-transform"
+            className="flex items-center gap-1 transition-opacity duration-200 ease-in-out hover:opacity-60"
           >
             <Image
               src="/brand/logos/NJ Icon.svg"
@@ -59,21 +59,21 @@ export function SiteHeader() {
 
           {/* Shopping Cart */}
           <Link href="/shop">
-            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
-              <ShoppingCart className="h-5 w-5 text-accent transition-colors group-hover:text-foreground" />
+            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
+              <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
             </Button>
           </Link>
 
           {/* Sign In or Portal */}
           {!session ? (
             <Link href="/portal/login">
-              <Button variant="ghost" size="sm" className="text-sm font-medium text-accent hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+              <Button variant="ghost" size="sm" className="text-sm font-medium text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
                 Sign In
               </Button>
             </Link>
           ) : (
             <Link href="/portal/login">
-              <Button className="bg-gradient-to-br from-foreground/40 to-accent text-background font-semibold hover:shadow-lg hover:scale-105 transition-transform">
+              <Button className="bg-gradient-to-br from-foreground/40 to-primary text-background font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
                 Portal
               </Button>
             </Link>
@@ -84,15 +84,15 @@ export function SiteHeader() {
         <div className="absolute right-4 top-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
           {/* Shopping Cart */}
           <Link href="/shop">
-            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
-              <ShoppingCart className="h-5 w-5 text-accent transition-colors group-hover:text-foreground" />
+            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
+              <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
             </Button>
           </Link>
 
           {/* Sign In Link - only show if not authenticated */}
           {!session && (
             <Link href="/portal/login">
-              <Button variant="ghost" size="sm" className="text-sm text-accent hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all">
+              <Button variant="ghost" size="sm" className="text-sm text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
                 Sign In
               </Button>
             </Link>

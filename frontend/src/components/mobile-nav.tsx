@@ -46,7 +46,10 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm">
         <SheetHeader className="border-b border-border pb-4">
-          <Link href="/" className="flex justify-center">
+          <Link
+            href="/"
+            className="flex justify-center transition-opacity duration-200 ease-in-out hover:opacity-60"
+          >
             <Image
               src="/brand/logos/Text Logo.svg"
               alt="NJ Stars"
@@ -61,14 +64,14 @@ export function MobileNav() {
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
-              className="text-lg font-medium hover:text-accent transition-colors py-2"
+              className="text-lg font-medium hover:text-primary transition-colors py-2"
             >
               {link.label}
             </Link>
           ))}
           <div className="pt-4 border-t border-border">
             <Link href="/portal/login" onClick={() => setOpen(false)}>
-              <Button className="bg-gradient-to-br from-foreground/40 to-accent text-background font-semibold w-full hover:shadow-lg hover:scale-105 transition-transform">
+              <Button className="bg-gradient-to-br from-foreground/40 to-primary text-background font-semibold w-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
                 Portal Login
               </Button>
             </Link>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
+import { ErrorMessage } from "@/components/error-message"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { format } from "date-fns"
 
 interface InstagramPost {
@@ -31,15 +33,23 @@ interface FeedItem {
 export function NewsFeed() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchFeed() {
       try {
+        setLoading(true)
+        setError(null)
         const response = await fetch('http://localhost:8000/api/instagram/')
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch news feed: ${response.statusText}`)
+        }
+
         const data = await response.json()
 
         // Transform Instagram posts to FeedItem format
-        const instagramFeed: FeedItem[] = data.results.map((post: InstagramPost) => {
+        const instagramFeed: FeedItem[] = (data.results || []).map((post: InstagramPost) => {
           // Extract title from first line before emoji or create from hashtags
           const firstLine = post.caption.split('\n')[0]
           const titleText = firstLine.replace(/[🏀💪🔥⭐🎯🏆📸🔊💯🌟]/g, '').trim()
@@ -62,8 +72,9 @@ export function NewsFeed() {
         })
 
         setFeedItems(instagramFeed)
-      } catch (error) {
-        console.error("Error fetching feed:", error)
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load news feed'
+        setError(errorMessage)
         setFeedItems([])
       } finally {
         setLoading(false)
@@ -73,19 +84,20 @@ export function NewsFeed() {
     fetchFeed()
   }, [])
 
-  // Show skeleton cards if loading
+  // Show error if there's an error
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <ErrorMessage error={error} />
+      </div>
+    )
+  }
+
+  // Show spinner while loading
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Card key={i} className="animate-pulse h-[540px]">
-            <div className="h-[432px] bg-muted"></div>
-            <div className="p-4">
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-3 bg-muted rounded w-1/2 mt-2"></div>
-            </div>
-          </Card>
-        ))}
+      <div className="flex justify-center py-16">
+        <LoadingSpinner size="lg" text="Loading news feed..." />
       </div>
     )
   }
@@ -94,9 +106,9 @@ export function NewsFeed() {
   if (feedItems.length === 0) {
     return (
       <div className="text-center py-16">
-        <div className="mx-auto w-24 h-24 mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+        <div className="mx-auto w-24 h-24 mb-6 rounded-full bg-accent/10 flex items-center justify-center">
           <svg
-            className="w-12 h-12 text-primary"
+            className="w-12 h-12 text-accent"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -151,7 +163,7 @@ function FeedCard({ item }: { item: FeedItem }) {
       <div className="flex flex-col flex-1 p-4">
         <div className="flex items-start justify-between mb-1">
           <CardTitle className="line-clamp-1 text-base font-bold flex-1">{item.title}</CardTitle>
-          <span className="ml-2 px-2 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary whitespace-nowrap">
+          <span className="ml-2 px-2 py-1 rounded-md text-xs font-semibold bg-accent/10 text-accent whitespace-nowrap">
             {item.type === "blog" ? "BLOG" : "INSTAGRAM"}
           </span>
         </div>
@@ -165,7 +177,7 @@ function FeedCard({ item }: { item: FeedItem }) {
             href={item.permalink}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 text-sm inline-flex items-center gap-1 transition-colors mt-auto"
+            className="text-accent hover:text-accent/80 text-sm inline-flex items-center gap-1 transition-colors mt-auto"
           >
             View on Instagram →
           </a>

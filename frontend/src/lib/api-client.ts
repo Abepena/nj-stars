@@ -10,6 +10,13 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+// Error Types
+export interface APIError {
+  message: string
+  status: number
+  errors?: Record<string, string[]>
+}
+
 // Types
 export interface User {
   id: number
@@ -135,8 +142,38 @@ class APIClient {
     const response = await fetch(url, config)
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: response.statusText }))
-      throw new Error(error.detail || 'API request failed')
+      let errorMessage = 'An error occurred'
+      let fieldErrors: Record<string, string[]> | undefined
+
+      try {
+        const errorData = await response.json()
+
+        // Handle Django REST Framework error format
+        if (errorData.detail) {
+          errorMessage = errorData.detail
+        } else if (Array.isArray(errorData)) {
+          errorMessage = errorData.join(', ')
+        } else if (typeof errorData === 'object') {
+          // Field-level errors from DRF
+          fieldErrors = errorData
+          errorMessage = 'Please check the form for errors'
+        }
+      } catch {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`
+      }
+
+      const apiError: APIError = {
+        message: errorMessage,
+        status: response.status,
+        errors: fieldErrors,
+      }
+
+      throw apiError
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return {} as T
     }
 
     return response.json()

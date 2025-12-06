@@ -5,8 +5,8 @@ export function Hero() {
   return (
     <section className="bg-card border-b border-border py-16 md:py-20 min-h-[50vh] flex items-center">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="max-w-6xl mx-auto md:mx-6 text-left">
-          <h1 className="text-5xl pb-2 sm:text-8xl font-black tracking-tight leading-none bg-gradient-to-br from-foreground to-accent bg-clip-text text-transparent">
+        <div className="max-w-6xl px-6 mx-auto md:mx-6 text-left">
+          <h1 className="text-5xl pb-2 sm:text-8xl font-black tracking-tight leading-none bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
             <span className="block">Elite Training.</span>
             <span className="block text-4xl sm:text-6xl mt-1">
               Built for Rising Stars.
@@ -22,7 +22,7 @@ export function Hero() {
             <Link href="/events">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-gradient-to-br from-foreground/40 to-accent text-background font-bold hover:text-foreground hover:scale-105 transition-transform px-8"
+                className="w-full sm:w-auto bg-gradient-to-br from-foreground/40 to-primary text-background font-bold hover:text-foreground hover:scale-[1.02] transition-all duration-200 ease-in-out px-8"
               >
                 Register for Tryouts →
               </Button>
@@ -31,7 +31,7 @@ export function Hero() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-foreground w-full sm:w-auto border-border hover:bg-muted hover:text-accent  hover:scale-105 transition-all px-8"
+                className="text-foreground w-full sm:w-auto border-border hover:bg-muted hover:text-primary hover:scale-[1.02] transition-all duration-200 ease-in-out px-8"
               >
                 View Schedule
               </Button>

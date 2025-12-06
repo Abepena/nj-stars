@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { PageHeader } from "@/components/page-header"
 import { LayoutShell } from "@/components/layout-shell"
+import { ErrorMessage } from "@/components/error-message"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { format } from "date-fns"
 
 interface Event {
@@ -29,18 +31,29 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedType, setSelectedType] = useState<string>("all")
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
 
   useEffect(() => {
     async function fetchEvents() {
       try {
+        setLoading(true)
+        setError(null)
         const response = await fetch('http://localhost:8000/api/events/')
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch events: ${response.statusText}`)
+        }
+
         const data = await response.json()
-        setEvents(data.results)
-        setFilteredEvents(data.results)
-      } catch (error) {
-        console.error("Error fetching events:", error)
+        setEvents(data.results || [])
+        setFilteredEvents(data.results || [])
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load events'
+        setError(errorMessage)
+        setEvents([])
+        setFilteredEvents([])
       } finally {
         setLoading(false)
       }
@@ -52,9 +65,9 @@ export default function EventsPage() {
   useEffect(() => {
     let filtered = events
 
-    // Filter by type
-    if (selectedType !== "all") {
-      filtered = filtered.filter(event => event.event_type === selectedType)
+    // Filter by types (multiple selection)
+    if (selectedTypes.length > 0) {
+      filtered = filtered.filter(event => selectedTypes.includes(event.event_type))
     }
 
     // Filter by search query
@@ -67,28 +80,54 @@ export default function EventsPage() {
     }
 
     setFilteredEvents(filtered)
-  }, [searchQuery, selectedType, events])
+  }, [searchQuery, selectedTypes, events])
 
   const eventTypes = [
-    { value: "all", label: "All Events" },
-    { value: "tryout", label: "Tryouts" },
+    { value: "tryout", label: "Tryout" },
     { value: "open_gym", label: "Open Gym" },
-    { value: "tournament", label: "Tournaments" },
-    { value: "camp", label: "Camps" },
+    { value: "tournament", label: "Tournament" },
+    { value: "camp", label: "Camp" },
     { value: "practice", label: "Practice" },
-    { value: "game", label: "Games" },
+    { value: "game", label: "Game" },
   ]
 
-  const getEventTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      open_gym: "bg-green-100 text-green-800",
-      tryout: "bg-blue-100 text-blue-800",
-      game: "bg-red-100 text-red-800",
-      practice: "bg-yellow-100 text-yellow-800",
-      tournament: "bg-purple-100 text-purple-800",
-      camp: "bg-orange-100 text-orange-800",
+  const toggleType = (type: string) => {
+    setSelectedTypes(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    )
+  }
+
+  const getEventTypeColor = (type: string, isActive: boolean = false) => {
+    const colors: Record<string, { active: string; inactive: string }> = {
+      open_gym: {
+        active: "bg-success/15 text-success border border-success/30",
+        inactive: "bg-success/5 text-success/50 border border-success/10"
+      },
+      tryout: {
+        active: "bg-info/15 text-info border border-info/30",
+        inactive: "bg-info/5 text-info/50 border border-info/10"
+      },
+      game: {
+        active: "bg-accent/15 text-accent border border-accent/30",
+        inactive: "bg-accent/5 text-accent/50 border border-accent/10"
+      },
+      practice: {
+        active: "bg-warning/15 text-warning border border-warning/30",
+        inactive: "bg-warning/5 text-warning/50 border border-warning/10"
+      },
+      tournament: {
+        active: "bg-secondary/15 text-secondary border border-secondary/30",
+        inactive: "bg-secondary/5 text-secondary/50 border border-secondary/10"
+      },
+      camp: {
+        active: "bg-tertiary/15 text-tertiary border border-tertiary/30",
+        inactive: "bg-tertiary/5 text-tertiary/50 border border-tertiary/10"
+      },
     }
-    return colors[type] || "bg-gray-100 text-gray-800"
+    const colorSet = colors[type] || { active: "bg-muted text-muted-foreground border border-border", inactive: "bg-muted/30 text-muted-foreground/50 border border-border/30" }
+    return isActive ? colorSet.active : colorSet.inactive
   }
 
   return (
@@ -111,41 +150,41 @@ export default function EventsPage() {
             />
 
             <div className="flex flex-wrap gap-2">
-              {eventTypes.map((type) => (
-                <Button
-                  key={type.value}
-                  onClick={() => setSelectedType(type.value)}
-                  variant={selectedType === type.value ? "default" : "outline"}
-                  className={selectedType === type.value
-                    ? "bg-gradient-to-br from-foreground/40 to-accent text-background font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-transform"
-                    : "border-border text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all"
-                  }
-                  size="sm"
-                >
-                  {type.label}
-                </Button>
-              ))}
+              {eventTypes.map((type) => {
+                const isActive = selectedTypes.includes(type.value)
+                return (
+                  <button
+                    key={type.value}
+                    onClick={() => toggleType(type.value)}
+                    className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition-all duration-200 ease-in-out hover:scale-105 ${getEventTypeColor(
+                      type.value,
+                      isActive
+                    )}`}
+                  >
+                    {type.label}
+                  </button>
+                )
+              })}
             </div>
 
-            {searchQuery || selectedType !== "all" ? (
+            {searchQuery || selectedTypes.length > 0 ? (
               <p className="text-sm text-muted-foreground">
                 Showing {filteredEvents.length} of {events.length} events
               </p>
             ) : null}
           </div>
 
-          {loading ? (
-            <div className="space-y-4 max-w-3xl mx-auto">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-6 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/2 mt-2"></div>
-                  </CardHeader>
-                </Card>
-              ))}
+          {error && (
+            <div className="max-w-3xl mx-auto">
+              <ErrorMessage error={error} />
             </div>
-          ) : filteredEvents.length === 0 ? (
+          )}
+
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <LoadingSpinner size="lg" text="Loading events..." />
+            </div>
+          ) : !error && filteredEvents.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-xl text-muted-foreground">
                 {searchQuery || selectedType !== "all"
@@ -166,11 +205,12 @@ export default function EventsPage() {
                         </CardDescription>
                       </div>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getEventTypeColor(
-                          event.event_type
+                        className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider ${getEventTypeColor(
+                          event.event_type,
+                          true
                         )}`}
                       >
-                        {event.event_type.replace("_", " ").toUpperCase()}
+                        {event.event_type.replace("_", " ")}
                       </span>
                     </div>
                   </CardHeader>
@@ -231,15 +271,9 @@ export default function EventsPage() {
                       )}
                     </div>
                     {event.is_registration_open && (
-                      <Button className="w-full bg-gradient-to-br from-foreground/40 to-accent text-background font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-transform">
+                      <Button className="w-full bg-gradient-to-br from-foreground/40 to-primary text-background font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 ease-in-out">
                         Register Now
                       </Button>
-                    )}
-                    {!event.is_registration_open && event.is_full && (
-                      <Button disabled className="w-full text-primary">Event Full</Button>
-                    )}
-                    {!event.is_registration_open && !event.is_full && (
-                      <Button disabled className="w-full text-primary">Registration Closed</Button>
                     )}
                   </CardContent>
                 </Card>

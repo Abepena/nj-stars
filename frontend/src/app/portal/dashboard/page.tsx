@@ -21,7 +21,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -40,7 +40,7 @@ export default function DashboardPage() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <Link href="/" className="text-2xl font-bold text-primary">
+            <Link href="/" className="text-2xl font-bold text-accent">
               NJ Stars
             </Link>
             <p className="text-sm text-muted-foreground">Portal Dashboard</p>
@@ -114,11 +114,11 @@ export default function DashboardPage() {
           {/* Admin-Only Section */}
           {isAdmin && (
             <>
-              <Card className="md:col-span-2 lg:col-span-3 border-primary">
+              <Card className="md:col-span-2 lg:col-span-3 border-accent">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <svg
-                      className="w-5 h-5 text-primary"
+                      className="w-5 h-5 text-accent"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

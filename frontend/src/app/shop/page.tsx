@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { CheckoutButton } from "@/components/checkout-button"
 import { PageHeader } from "@/components/page-header"
 import { LayoutShell } from "@/components/layout-shell"
+import { ErrorMessage } from "@/components/error-message"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface Product {
@@ -22,6 +24,30 @@ interface Product {
   category: string
   in_stock: boolean
   featured: boolean
+}
+
+// Helper function for category colors
+function getCategoryColor(category: string, isActive: boolean = false) {
+  const colors: Record<string, { active: string; inactive: string }> = {
+    jersey: {
+      active: "bg-accent/15 text-accent border border-accent/30",
+      inactive: "bg-accent/5 text-accent/50 border border-accent/10"
+    },
+    apparel: {
+      active: "bg-secondary/15 text-secondary border border-secondary/30",
+      inactive: "bg-secondary/5 text-secondary/50 border border-secondary/10"
+    },
+    accessories: {
+      active: "bg-tertiary/15 text-tertiary border border-tertiary/30",
+      inactive: "bg-tertiary/5 text-tertiary/50 border border-tertiary/10"
+    },
+    equipment: {
+      active: "bg-info/15 text-info border border-info/30",
+      inactive: "bg-info/5 text-info/50 border border-info/10"
+    },
+  }
+  const colorSet = colors[category] || { active: "bg-muted text-muted-foreground border border-border", inactive: "bg-muted/30 text-muted-foreground/50 border border-border/30" }
+  return isActive ? colorSet.active : colorSet.inactive
 }
 
 // Product Card with Image Carousel
@@ -99,8 +125,8 @@ function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-col flex-1 p-4">
         <div className="flex items-start justify-between mb-2">
           <CardTitle className="text-base line-clamp-1 flex-1">{product.name}</CardTitle>
-          <span className="ml-2 px-2 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary whitespace-nowrap">
-            {product.category.toUpperCase()}
+          <span className={`ml-2 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${getCategoryColor(product.category, true)}`}>
+            {product.category}
           </span>
         </div>
 
@@ -123,7 +149,7 @@ function ProductCard({ product }: { product: Product }) {
               price={parseFloat(product.price)}
             />
           ) : (
-            <Button disabled className="w-full text-primary">
+            <Button disabled className="w-full text-accent">
               Out of Stock
             </Button>
           )}
@@ -137,18 +163,29 @@ export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   useEffect(() => {
     async function fetchProducts() {
       try {
+        setLoading(true)
+        setError(null)
         const response = await fetch('http://localhost:8000/api/payments/products/')
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.statusText}`)
+        }
+
         const data = await response.json()
-        setProducts(data.results)
-        setFilteredProducts(data.results)
-      } catch (error) {
-        console.error("Error fetching products:", error)
+        setProducts(data.results || [])
+        setFilteredProducts(data.results || [])
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load products'
+        setError(errorMessage)
+        setProducts([])
+        setFilteredProducts([])
       } finally {
         setLoading(false)
       }
@@ -160,9 +197,9 @@ export default function ShopPage() {
   useEffect(() => {
     let filtered = products
 
-    // Filter by category
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(product => product.category === selectedCategory)
+    // Filter by categories (multiple selection)
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(product => selectedCategories.includes(product.category))
     }
 
     // Filter by search query
@@ -174,15 +211,22 @@ export default function ShopPage() {
     }
 
     setFilteredProducts(filtered)
-  }, [searchQuery, selectedCategory, products])
+  }, [searchQuery, selectedCategories, products])
 
   const categories = [
-    { value: "all", label: "All Products" },
-    { value: "jersey", label: "Jerseys" },
+    { value: "jersey", label: "Jersey" },
     { value: "apparel", label: "Apparel" },
     { value: "accessories", label: "Accessories" },
     { value: "equipment", label: "Equipment" },
   ]
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    )
+  }
 
   return (
     <LayoutShell>
@@ -204,45 +248,44 @@ export default function ShopPage() {
             />
 
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <Button
-                  key={category.value}
-                  onClick={() => setSelectedCategory(category.value)}
-                  variant={selectedCategory === category.value ? "default" : "outline"}
-                  className={selectedCategory === category.value
-                    ? "bg-gradient-to-br from-foreground/40 to-accent text-background font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-transform"
-                    : "border-border text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-accent hover:shadow-lg hover:scale-105 transition-all"
-                  }
-                  size="sm"
-                >
-                  {category.label}
-                </Button>
-              ))}
+              {categories.map((category) => {
+                const isActive = selectedCategories.includes(category.value)
+                return (
+                  <button
+                    key={category.value}
+                    onClick={() => toggleCategory(category.value)}
+                    className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition-all duration-200 ease-in-out hover:scale-105 ${getCategoryColor(
+                      category.value,
+                      isActive
+                    )}`}
+                  >
+                    {category.label}
+                  </button>
+                )
+              })}
             </div>
 
-            {searchQuery || selectedCategory !== "all" ? (
+            {searchQuery || selectedCategories.length > 0 ? (
               <p className="text-sm text-muted-foreground">
                 Showing {filteredProducts.length} of {products.length} products
               </p>
             ) : null}
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="animate-pulse h-[540px]">
-                  <div className="h-[432px] bg-muted"></div>
-                  <div className="p-4">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/2 mt-2"></div>
-                  </div>
-                </Card>
-              ))}
+          {error && (
+            <div className="max-w-4xl mx-auto mb-8">
+              <ErrorMessage error={error} />
             </div>
-          ) : filteredProducts.length === 0 ? (
+          )}
+
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <LoadingSpinner size="lg" text="Loading products..." />
+            </div>
+          ) : !error && filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-xl text-muted-foreground">
-                {searchQuery || selectedCategory !== "all"
+                {searchQuery || selectedCategories.length > 0
                   ? "No products match your search criteria."
                   : "No products available at the moment. Check back soon!"}
               </p>
