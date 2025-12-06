@@ -5,6 +5,9 @@ import { NewsletterSignup } from "@/components/newsletter-signup";
 import { FeaturedMerch } from "@/components/featured-merch";
 import { fetchHomePage } from "@/lib/wagtail-client";
 
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   // Fetch CMS content for the homepage
   const homePage = await fetchHomePage();

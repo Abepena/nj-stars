@@ -1,40 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PageHeader } from "@/components/page-header"
 import { LayoutShell } from "@/components/layout-shell"
 import { LoadingSpinner } from "@/components/loading-spinner"
 
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams()
-  const sessionId = searchParams.get("session_id")
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Simulate a brief loading period
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 800)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (loading) {
-    return (
-      <LayoutShell>
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <LoadingSpinner size="lg" text="Confirming your purchase..." />
-        </div>
-      </LayoutShell>
-    )
-  }
+  const sessionId = searchParams?.get("session_id")
 
   return (
-    <LayoutShell>
       <section className="py-16">
         <div className="container mx-auto px-4">
           <Card className="max-w-2xl mx-auto">
@@ -90,6 +68,19 @@ export default function SuccessPage() {
           </Card>
         </div>
       </section>
+  )
+}
+
+export default function SuccessPage() {
+  return (
+    <LayoutShell>
+      <Suspense fallback={
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <LoadingSpinner size="lg" text="Loading..." />
+        </div>
+      }>
+        <SuccessContent />
+      </Suspense>
     </LayoutShell>
   )
 }

@@ -7,6 +7,114 @@ This document outlines the steps needed to take the NJ Stars platform from devel
 
 ---
 
+## 🚀 MVP WEEKEND LAUNCH CHECKLIST
+
+**Goal:** Get a working site live on a domain by Sunday night
+
+### Day 1 (Saturday) - Infrastructure Setup
+
+#### Morning: Hosting & Database (2-3 hours)
+- [ ] **Choose hosting platform** (Recommended: Railway for simplicity)
+  - Railway: Backend + PostgreSQL in one platform
+  - Vercel: Frontend (free tier, built for Next.js)
+- [ ] **Create Railway account** → [railway.app](https://railway.app)
+- [ ] **Create Vercel account** → [vercel.com](https://vercel.com)
+- [ ] **Provision PostgreSQL database** on Railway
+  - Copy `DATABASE_URL` connection string
+- [ ] **Deploy Django backend** to Railway
+  - Connect GitHub repo → select `backend/` folder
+  - Add environment variables (see checklist below)
+  - Run initial migrations: `python manage.py migrate`
+  - Create superuser: `python manage.py createsuperuser`
+
+#### Afternoon: Frontend & Domain (2-3 hours)
+- [ ] **Deploy Next.js frontend** to Vercel
+  - Connect GitHub repo → select `frontend/` folder
+  - Add environment variables (see checklist below)
+- [ ] **Purchase/configure domain** (if not owned)
+  - Option A: Use Vercel subdomain temporarily (free)
+  - Option B: Configure custom domain in Vercel
+- [ ] **Update CORS settings** in backend for production domain
+- [ ] **Test basic pages load** (home, shop, events)
+
+### Day 2 (Sunday) - Stripe & Content
+
+#### Morning: Stripe Live Mode (1-2 hours)
+- [ ] **Enable Stripe live mode** at [dashboard.stripe.com](https://dashboard.stripe.com)
+- [ ] **Copy live API keys**:
+  - `pk_live_...` → Frontend `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+  - `sk_live_...` → Backend `STRIPE_SECRET_KEY`
+- [ ] **Create webhook endpoint** in Stripe dashboard
+  - URL: `https://your-backend-url.railway.app/api/v1/webhooks/stripe`
+  - Events: `checkout.session.completed`, `checkout.session.expired`
+  - Copy signing secret → Backend `STRIPE_WEBHOOK_SECRET`
+- [ ] **Test checkout flow** with a real $1 product
+
+#### Afternoon: Content & Launch (2-3 hours)
+- [ ] **Add real content via Wagtail CMS** (`/cms-admin/`)
+  - Homepage hero text and images
+  - 2-3 blog posts for news feed
+  - Team roster (if available)
+- [ ] **Add products via Django admin** (`/django-admin/`)
+  - At least 3-5 merch items with images
+  - Set real prices
+- [ ] **Final smoke test**:
+  - [ ] Homepage loads
+  - [ ] Shop page shows products
+  - [ ] Events page works
+  - [ ] Light/dark mode toggle works
+  - [ ] Mobile responsive
+  - [ ] Checkout flow works
+- [ ] **🚀 LAUNCH!** Share link with team
+
+---
+
+### Environment Variables Checklist
+
+#### Backend (Railway)
+```bash
+# Required
+DATABASE_URL=postgresql://...              # From Railway
+SECRET_KEY=$(openssl rand -hex 32)         # Generate new
+DJANGO_SETTINGS_MODULE=config.settings.production
+ALLOWED_HOSTS=your-app.railway.app,yourdomain.com
+FRONTEND_URL=https://yourdomain.vercel.app
+
+# Stripe (Live)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Optional (can add later)
+INSTAGRAM_ACCESS_TOKEN=...
+INSTAGRAM_USER_ID=...
+```
+
+#### Frontend (Vercel)
+```bash
+# Required
+NEXT_PUBLIC_API_URL=https://your-app.railway.app
+NEXTAUTH_URL=https://yourdomain.vercel.app
+NEXTAUTH_SECRET=$(openssl rand -hex 32)
+
+# Stripe (Live)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+
+# Optional (can add later)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+```
+
+---
+
+### Post-Launch (Next Week)
+- [ ] Set up error monitoring (Sentry - free tier)
+- [ ] Set up uptime monitoring (UptimeRobot - free)
+- [ ] Add Google Analytics
+- [ ] Connect Instagram API for live posts
+- [ ] Set up Google OAuth for social login
+
+---
+
 ## 🎯 Quick Reference
 
 | Phase | Timeline | Priority | Status |
