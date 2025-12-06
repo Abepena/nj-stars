@@ -209,7 +209,9 @@ class Product(models.Model):
 
     # Status
     is_active = models.BooleanField(default=True)
-    featured = models.BooleanField(default=False)
+    featured = models.BooleanField(default=False, help_text="Show in featured products section")
+    best_selling = models.BooleanField(default=False, help_text="Mark as bestseller")
+    on_sale = models.BooleanField(default=False, help_text="Show 'On Sale' badge")
 
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -220,6 +222,8 @@ class Product(models.Model):
         indexes = [
             models.Index(fields=['category', 'is_active']),
             models.Index(fields=['featured', 'is_active']),
+            models.Index(fields=['best_selling', 'is_active']),
+            models.Index(fields=['on_sale', 'is_active']),
         ]
 
     def save(self, *args, **kwargs):

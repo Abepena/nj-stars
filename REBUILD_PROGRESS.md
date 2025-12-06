@@ -1,7 +1,16 @@
 # Django + Wagtail Rebuild - Progress Report
 
-> **Last Updated:** December 5, 2024
-> **Status:** Phase 2 Complete, Phase 3 Complete, Phase 4 Started, Frontend Updates In Progress
+> **Last Updated:** December 6, 2025
+> **Status:** Phase 4 (Wagtail CMS) ✅ Complete - Full frontend integration working
+
+---
+
+## ⚠️ Development Notes
+
+**Superuser Account (Development Only):**
+- Current email: `pena.abe@gmail.com`
+- **TODO:** Change to `admin@njstarselite.com` before production
+- See NEXT_STEPS.md for production checklist
 
 ---
 
@@ -63,31 +72,41 @@
 
 ---
 
-### Phase 4: Wagtail CMS Pages 🔄 STARTED
+### Phase 4: Wagtail CMS Pages ✅ COMPLETE
 
 **Done:**
 
-- Added Wagtail page models: `HomePage`, `BlogIndexPage`, `BlogPage`, `TeamPage`, `PlayerProfile`
+- ✅ Wagtail page models: `HomePage`, `BlogIndexPage`, `BlogPage`, `TeamPage`, `PlayerProfile`
+- ✅ Wagtail API v2 configured at `/api/v2/pages/`
+- ✅ Seed data script creates homepage, blog posts, team roster
+- ✅ Frontend Wagtail client (`wagtail-client.ts`) with SSR support
+- ✅ TypeScript types for all Wagtail pages (`types/wagtail.ts`)
+- ✅ Homepage fetches hero content from Wagtail CMS
+- ✅ News feed merges blog posts with Instagram posts
+- ✅ Featured merch component with product tags
+- ✅ Placeholder logo SVG with muted background for cards without images
 
-**Next Tasks:**
-
-- Configure Wagtail API v2
-- Test Wagtail admin interface
-
-**Estimated Time:** 1-2 hours
+**Admin Access:**
+- Wagtail: `/cms-admin/` (pena.abe@gmail.com / admin123)
+- Django: `/django-admin/`
 
 ---
 
-### Frontend Development 🔄 IN PROGRESS
+### Frontend Development ✅ INTEGRATED
 
-**Recent Progress (December 5, 2024):**
+**Recent Progress (December 6, 2025):**
 
 - ✅ Page layouts refactored and improved
 - ✅ Homepage sections componentized for reusability
 - ✅ Homepage styling completed to desired look and feel
-- 🔄 Component library being built out
+- ✅ Wagtail CMS integration complete
+- ✅ News feed component fetches from Wagtail blog API
+- ✅ Featured merch component with product tags (featured, best seller, on sale)
+- ✅ Multi-select category filters on shop page
+- ✅ Placeholder images use muted logo SVG (`logo square thick muted.svg`)
+- ✅ Toast notifications for add-to-cart actions
 
-**Note:** Frontend work is progressing in parallel with backend rebuild. Components are being prepared to integrate with Django/Wagtail API once Phase 5 is complete.
+**Note:** Frontend is now fully integrated with Django/Wagtail backend. CMS changes appear on frontend after page refresh.
 
 ---
 
@@ -219,20 +238,20 @@
 | ------------------------- | ----------- | ---------- | -------------- |
 | 1. Project Scaffolding    | ✅ Complete | 30 min     | -              |
 | 2. Settings Configuration | ✅ Complete | 1 hour     | -              |
-| 3. Django Models          | 🔄 20%      | 30 min     | 1-2 hours      |
-| 4. Wagtail CMS            | ⏸️ Pending  | -          | 1-2 hours      |
-| 5. API Endpoints          | ⏸️ Pending  | -          | 2-3 hours      |
-| 6. Stripe Integration     | ⏸️ Pending  | -          | 1-2 hours      |
-| 7. Instagram Service      | ⏸️ Pending  | -          | 30 min         |
-| 8. Frontend Updates       | ⏸️ Pending  | -          | 1-2 hours      |
-| 9. Docker Config          | ⏸️ Pending  | -          | 1 hour         |
-| 10. Testing               | ⏸️ Pending  | -          | 2-3 hours      |
-| 11. Seed Data             | ⏸️ Pending  | -          | 1-2 hours      |
-| 12. Documentation         | ⏸️ Pending  | -          | 1-2 hours      |
+| 3. Django Models          | ✅ Complete | 2 hours    | -              |
+| 4. Wagtail CMS            | ✅ Complete | 3 hours    | -              |
+| 5. API Endpoints          | ✅ Complete | 2 hours    | -              |
+| 6. Stripe Integration     | ✅ Complete | 2 hours    | -              |
+| 7. Instagram Service      | ✅ Complete | 1 hour     | -              |
+| 8. Frontend Updates       | ✅ Complete | 4 hours    | -              |
+| 9. Docker Config          | ✅ Complete | 1 hour     | -              |
+| 10. Testing               | 🔄 Partial  | 1 hour     | 2 hours        |
+| 11. Seed Data             | ✅ Complete | 1 hour     | -              |
+| 12. Documentation         | 🔄 Ongoing  | 1 hour     | Ongoing        |
 
-**Total Progress:** ~15% complete
-**Time Invested:** ~2 hours
-**Estimated Remaining:** 13-21 hours
+**Total Progress:** ~90% complete
+**Time Invested:** ~18 hours
+**Estimated Remaining:** ~2-4 hours (testing, final polish)
 
 ---
 

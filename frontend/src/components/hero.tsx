@@ -1,30 +1,45 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export function Hero() {
+interface HeroProps {
+  heading?: string;
+  tagline?: string;
+  subheading?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+}
+
+// Default fallback content (used when Wagtail data unavailable)
+const defaults = {
+  heading: "Elite Training.",
+  tagline: "Built for Rising Stars.",
+  subheading: "Focused training and real competition for players serious about their game.",
+  ctaLabel: "Register for Tryouts",
+};
+
+export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroProps) {
   return (
     <section className="bg-card border-b border-border py-16 md:py-20 min-h-[50vh] flex items-center">
       <div className="max-w-6xl mx-auto px-4">
         <div className="max-w-6xl px-6 mx-auto md:mx-6 text-left">
           <h1 className="text-5xl pb-2 sm:text-8xl font-black tracking-tight leading-none bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
-            <span className="block">Elite Training.</span>
+            <span className="block">{heading || defaults.heading}</span>
             <span className="block text-4xl sm:text-6xl mt-1">
-              Built for Rising Stars.
+              {tagline || defaults.tagline}
             </span>
           </h1>
 
           <p className="mt-2 text-base sm:text-xl text-muted-foreground leading-relaxed max-w-xl md:mx-0">
-            Focused training and real competition for players serious about
-            their game.
+            {subheading || defaults.subheading}
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row sm:justify-center md:justify-start gap-3 sm:gap-4">
-            <Link href="/events">
+            <Link href={ctaUrl || "/events"}>
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-gradient-to-br from-foreground/40 to-primary text-background font-bold hover:text-foreground hover:scale-[1.02] transition-all duration-200 ease-in-out px-8"
               >
-                Register for Tryouts →
+                {ctaLabel || defaults.ctaLabel} →
               </Button>
             </Link>
             <Link href="/events/tryouts">

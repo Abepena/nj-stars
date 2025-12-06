@@ -14,6 +14,15 @@ from .serializers import ProductSerializer, SubscriptionPlanSerializer
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+def _stripe_key_configured() -> bool:
+    """Basic guard to prevent calling Stripe with placeholder keys."""
+    key = getattr(settings, "STRIPE_SECRET_KEY", "")
+    if not key:
+        return False
+    # Treat obvious placeholders (containing * or the word dummy) as invalid
+    placeholder_markers = ["*", "dummy", "your-secret-key"]
+    return not any(marker in key for marker in placeholder_markers)
+
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -51,6 +60,12 @@ class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
 def create_product_checkout(request):
     """Create Stripe checkout session for product purchase"""
     try:
+        if not _stripe_key_configured():
+            return Response(
+                {"error": "Stripe secret key is not configured. Set STRIPE_SECRET_KEY in the backend environment."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         product_id = request.data.get('product_id')
         quantity = request.data.get('quantity', 1)
         success_url = request.data.get('success_url')
@@ -116,6 +131,12 @@ def create_event_checkout(request):
     """Create Stripe checkout session for event registration"""
     try:
         from apps.events.models import Event
+
+        if not _stripe_key_configured():
+            return Response(
+                {"error": "Stripe secret key is not configured. Set STRIPE_SECRET_KEY in the backend environment."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         event_slug = request.data.get('event_slug')
         success_url = request.data.get('success_url')

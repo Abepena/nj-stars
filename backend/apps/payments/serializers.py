@@ -20,6 +20,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'image_url',
             'is_active',
             'featured',
+            'best_selling',
+            'on_sale',
             'stock_quantity',
             'in_stock',
             'created_at',

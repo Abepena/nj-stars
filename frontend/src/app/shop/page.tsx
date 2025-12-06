@@ -115,8 +115,13 @@ function ProductCard({ product }: { product: Product }) {
             )}
           </>
         ) : (
-          <div className="h-full w-full bg-muted flex items-center justify-center">
-            <span className="text-muted-foreground">No Image</span>
+          <div className="h-full w-full bg-muted flex items-center justify-center p-8 relative">
+            <Image
+              src="/brand/logos/logo square thick muted.svg"
+              alt={product.name}
+              fill
+              className="opacity-30 object-contain p-8"
+            />
           </div>
         )}
       </div>

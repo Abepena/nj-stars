@@ -15,15 +15,38 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from wagtail.admin import urls as wagtailadmin_urls
+from wagtail import urls as wagtail_urls
+from wagtail.documents import urls as wagtaildocs_urls
+
+from apps.cms.api import api_router as wagtail_api_router
 
 urlpatterns = [
     # Django Admin
-    path("admin/", admin.site.urls),
+    path("django-admin/", admin.site.urls),
+
+    # Wagtail Admin
+    path("cms-admin/", include(wagtailadmin_urls)),
+
+    # Wagtail Documents
+    path("documents/", include(wagtaildocs_urls)),
+
+    # Wagtail API v2 (for frontend to fetch CMS content)
+    path("api/v2/", wagtail_api_router.urls),
 
     # API endpoints
     path("api/events/", include("apps.events.urls")),
     path("api/payments/", include("apps.payments.urls")),
     path("api/", include("apps.core.urls")),
+
+    # Wagtail pages - must be last
+    path("cms/", include(wagtail_urls)),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,7 +1,7 @@
 # NJ Stars Platform - Next Steps & Roadmap
 
 > **Purpose:** Clear action items and roadmap for production deployment and future enhancements
-> **Last Updated:** December 3, 2024
+> **Last Updated:** December 6, 2025
 
 This document outlines the steps needed to take the NJ Stars platform from development to production, plus optional enhancements for future phases.
 
@@ -22,6 +22,17 @@ This document outlines the steps needed to take the NJ Stars platform from devel
 ---
 
 ## Phase 1: Production Setup (Week 1-2)
+
+### ⚠️ IMPORTANT: Development Superuser Account
+
+**Current superuser email:** `pena.abe@gmail.com` (for development only)
+
+**TODO BEFORE PRODUCTION:**
+- [ ] Change superuser email back to production admin email
+- [ ] Update in Django admin or run: `python manage.py shell` then update the User model
+- [ ] Recommended production email: `admin@njstarselite.com`
+
+---
 
 ### 1.1 Third-Party Service Accounts 🔴 CRITICAL
 
@@ -650,29 +661,32 @@ pip install sendgrid
 
 ### Immediate (This Week)
 1. ✅ Review `PROJECT_STATUS.md` to understand current state
-2. 🔴 Set up Stripe account and get live API keys
-3. 🔴 Choose hosting providers (backend + frontend)
-4. 🔴 Set up production database
-5. 🔴 Purchase domain name (if needed)
+2. ✅ Stripe test integration working (checkout sessions, webhooks)
+3. ✅ Wagtail CMS fully integrated with Next.js frontend
+4. ✅ News feed merges blog posts with Instagram
+5. ✅ Shop page with multi-select filters and product tags
+6. 🔴 Set up Stripe live mode API keys for production
+7. 🔴 Choose hosting providers (backend + frontend)
+8. 🔴 Set up production database
 
 ### This Month
-6. 🔴 Deploy backend to production
-7. 🔴 Deploy frontend to production
-8. 🔴 Configure Stripe webhooks
-9. 🟠 Add real content (products, blog posts, events)
-10. 🟠 User acceptance testing
-11. 🚀 Launch!
+9. 🔴 Deploy backend to production
+10. 🔴 Deploy frontend to production
+11. 🔴 Configure Stripe webhooks for production
+12. 🟠 Add real content (products, blog posts, events) via Wagtail CMS
+13. 🟠 User acceptance testing
+14. 🚀 Launch!
 
 ### Next Month
-12. 🟡 Set up monitoring and analytics
-13. 🟡 Implement email notifications
-14. 🟡 Add advanced admin features
-15. 🟡 Collect user feedback and iterate
+15. 🟡 Set up monitoring and analytics (Sentry, Google Analytics)
+16. 🟡 Implement email notifications (newsletter integration)
+17. 🟡 Add advanced admin features
+18. 🟡 Collect user feedback and iterate
 
 ### Quarter 2
-16. 📱 Start mobile app development
-17. 🟢 Add nice-to-have features
-18. 🟢 Marketing and growth
+19. 📱 Start mobile app development
+20. 🟢 Add nice-to-have features
+21. 🟢 Marketing and growth
 
 ---
 
