@@ -10,7 +10,10 @@ import { PageHeader } from "@/components/page-header"
 import { LayoutShell } from "@/components/layout-shell"
 import { ErrorMessage } from "@/components/error-message"
 import { LoadingSpinner } from "@/components/loading-spinner"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleton"
+import { Breadcrumbs } from "@/components/breadcrumbs"
+import { ProductQuickView } from "@/components/product-quick-view"
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react"
 
 interface Product {
   id: number
@@ -53,6 +56,7 @@ function getCategoryColor(category: string, isActive: boolean = false) {
 // Product Card with Image Carousel
 function ProductCard({ product }: { product: Product }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [quickViewOpen, setQuickViewOpen] = useState(false)
 
   // Generate multiple placeholder images for carousel
   const productImages = [
@@ -70,9 +74,10 @@ function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <Card className="overflow-hidden flex flex-col h-[540px] group">
-      {/* Image Carousel - 80% of card */}
-      <div className="relative h-[432px] w-full">
+    <>
+      <Card className="overflow-hidden flex flex-col h-auto md:h-[540px] group">
+      {/* Image Carousel - responsive aspect ratio */}
+      <div className="relative w-full aspect-[4/3] md:h-[432px] md:aspect-auto">
         {productImages[currentImageIndex] ? (
           <>
             <Image
@@ -81,19 +86,27 @@ function ProductCard({ product }: { product: Product }) {
               fill
               className="object-cover"
             />
+            {/* Quick View Button - appears on hover */}
+            <button
+              onClick={() => setQuickViewOpen(true)}
+              className="absolute top-4 right-4 bg-background/90 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+              aria-label={`Quick view ${product.name}`}
+            >
+              <Eye className="w-5 h-5" />
+            </button>
             {/* Carousel Controls */}
             {productImages.length > 1 && (
               <>
                 <button
                   onClick={previousImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                   aria-label="Next image"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -130,7 +143,7 @@ function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-col flex-1 p-4">
         <div className="flex items-start justify-between mb-2">
           <CardTitle className="text-base line-clamp-1 flex-1">{product.name}</CardTitle>
-          <span className={`ml-2 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${getCategoryColor(product.category, true)}`}>
+          <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${getCategoryColor(product.category, true)}`}>
             {product.category}
           </span>
         </div>
@@ -146,7 +159,7 @@ function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
-        <div className="mt-2">
+        <div className="mt-2 space-y-2">
           {product.stock_quantity > 0 ? (
             <CheckoutButton
               productId={product.id}
@@ -158,9 +171,25 @@ function ProductCard({ product }: { product: Product }) {
               Out of Stock
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full"
+            onClick={() => setQuickViewOpen(true)}
+          >
+            Quick View
+          </Button>
         </div>
       </div>
     </Card>
+
+      {/* Quick View Modal */}
+      <ProductQuickView
+        product={product}
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+      />
+    </>
   )
 }
 
@@ -242,32 +271,59 @@ export default function ShopPage() {
 
       <section className="py-16">
         <div className="container mx-auto px-4">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Shop" },
+            ]}
+          />
           {/* Search and Filter */}
           <div className="max-w-4xl mx-auto mb-8 space-y-4">
-            <Input
-              type="text"
-              placeholder="Search products by name or description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
+            <div>
+              <label htmlFor="shop-search" className="sr-only">
+                Search products
+              </label>
+              <Input
+                id="shop-search"
+                type="text"
+                placeholder="Search products by name or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               {categories.map((category) => {
                 const isActive = selectedCategories.includes(category.value)
                 return (
                   <button
                     key={category.value}
                     onClick={() => toggleCategory(category.value)}
-                    className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition-all duration-200 ease-in-out hover:scale-105 ${getCategoryColor(
+                    className={`min-h-[44px] min-w-[44px] px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider transition-all duration-200 ease-in-out hover:scale-105 inline-flex items-center justify-center ${getCategoryColor(
                       category.value,
                       isActive
                     )}`}
+                    aria-label={`Filter by ${category.label}`}
+                    aria-pressed={isActive}
                   >
                     {category.label}
                   </button>
                 )
               })}
+              {(selectedCategories.length > 0 || searchQuery) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategories([])
+                    setSearchQuery("")
+                  }}
+                  className="min-h-[44px]"
+                >
+                  Clear Filters ({selectedCategories.length + (searchQuery ? 1 : 0)})
+                </Button>
+              )}
             </div>
 
             {searchQuery || selectedCategories.length > 0 ? (
@@ -284,8 +340,10 @@ export default function ShopPage() {
           )}
 
           {loading ? (
-            <div className="flex justify-center py-16">
-              <LoadingSpinner size="lg" text="Loading products..." />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
             </div>
           ) : !error && filteredProducts.length === 0 ? (
             <div className="text-center py-16">

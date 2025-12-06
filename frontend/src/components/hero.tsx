@@ -37,7 +37,8 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
             <Link href={ctaUrl || "/events"}>
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-gradient-to-br from-foreground/40 to-primary text-background font-bold hover:text-foreground hover:scale-[1.02] transition-all duration-200 ease-in-out px-8"
+                variant="cta"
+                className="w-full sm:w-auto"
               >
                 {ctaLabel || defaults.ctaLabel} →
               </Button>
@@ -46,7 +47,7 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
               <Button
                 size="lg"
                 variant="outline"
-                className="text-foreground w-full sm:w-auto border-border hover:bg-muted hover:text-primary hover:scale-[1.02] transition-all duration-200 ease-in-out px-8"
+                className="w-full sm:w-auto px-8"
               >
                 View Schedule
               </Button>

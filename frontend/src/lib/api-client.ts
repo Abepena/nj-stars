@@ -131,7 +131,7 @@ class APIClient {
     // Add auth token if available
     const token = this.getToken()
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
     }
 
     const config: RequestInit = {

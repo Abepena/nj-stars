@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +22,8 @@ const navLinks = [
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [textLogo, setTextLogo] = useState("/brand/logos/Text Logo.svg")
+  const pathname = usePathname()
 
   // Only render this nav on small screens to avoid off-canvas overflow on desktop
   useEffect(() => {
@@ -28,6 +31,24 @@ export function MobileNav() {
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  // Update logo based on theme (client-side only)
+  useEffect(() => {
+    const updateLogo = () => {
+      const isLight = document.documentElement.classList.contains("light")
+      setTextLogo(isLight ? "/brand/logos/Text Logo Light.svg" : "/brand/logos/Text Logo.svg")
+    }
+
+    updateLogo()
+
+    const observer = new MutationObserver(updateLogo)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
+
+    return () => observer.disconnect()
   }, [])
 
   if (!isMobile) return null
@@ -51,7 +72,7 @@ export function MobileNav() {
             className="flex justify-center transition-opacity duration-200 ease-in-out hover:opacity-60"
           >
             <Image
-              src="/brand/logos/Text Logo.svg"
+              src={textLogo}
               alt="NJ Stars"
               width={160}
               height={50}
@@ -59,16 +80,21 @@ export function MobileNav() {
           </Link>
         </SheetHeader>
         <nav className="flex flex-col gap-4 mt-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setOpen(false)}
-              className="text-lg font-medium hover:text-primary transition-colors py-2"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={`text-lg font-medium hover:text-primary transition-colors py-2 ${
+                  isActive ? "border-b-2 border-primary" : ""
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
           <div className="pt-4 border-t border-border">
             <Link href="/portal/login" onClick={() => setOpen(false)}>
               <Button className="bg-gradient-to-br from-foreground/40 to-primary text-background font-semibold w-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">

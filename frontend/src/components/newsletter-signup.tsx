@@ -46,19 +46,33 @@ export function NewsletterSignup({
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="flex-1"
-                disabled={status === "loading"}
-              />
+              <div className="flex-1">
+                <label htmlFor="newsletter-email" className="sr-only">
+                  Email Address
+                </label>
+                <Input
+                  id="newsletter-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full"
+                  disabled={status === "loading"}
+                  aria-describedby={status === "error" ? "newsletter-error" : undefined}
+                  aria-invalid={status === "error"}
+                />
+                {status === "error" && (
+                  <p id="newsletter-error" className="text-destructive text-sm mt-1">
+                    Please enter a valid email address
+                  </p>
+                )}
+              </div>
               <Button
                 type="submit"
+                variant="cta"
+                size="lg"
                 disabled={status === "loading"}
-                className="bg-gradient-to-br from-foreground/40 to-primary text-background font-bold hover:text-foreground hover:scale-[1.02] transition-all duration-200 ease-in-out px-8"
               >
                 {status === "loading" ? "Subscribing..." : "Subscribe"}
               </Button>

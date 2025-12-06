@@ -1,10 +1,12 @@
 "use client"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { MobileNav } from "@/components/mobile-nav"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { ShoppingCart } from "lucide-react"
 
 const links = [
@@ -16,6 +18,27 @@ const links = [
 export function SiteHeader() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const [textLogo, setTextLogo] = useState("/brand/logos/Text Logo.svg")
+
+  // Update logo based on theme (client-side only to avoid SSR issues)
+  useEffect(() => {
+    const updateLogo = () => {
+      const isLight = document.documentElement.classList.contains("light")
+      setTextLogo(isLight ? "/brand/logos/Text Logo Light.svg" : "/brand/logos/Text Logo.svg")
+    }
+
+    // Initial update
+    updateLogo()
+
+    // Watch for class changes on html element
+    const observer = new MutationObserver(updateLogo)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   const linkClasses = (href: string) =>
     [
@@ -27,24 +50,17 @@ export function SiteHeader() {
     <nav className="border-b border-border">
       <div className="container mx-auto px-4 py-2 relative">
         <div className="flex items-center justify-start">
-          {/* Logo - left aligned on all screen sizes, icon hidden on mobile */}
+          {/* Logo - text only */}
           <Link
             href="/"
-            className="flex items-center gap-1 transition-opacity duration-200 ease-in-out hover:opacity-60"
+            className="transition-opacity duration-200 ease-in-out hover:opacity-60"
           >
             <Image
-              src="/brand/logos/NJ Icon.svg"
-              alt="NJ Stars Icon"
-              width={60}
-              height={60}
-              className="hidden md:block"
-            />
-            <Image
-              src="/brand/logos/Text Logo.svg"
+              src={textLogo}
               alt="NJ Stars"
-              width={160}
-              height={50}
-              className="block"
+              width={120}
+              height={38}
+              className="w-[120px] h-[38px] md:w-[160px] md:h-[50px]"
             />
           </Link>
         </div>
@@ -57,9 +73,12 @@ export function SiteHeader() {
             </Link>
           ))}
 
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {/* Shopping Cart */}
           <Link href="/shop">
-            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
+            <Button variant="ghost" size="icon" className="group h-9 w-9">
               <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
             </Button>
           </Link>
@@ -82,9 +101,12 @@ export function SiteHeader() {
 
         {/* Mobile Navigation & Actions - visible on mobile only, positioned on right */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {/* Shopping Cart */}
           <Link href="/shop">
-            <Button variant="ghost" size="icon" className="group h-9 w-9 hover:text-foreground hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
+            <Button variant="ghost" size="icon" className="group h-9 w-9">
               <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
             </Button>
           </Link>

@@ -7,6 +7,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
 import { LoadingSpinner } from "@/components/loading-spinner"
+import { NewsCardSkeleton } from "@/components/skeletons/news-card-skeleton"
 import { format } from "date-fns"
 
 interface InstagramPost {
@@ -53,16 +54,16 @@ interface FeedItem {
   media_type?: string
 }
 
-// Category tag colors and labels
+// Category tag colors and labels - using design tokens
 const CATEGORY_CONFIG: Record<BlogCategory | 'instagram', { label: string; className: string }> = {
-  news: { label: 'NEWS', className: 'bg-blue-500/10 text-blue-500' },
-  tryouts: { label: 'TRYOUTS', className: 'bg-orange-500/10 text-orange-500' },
-  camp: { label: 'CAMP', className: 'bg-green-500/10 text-green-500' },
-  tournament: { label: 'TOURNAMENT', className: 'bg-purple-500/10 text-purple-500' },
-  merch: { label: 'MERCH DROP', className: 'bg-pink-500/10 text-pink-500' },
-  sale: { label: 'SALE', className: 'bg-yellow-500/10 text-yellow-600' },
-  announcement: { label: 'ANNOUNCEMENT', className: 'bg-cyan-500/10 text-cyan-500' },
-  instagram: { label: 'INSTAGRAM', className: 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-pink-500' },
+  news: { label: 'NEWS', className: 'bg-info/15 text-info' },
+  tryouts: { label: 'TRYOUTS', className: 'bg-warning/15 text-warning' },
+  camp: { label: 'CAMP', className: 'bg-success/15 text-success' },
+  tournament: { label: 'TOURNAMENT', className: 'bg-secondary/15 text-secondary' },
+  merch: { label: 'MERCH DROP', className: 'bg-primary/15 text-primary' },
+  sale: { label: 'SALE', className: 'bg-tertiary/15 text-tertiary' },
+  announcement: { label: 'ANNOUNCEMENT', className: 'bg-accent/15 text-accent' },
+  instagram: { label: 'INSTAGRAM', className: 'bg-primary/10 text-primary' },
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -160,11 +161,13 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
     )
   }
 
-  // Show spinner while loading
+  // Show skeleton while loading
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <LoadingSpinner size="lg" text="Loading news feed..." />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <NewsCardSkeleton key={i} />
+        ))}
       </div>
     )
   }
@@ -232,10 +235,10 @@ function FeedCard({ item }: { item: FeedItem }) {
   const tagConfig = getTagConfig()
 
   const cardContent = (
-    <Card className="overflow-hidden flex flex-col h-[540px] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      {/* Image - 80% of card */}
+    <Card className="overflow-hidden flex flex-col h-auto md:h-[540px] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+      {/* Image - responsive aspect ratio */}
       {item.image_url ? (
-        <div className="relative h-[432px] w-full">
+        <div className="relative w-full aspect-[4/3] md:h-[432px] md:aspect-auto">
           <Image
             src={item.image_url}
             alt={item.title}
@@ -244,7 +247,7 @@ function FeedCard({ item }: { item: FeedItem }) {
           />
         </div>
       ) : (
-        <div className="h-[432px] w-full bg-muted flex items-center justify-center p-8 relative">
+        <div className="w-full aspect-[4/3] md:h-[432px] md:aspect-auto bg-muted flex items-center justify-center p-8 relative">
           <Image
             src="/brand/logos/logo square thick muted.svg"
             alt={item.title}

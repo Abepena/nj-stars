@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "NJ Stars Basketball",
   description: "Official website for NJ Stars AAU Basketball Team",
+  icons: {
+    icon: "/brand/logos/NJ Icon.svg",
+  },
 }
 
 export default function RootLayout({
@@ -16,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

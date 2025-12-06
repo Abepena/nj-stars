@@ -7,6 +7,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
 import { LoadingSpinner } from "@/components/loading-spinner"
+import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleton"
 
 interface Product {
   id: number
@@ -27,11 +28,11 @@ interface Product {
 
 type ProductTag = 'featured' | 'best_selling' | 'on_sale'
 
-// Product tag colors and labels
+// Product tag colors and labels - using design tokens
 const TAG_CONFIG: Record<ProductTag, { label: string; className: string }> = {
-  featured: { label: 'FEATURED', className: 'bg-purple-500/10 text-purple-500' },
-  best_selling: { label: 'BEST SELLING', className: 'bg-orange-500/10 text-orange-500' },
-  on_sale: { label: 'ON SALE!', className: 'bg-red-500/10 text-red-500' },
+  featured: { label: 'FEATURED', className: 'bg-secondary/15 text-secondary' },
+  best_selling: { label: 'BEST SELLING', className: 'bg-warning/15 text-warning' },
+  on_sale: { label: 'ON SALE!', className: 'bg-destructive/15 text-destructive' },
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -83,11 +84,13 @@ export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchP
     )
   }
 
-  // Show spinner while loading
+  // Show skeleton while loading
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <LoadingSpinner size="lg" text="Loading products..." />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
       </div>
     )
   }
@@ -154,10 +157,10 @@ function ProductCard({ product }: { product: Product }) {
   const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
 
   const cardContent = (
-    <Card className="overflow-hidden flex flex-col h-[540px] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      {/* Image - 80% of card */}
+    <Card className="overflow-hidden flex flex-col h-auto md:h-[540px] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+      {/* Image - responsive aspect ratio */}
       {product.image_url ? (
-        <div className="relative h-[432px] w-full">
+        <div className="relative w-full aspect-[4/3] md:h-[432px] md:aspect-auto">
           <Image
             src={product.image_url}
             alt={product.name}
@@ -166,7 +169,7 @@ function ProductCard({ product }: { product: Product }) {
           />
         </div>
       ) : (
-        <div className="h-[432px] w-full bg-muted flex items-center justify-center p-8 relative">
+        <div className="w-full aspect-[4/3] md:h-[432px] md:aspect-auto bg-muted flex items-center justify-center p-8 relative">
           <Image
             src="/brand/logos/logo square thick muted.svg"
             alt={product.name}
