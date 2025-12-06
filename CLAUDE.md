@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NJ Stars is a web platform for an AAU basketball team featuring a public website, e-commerce merch store, and protected member portal. The project is actively being rebuilt from FastAPI to Django + Wagtail CMS.
 
+**Domains:**
+- **Primary:** njstarselite.com
+- **Secondary:** njstarsbasketball.com (owned, can redirect)
+
 ## Architecture
 
 **Current State:** Django + Wagtail backend with Next.js frontend (fully integrated)
@@ -104,7 +108,7 @@ See `.env.example` files in each directory.
 
 ## Current Migration Status
 
-The Django + Wagtail rebuild is ~90% complete. See `REBUILD_PROGRESS.md` for detailed phase status. Key completed work:
+The Django + Wagtail rebuild is ~90% complete. See `documentation/REBUILD_PROGRESS.md` for detailed phase status. Key completed work:
 - Django project scaffolding with Wagtail 7.2.1
 - Split settings configuration (base, development, production)
 - Django models (Events, Payments, Registrations, Core, CMS)
