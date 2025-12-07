@@ -28,5 +28,17 @@ FROM base AS production
 ENV DJANGO_SETTINGS_MODULE=config.settings.production
 WORKDIR /app
 COPY . .
-RUN python manage.py collectstatic --noinput
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+# Create entrypoint script that runs migrations and starts gunicorn
+# Uses $PORT from environment (Railway sets this dynamically)
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Collecting static files..."\n\
+python manage.py collectstatic --noinput\n\
+echo "Running migrations..."\n\
+python manage.py migrate --noinput\n\
+echo "Starting gunicorn on port ${PORT:-8000}..."\n\
+exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]
