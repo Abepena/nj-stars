@@ -12,6 +12,7 @@ django-allauth==0.61.1
 
 # Database
 psycopg2-binary==2.9.9
+dj-database-url==2.1.0
 
 # Payments
 stripe==8.0.0
