@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL("https://njstarselite.com"),
   openGraph: {
-    title: "NJ Stars Elite Basketball",
+    title: "NJ Stars Elite Basketball | Coming Soon 2026",
     description:
       "Elite AAU basketball training and competitive play for rising stars in Bergen County, NJ.",
     url: "https://njstarselite.com",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NJ Stars Elite Basketball",
+    title: "NJ Stars Elite Basketball | Coming Soon 2026",
     description:
       "Elite AAU basketball training and competitive play for rising stars in Bergen County, NJ.",
     images: ["/brand/logos/black-outlined.jpg"],
