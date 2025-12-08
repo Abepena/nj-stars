@@ -42,8 +42,8 @@ class Command(BaseCommand):
         # Get the root page
         root = Page.objects.get(depth=1)
 
-        # Delete existing welcome page and any old content
-        self._cleanup_existing_pages(root)
+        # Delete existing welcome page and any old content (returns refreshed root)
+        root = self._cleanup_existing_pages(root)
 
         # Create HomePage
         homepage = self._create_homepage(root)
@@ -75,11 +75,22 @@ class Command(BaseCommand):
         # Delete all children of root (welcome page, any old pages)
         for page in root.get_children():
             self.stdout.write(f"  Deleting: {page.title}")
+            # Use specific=True to get the actual page instance
+            specific_page = page.specific
+            # Unpublish first if published
+            if specific_page.live:
+                specific_page.unpublish()
+                self.stdout.write(f"Unpublished: \"{page.title}\" pk={page.pk}")
+            # Delete the page
             page.delete()
+            self.stdout.write(f"Page deleted: \"{page.title}\" id={page.id}")
 
         # Fix tree consistency after deletions
         from wagtail.models import Page
         Page.fix_tree()
+
+        # Refresh the root from database to get updated tree state
+        return Page.objects.get(depth=1)
 
     def _create_homepage(self, root):
         """Create the main HomePage."""
