@@ -191,7 +191,7 @@ export default function UnderConstructionPage() {
 
         {/* Footer */}
         <p className="mt-12 text-sm text-muted-foreground/60">
-          NJ Stars Elite &bull; Coming Soon 2025
+          NJ Stars Elite &bull; Coming Soon 2026
         </p>
       </div>
 
