@@ -484,6 +484,84 @@ def cart_checkout(request):
         )
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_checkout_session(request, session_id):
+    """Retrieve checkout session details from Stripe for order confirmation"""
+    try:
+        if not _stripe_key_configured():
+            return Response(
+                {"error": "Stripe is not configured"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        # Retrieve the checkout session with expanded line items
+        session = stripe.checkout.Session.retrieve(
+            session_id,
+            expand=['line_items', 'line_items.data.price.product', 'customer_details', 'shipping_details']
+        )
+
+        # Format the response
+        line_items = []
+        if session.line_items:
+            for item in session.line_items.data:
+                product_data = item.price.product if hasattr(item.price, 'product') else {}
+                line_items.append({
+                    'name': product_data.get('name', item.description) if isinstance(product_data, dict) else getattr(product_data, 'name', item.description),
+                    'description': product_data.get('description', '') if isinstance(product_data, dict) else getattr(product_data, 'description', ''),
+                    'image': (product_data.get('images', []) if isinstance(product_data, dict) else getattr(product_data, 'images', []) or [None])[0],
+                    'quantity': item.quantity,
+                    'unit_price': item.price.unit_amount / 100,  # Convert from cents
+                    'total': item.amount_total / 100,  # Convert from cents
+                })
+
+        # Get shipping details if available
+        shipping = None
+        if session.shipping_details:
+            shipping = {
+                'name': session.shipping_details.name,
+                'address': {
+                    'line1': session.shipping_details.address.line1,
+                    'line2': session.shipping_details.address.line2,
+                    'city': session.shipping_details.address.city,
+                    'state': session.shipping_details.address.state,
+                    'postal_code': session.shipping_details.address.postal_code,
+                    'country': session.shipping_details.address.country,
+                }
+            }
+
+        # Get customer details
+        customer = None
+        if session.customer_details:
+            customer = {
+                'email': session.customer_details.email,
+                'name': session.customer_details.name,
+            }
+
+        return Response({
+            'id': session.id,
+            'status': session.status,
+            'payment_status': session.payment_status,
+            'amount_total': session.amount_total / 100,  # Convert from cents
+            'currency': session.currency.upper(),
+            'line_items': line_items,
+            'shipping': shipping,
+            'customer': customer,
+            'created': session.created,
+        })
+
+    except stripe.error.InvalidRequestError:
+        return Response(
+            {'error': 'Invalid session ID'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def merge_cart(request):

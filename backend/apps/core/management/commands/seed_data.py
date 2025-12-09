@@ -360,6 +360,20 @@ class Command(BaseCommand):
                 'best_selling': False,
                 'on_sale': False,
             },
+            # TEST PRODUCT - $0.50 minimum for Stripe checkout testing
+            {
+                'name': '[TEST] Checkout Test Item',
+                'slug': 'test-checkout-item',
+                'description': 'This is a $0.50 test product for testing the checkout flow. Do not purchase unless testing.',
+                'price': Decimal('0.50'),
+                'category': 'equipment',
+                'image_url': '',
+                'is_active': True,
+                'stock_quantity': 999,
+                'featured': False,
+                'best_selling': False,
+                'on_sale': False,
+            },
         ]
 
         for product_data in products:

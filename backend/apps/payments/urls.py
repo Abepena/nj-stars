@@ -10,6 +10,7 @@ from .views import (
     CartItemAPIView,
     cart_checkout,
     merge_cart,
+    get_checkout_session,
 )
 
 router = DefaultRouter()
@@ -22,6 +23,7 @@ urlpatterns = [
     path('checkout/product/', create_product_checkout, name='product-checkout'),
     path('checkout/event/', create_event_checkout, name='event-checkout'),
     path('checkout/cart/', cart_checkout, name='cart-checkout'),
+    path('checkout/session/<str:session_id>/', get_checkout_session, name='checkout-session'),
     # Cart endpoints
     path('cart/', CartAPIView.as_view(), name='cart'),
     path('cart/items/<int:item_id>/', CartItemAPIView.as_view(), name='cart-item'),
