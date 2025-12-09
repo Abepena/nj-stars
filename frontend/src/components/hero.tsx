@@ -42,7 +42,8 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
 
       {/* Content - Bottom on all screens, centered on desktop */}
       <div className="relative z-10 w-full mt-auto px-4 py-8 md:py-16">
-        <div className="max-w-4xl mx-auto text-center md:text-left md:ml-12 lg:ml-20">
+        <div className="container mx-auto px-4 text-center md:text-left">
+          <div className="max-w-4xl">
           <h1 className="text-4xl pb-2 sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
             {/* Pink accent line - smaller, closer to heading */}
             <div className="w-12 h-0.5 bg-primary mb-3 mx-auto md:mx-0" />
@@ -77,6 +78,7 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
                 View Schedule
               </Button>
             </Link>
+          </div>
           </div>
         </div>
       </div>
