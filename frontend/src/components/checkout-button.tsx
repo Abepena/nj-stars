@@ -11,6 +11,8 @@ interface CheckoutButtonProps {
   quantity?: number
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
 export function CheckoutButton({
   productId,
   productName,
@@ -27,7 +29,7 @@ export function CheckoutButton({
     try {
       // Call Django backend to create Stripe Checkout Session
       const response = await fetch(
-        `http://localhost:8000/api/payments/checkout/product/`,
+        `${API_BASE_URL}/api/payments/checkout/product/`,
         {
           method: "POST",
           headers: {
