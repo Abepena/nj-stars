@@ -31,7 +31,7 @@ export default async function Home() {
       </FadeInSection>
       
       {/* The Locker Room - Featured Merch Section */}
-      {homePage?.show_merch_section && (
+      {(homePage?.show_merch_section !== false) && (
         <FadeInSection direction="up" delay={100}>
           <section className="py-16 md:py-24 bg-muted/30">
             <div className="container mx-auto px-4">
@@ -40,9 +40,9 @@ export default async function Home() {
           </section>
         </FadeInSection>
       )}
-      
+
       {/* The Huddle - News Feed */}
-      {homePage?.show_huddle_section && (
+      {(homePage?.show_huddle_section !== false) && (
         <FadeInSection direction="up" delay={100}>
           <section className="py-16 md:py-24 bg-background">
             <div className="container mx-auto px-4">
