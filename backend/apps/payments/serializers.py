@@ -33,8 +33,23 @@ class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model"""
 
     in_stock = serializers.ReadOnlyField()
-    primary_image_url = serializers.ReadOnlyField()
+    primary_image_url = serializers.SerializerMethodField()
     images = ProductImageSerializer(many=True, read_only=True)
+
+    def get_primary_image_url(self, obj):
+        """Get the primary image URL with absolute URL for uploaded files"""
+        request = self.context.get('request')
+        primary = obj.images.filter(is_primary=True).first()
+        image_obj = primary or obj.images.first()
+
+        if image_obj:
+            if image_obj.image:
+                if request:
+                    return request.build_absolute_uri(image_obj.image.url)
+                return image_obj.image.url
+            return image_obj.image_url
+
+        return obj.image_url or None
 
     class Meta:
         model = Product

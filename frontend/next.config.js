@@ -17,6 +17,22 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'scontent.cdninstagram.com',
       },
+      // Production backend - Django media files
+      {
+        protocol: 'https',
+        hostname: 'api.njstarselite.com',
+      },
+      // Railway default domains
+      {
+        protocol: 'https',
+        hostname: '*.up.railway.app',
+      },
+      // Local development
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+      },
     ],
   },
   env: {
