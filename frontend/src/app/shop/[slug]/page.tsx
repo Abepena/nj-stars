@@ -14,6 +14,14 @@ import { ProductDetailSkeleton } from "@/components/skeletons/product-detail-ske
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 
+interface ProductImage {
+  id: number
+  url: string
+  alt_text: string
+  is_primary: boolean
+  sort_order: number
+}
+
 interface Product {
   id: number
   name: string
@@ -22,6 +30,8 @@ interface Product {
   price: string
   compare_at_price: string | null
   image_url: string
+  primary_image_url: string | null
+  images: ProductImage[]
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -126,15 +136,21 @@ export default function ProductDetailPage() {
     }
   }, [slug])
 
-  // Generate placeholder images for gallery
-  const productImages = product?.image_url
-    ? [
-        product.image_url,
-        `${product.image_url}&seed=1`,
-        `${product.image_url}&seed=2`,
-        `${product.image_url}&seed=3`,
-      ]
-    : []
+  // Build image gallery from uploaded images, falling back to legacy image_url
+  const productImages: { url: string; alt: string }[] = (() => {
+    if (product?.images && product.images.length > 0) {
+      // Use uploaded images from the carousel
+      return product.images.map((img) => ({
+        url: img.url,
+        alt: img.alt_text || product.name,
+      }))
+    }
+    // Fall back to legacy single image
+    if (product?.image_url) {
+      return [{ url: product.image_url, alt: product.name }]
+    }
+    return []
+  })()
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % productImages.length)
@@ -228,8 +244,8 @@ export default function ProductDetailPage() {
               {productImages[currentImageIndex] ? (
                 <>
                   <Image
-                    src={productImages[currentImageIndex]}
-                    alt={product.name}
+                    src={productImages[currentImageIndex].url}
+                    alt={productImages[currentImageIndex].alt}
                     fill
                     className="object-cover"
                     priority
@@ -281,7 +297,7 @@ export default function ProductDetailPage() {
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {productImages.map((img, index) => (
                   <button
-                    key={index}
+                    key={img.url}
                     onClick={() => setCurrentImageIndex(index)}
                     className={`relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 border-2 transition-all ${
                       index === currentImageIndex
@@ -290,7 +306,7 @@ export default function ProductDetailPage() {
                     }`}
                     aria-label={`View image ${index + 1}`}
                   >
-                    <Image src={img} alt={`${product.name} ${index + 1}`} fill className="object-cover" />
+                    <Image src={img.url} alt={img.alt} fill className="object-cover" />
                   </button>
                 ))}
               </div>

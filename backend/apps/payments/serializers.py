@@ -1,11 +1,40 @@
 from rest_framework import serializers
-from .models import Product, SubscriptionPlan, Cart, CartItem, Order, OrderItem
+from .models import Product, ProductImage, SubscriptionPlan, Cart, CartItem, Order, OrderItem
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    """Serializer for ProductImage model"""
+
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = [
+            'id',
+            'url',
+            'alt_text',
+            'is_primary',
+            'sort_order',
+        ]
+
+    def get_url(self, obj):
+        """Return the image URL - handles both uploads and URL links"""
+        request = self.context.get('request')
+        # If uploaded file exists, return its URL
+        if obj.image:
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        # Otherwise return the image_url field
+        return obj.image_url or None
 
 
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model"""
 
     in_stock = serializers.ReadOnlyField()
+    primary_image_url = serializers.ReadOnlyField()
+    images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -18,6 +47,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'compare_at_price',
             'category',
             'image_url',
+            'primary_image_url',
+            'images',
             'is_active',
             'featured',
             'best_selling',

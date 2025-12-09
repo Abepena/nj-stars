@@ -14,6 +14,14 @@ import { getCategoryColor } from "@/lib/category-colors"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
+interface ProductImage {
+  id: number
+  url: string
+  alt_text: string
+  is_primary: boolean
+  sort_order: number
+}
+
 interface Product {
   id: number
   name: string
@@ -22,6 +30,8 @@ interface Product {
   price: string
   compare_at_price: string | null
   image_url: string
+  primary_image_url: string | null
+  images: ProductImage[]
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -86,9 +96,9 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
     >
       {/* Image - rounded corners, no card border */}
       <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-muted">
-        {product.image_url ? (
+        {(product.primary_image_url || product.image_url) ? (
           <Image
-            src={product.image_url}
+            src={product.primary_image_url || product.image_url}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"

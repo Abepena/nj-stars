@@ -38,14 +38,30 @@ export interface BlogPost {
   permalink?: string
 }
 
+export interface ProductImage {
+  id: number
+  url: string
+  alt_text: string
+  is_primary: boolean
+  sort_order: number
+}
+
 export interface Product {
   id: number
   name: string
+  slug: string
   description: string
   price: number
+  compare_at_price?: number | null
   image_url?: string
+  primary_image_url?: string | null
+  images: ProductImage[]
   stock_quantity: number
   category: string
+  in_stock: boolean
+  featured: boolean
+  best_selling: boolean
+  on_sale: boolean
 }
 
 export interface Event {
