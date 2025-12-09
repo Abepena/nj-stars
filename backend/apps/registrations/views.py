@@ -78,3 +78,19 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
 
         serializer = EventRegistrationListSerializer(past_registrations, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def my_event_ids(self, request):
+        """
+        Get list of event IDs the user is registered for.
+        Used by frontend to filter 'My Events' view.
+        Returns only upcoming events with completed or pending payment.
+        """
+        from django.utils import timezone
+
+        event_ids = self.get_queryset().filter(
+            event__start_datetime__gte=timezone.now(),
+            payment_status__in=['completed', 'pending']
+        ).values_list('event_id', flat=True).distinct()
+
+        return Response({'event_ids': list(event_ids)})

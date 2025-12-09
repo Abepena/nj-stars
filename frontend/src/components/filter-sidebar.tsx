@@ -78,6 +78,8 @@ export interface FilterSidebarProps {
   getCategoryColor?: (category: string, isActive: boolean) => string
   /** Show visible label for search input (default: false, sr-only) */
   showSearchLabel?: boolean
+  /** Custom label for tags section (default: "Shop By") */
+  tagsLabel?: string
   /** Additional class names */
   className?: string
 }
@@ -149,6 +151,7 @@ function FilterContent({
   onSortChange,
   getCategoryColor = defaultGetCategoryColor,
   showSearchLabel = false,
+  tagsLabel = "Shop By",
   isMobile = false,
 }: Omit<FilterSidebarProps, 'title' | 'onClearFilters' | 'totalCount' | 'filteredCount' | 'className'> & { isMobile?: boolean }) {
   return (
@@ -256,7 +259,7 @@ function FilterContent({
       {/* Tags */}
       {tags && tags.length > 0 && onTagToggle && (
         <>
-          <CollapsibleSection title="Shop By" defaultOpen={true}>
+          <CollapsibleSection title={tagsLabel} defaultOpen={true}>
             <div className={cn(
               "flex gap-2",
               isMobile ? "flex-col" : "flex-wrap"
@@ -366,6 +369,7 @@ export function FilterSidebar({
   filteredCount,
   getCategoryColor = defaultGetCategoryColor,
   showSearchLabel = false,
+  tagsLabel = "Shop By",
   className,
 }: FilterSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -393,13 +397,7 @@ export function FilterSidebar({
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
             <SheetHeader className="text-left mb-6">
-              <SheetTitle className="flex items-center justify-between">
-                <span>Sort By</span>
-                <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100">
-                  <X className="h-5 w-5" />
-                  <span className="sr-only">Close</span>
-                </SheetClose>
-              </SheetTitle>
+              <SheetTitle>Filter & Sort</SheetTitle>
             </SheetHeader>
 
             <FilterContent
@@ -418,6 +416,7 @@ export function FilterSidebar({
               sortBy={sortBy}
               onSortChange={onSortChange}
               getCategoryColor={getCategoryColor}
+              tagsLabel={tagsLabel}
               isMobile={true}
             />
 
@@ -470,6 +469,7 @@ export function FilterSidebar({
             onColorToggle={onColorToggle}
             getCategoryColor={getCategoryColor}
             showSearchLabel={showSearchLabel}
+            tagsLabel={tagsLabel}
             isMobile={false}
           />
 

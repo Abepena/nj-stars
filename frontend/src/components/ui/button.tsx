@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils"
  *
  * @variant cta - High-emphasis call-to-action for hero sections
  *                (Register for Tryouts, Get Started, Join Now)
- *                Gradient background with scale animation on hover
+ *                Dark/charcoal bg with light text, flips to pink on hover
  *
  * @variant accent - Alert or urgent actions
  *                   (Limited time offers, urgent notifications)
@@ -55,7 +55,7 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-muted hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        cta: "bg-gradient-to-br from-foreground/40 to-primary text-background font-bold hover:text-foreground hover:scale-[1.02] transition-all duration-200 ease-in-out",
+        cta: "bg-foreground text-background font-bold hover:bg-primary hover:text-primary-foreground hover:scale-[1.02] transition-all duration-200 ease-in-out",
         accent: "bg-accent text-accent-foreground hover:bg-accent/90",
       },
       size: {

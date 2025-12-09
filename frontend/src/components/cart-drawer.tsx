@@ -9,7 +9,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
   SheetClose,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -253,8 +252,9 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                 <span>${subtotal}</span>
               </div>
 
-              <SheetFooter className="gap-2 sm:flex-col">
+              <div className="flex flex-col gap-2">
                 <Button
+                  variant="cta"
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
@@ -270,11 +270,11 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                   )}
                 </Button>
                 <SheetClose asChild>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" size="lg">
                     Continue Shopping
                   </Button>
                 </SheetClose>
-              </SheetFooter>
+              </div>
             </div>
           </>
         )}

@@ -41,6 +41,23 @@
 - [ ] Connect @pena_abraham account first for testing
 - [ ] Requires Business/Creator account type
 
+### Registrations
+- [ ] Registrations / Tryouts should have easily shareable link with minimal steps to sign up and pay, gaurdians should only have to confirm details and select which child(ren) they are signing up and the form should auto-populate with profile details to save them time.
+- [ ] waivers should be acknowledged before signing up
+
+### Events Calendar Sync (Dec 9)
+- [ ] **Calendar export feature for "My Events"** - Allow users to sync their registered events to external calendars
+  - [ ] Generate iCalendar (.ics) feed URL for user's registered events
+  - [ ] "Add to Google Calendar" button using Google Calendar API links
+  - [ ] "Add to Apple Calendar" button (webcal:// protocol for iCal subscription)
+  - [ ] Consider django-ical package for generating .ics feeds
+  - [ ] Feed should auto-update when user registers/cancels events
+  - [ ] Include event details: title, datetime, location, description
+- **Implementation Notes:**
+  - Google Calendar: `https://calendar.google.com/calendar/render?action=TEMPLATE&text=EVENT_TITLE&dates=START/END&location=LOCATION&details=DESC`
+  - iCalendar feed: Serve .ics file from `/api/events/registrations/calendar.ics` (authenticated)
+  - Consider per-user unique calendar URL with token for subscription feeds 
+
 ### Custom Products/Invoices (Dec 9)
 - [ ] Coach-created custom invoices for private training
 - [ ] Shareable payment links

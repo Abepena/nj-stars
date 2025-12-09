@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -17,31 +19,51 @@ const defaults = {
   ctaLabel: "Register for Tryouts",
 };
 
+// Free stock basketball video from Mixkit (https://mixkit.co/free-stock-video/basketball/)
+const HERO_VIDEO_URL = "https://assets.mixkit.co/videos/44468/44468-720.mp4";
+
 export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroProps) {
   return (
-    <section className="bg-card border-b border-border min-h-[calc(100vh-80px)] flex items-center relative overflow-hidden">
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
+    <section className="bg-card border-b border-border min-h-[calc(100vh-80px)] flex flex-col relative overflow-hidden">
+      {/* Video Background */}
+      <div className="absolute inset-0 z-0">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src={HERO_VIDEO_URL} type="video/mp4" />
+        </video>
+        {/* Dark overlay - lighter in center on desktop to see video */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/80 md:bg-gradient-to-t md:from-black/90 md:via-black/20 md:to-black/40" />
+      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-16 md:py-24 relative z-10">
-        <div className="max-w-4xl px-2 sm:px-6 text-left">
-          <h1 className="text-5xl pb-2 sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-[0.9] bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
-            <span className="block">{heading || defaults.heading}</span>
-            <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl mt-2 md:mt-4">
+      {/* Content - Bottom on all screens, centered on desktop */}
+      <div className="relative z-10 w-full mt-auto px-4 py-8 md:py-16">
+        <div className="max-w-4xl mx-auto text-center md:text-left md:ml-12 lg:ml-20">
+          <h1 className="text-4xl pb-2 sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
+            {/* Pink accent line - smaller, closer to heading */}
+            <div className="w-12 h-0.5 bg-primary mb-3 mx-auto md:mx-0" />
+            <span className="block text-white drop-shadow-lg">{heading || defaults.heading}</span>
+            <span className="relative inline-block text-3xl sm:text-4xl md:text-4xl lg:text-5xl mt-2 md:mt-3 text-white/90 drop-shadow-lg">
               {tagline || defaults.tagline}
+              {/* Pink underline accent */}
+              <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-primary/0" />
             </span>
           </h1>
 
-          <p className="mt-6 md:mt-8 text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl">
+          <p className="mt-6 md:mt-6 text-base sm:text-lg md:text-lg text-white/80 leading-relaxed max-w-xl mx-auto md:mx-0 drop-shadow-md">
             {subheading || defaults.subheading}
           </p>
 
-          <div className="mt-10 md:mt-12 flex flex-col sm:flex-row sm:justify-start gap-4">
+          <div className="mt-6 md:mt-8 flex flex-col sm:flex-row sm:justify-center md:justify-start gap-3">
             <Link href={ctaUrl || "/events"}>
               <Button
                 size="lg"
                 variant="cta"
-                className="w-full sm:w-auto text-base md:text-lg px-8 py-6"
+                className="w-full sm:w-auto text-base px-6 py-5 border-2 border-white/20"
               >
                 {ctaLabel || defaults.ctaLabel} →
               </Button>
@@ -50,19 +72,12 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full sm:w-auto text-base md:text-lg px-8 py-6"
+                className="w-full sm:w-auto text-base px-6 py-5 bg-white/10 border-2 border-white/40 text-white hover:bg-white/20"
               >
                 View Schedule
               </Button>
             </Link>
           </div>
-        </div>
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce hidden md:block">
-        <div className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex justify-center pt-2">
-          <div className="w-1.5 h-3 bg-muted-foreground/50 rounded-full" />
         </div>
       </div>
     </section>

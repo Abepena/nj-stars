@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Card, CardDescription, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
 import { NewsCardSkeleton } from "@/components/skeletons/news-card-skeleton"
@@ -53,16 +52,16 @@ interface FeedItem {
   media_type?: string
 }
 
-// Category tag colors and labels - using design tokens
+// Category tag colors - clean text colors for Nike-style
 const CATEGORY_CONFIG: Record<BlogCategory | 'instagram', { label: string; className: string }> = {
-  news: { label: 'NEWS', className: 'bg-info/15 text-info' },
-  tryouts: { label: 'TRYOUTS', className: 'bg-warning/15 text-warning' },
-  camp: { label: 'CAMP', className: 'bg-success/15 text-success' },
-  tournament: { label: 'TOURNAMENT', className: 'bg-secondary/15 text-secondary' },
-  merch: { label: 'MERCH DROP', className: 'bg-primary/15 text-primary' },
-  sale: { label: 'SALE', className: 'bg-tertiary/15 text-tertiary' },
-  announcement: { label: 'ANNOUNCEMENT', className: 'bg-accent/15 text-accent' },
-  instagram: { label: 'INSTAGRAM', className: 'bg-primary/10 text-primary' },
+  news: { label: 'News', className: 'text-info' },
+  tryouts: { label: 'Tryouts', className: 'text-warning' },
+  camp: { label: 'Camp', className: 'text-success' },
+  tournament: { label: 'Tournament', className: 'text-secondary' },
+  merch: { label: 'Merch', className: 'text-primary' },
+  sale: { label: 'Sale', className: 'text-tertiary' },
+  announcement: { label: 'Announcement', className: 'text-accent' },
+  instagram: { label: 'Instagram', className: 'text-primary' },
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -163,8 +162,8 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
   // Show skeleton while loading
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        {[1, 2, 3, 4].map((i) => (
           <NewsCardSkeleton key={i} />
         ))}
       </div>
@@ -200,7 +199,7 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
         {feedItems.map((item) => (
           <FeedCard key={item.id} item={item} />
         ))}
@@ -209,7 +208,7 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
         <div className="flex justify-center">
           <Link href="/news">
             <Button variant="outline" size="lg" className="px-8">
-              See More →
+              More Updates →
             </Button>
           </Link>
         </div>
@@ -218,6 +217,7 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
   )
 }
 
+// Clean Nike-style feed card
 function FeedCard({ item }: { item: FeedItem }) {
   const formattedDate = format(new Date(item.published_date), "MMM dd, yyyy")
 
@@ -234,52 +234,46 @@ function FeedCard({ item }: { item: FeedItem }) {
   const tagConfig = getTagConfig()
 
   const cardContent = (
-    <Card className="overflow-hidden flex flex-col h-auto md:h-[540px] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      {/* Image - responsive aspect ratio */}
-      {item.image_url ? (
-        <div className="relative w-full aspect-[4/3] md:h-[432px] md:aspect-auto">
+    <article className="flex flex-col cursor-pointer group">
+      {/* Image - rounded corners, no card border */}
+      <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-muted">
+        {item.image_url ? (
           <Image
             src={item.image_url}
             alt={item.title}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
-        </div>
-      ) : (
-        <div className="w-full aspect-[4/3] md:h-[432px] md:aspect-auto bg-muted flex items-center justify-center p-8 relative">
-          <Image
-            src="/brand/logos/logo square thick muted.svg"
-            alt={item.title}
-            fill
-            className="opacity-30 object-contain p-8"
-          />
-        </div>
-      )}
-
-      {/* Content - 20% of card */}
-      <div className="flex flex-col flex-1 p-4">
-        <div className="flex items-start justify-between mb-1">
-          <CardTitle className="line-clamp-1 text-base font-bold flex-1">{item.title}</CardTitle>
-          <span className={`ml-2 px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${tagConfig.className}`}>
-            {tagConfig.label}
-          </span>
-        </div>
-
-        <CardDescription className="text-xs text-muted-foreground mb-2">
-          {formattedDate}
-        </CardDescription>
-
-        {item.type === "huddle" && item.excerpt && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.excerpt}</p>
-        )}
-
-        {item.permalink && (
-          <span className="text-accent hover:text-accent/80 text-sm inline-flex items-center gap-1 transition-colors mt-auto">
-            {item.type === "huddle" ? "Read More →" : "View on Instagram →"}
-          </span>
+        ) : (
+          <div className="h-full w-full flex items-center justify-center p-8 relative">
+            <Image
+              src="/brand/logos/logo square thick muted.svg"
+              alt={item.title}
+              fill
+              className="opacity-30 object-contain p-8"
+            />
+          </div>
         )}
       </div>
-    </Card>
+
+      {/* Content - Nike style: tag, title, date */}
+      <div className="flex flex-col pt-3 space-y-1">
+        {/* Tag label */}
+        <span className={`text-xs font-medium ${tagConfig.className}`}>
+          {tagConfig.label}
+        </span>
+
+        {/* Title */}
+        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+          {item.title}
+        </h3>
+
+        {/* Date */}
+        <p className="text-xs text-muted-foreground">
+          {formattedDate}
+        </p>
+      </div>
+    </article>
   )
 
   // Huddle posts use internal Link, Instagram uses external anchor

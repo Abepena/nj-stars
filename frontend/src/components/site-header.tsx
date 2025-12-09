@@ -89,7 +89,7 @@ export function SiteHeader() {
             className="group relative h-9 w-9"
             onClick={() => setCartOpen(true)}
           >
-            <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
+            <ShoppingCart className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                 {itemCount > 99 ? '99+' : itemCount}
@@ -100,13 +100,13 @@ export function SiteHeader() {
           {/* Sign In or Portal */}
           {!session ? (
             <Link href="/portal/login">
-              <Button variant="ghost" size="sm" className="text-sm font-medium text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
+              <Button variant="ghost" size="sm" className="text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out">
                 Sign In
               </Button>
             </Link>
           ) : (
             <Link href="/portal/login">
-              <Button className="bg-gradient-to-br from-foreground/40 to-primary text-background font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
+              <Button variant="cta">
                 Portal
               </Button>
             </Link>
@@ -115,9 +115,6 @@ export function SiteHeader() {
 
         {/* Mobile Navigation & Actions - visible on mobile only, positioned on right */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
-          {/* Theme Toggle */}
-          <ThemeToggle />
-
           {/* Shopping Cart */}
           <Button
             variant="ghost"
@@ -125,22 +122,13 @@ export function SiteHeader() {
             className="group relative h-9 w-9"
             onClick={() => setCartOpen(true)}
           >
-            <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
+            <ShoppingCart className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                 {itemCount > 99 ? '99+' : itemCount}
               </span>
             )}
           </Button>
-
-          {/* Sign In Link - only show if not authenticated */}
-          {!session && (
-            <Link href="/portal/login">
-              <Button variant="ghost" size="sm" className="text-sm text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
-                Sign In
-              </Button>
-            </Link>
-          )}
 
           {/* Mobile Menu */}
           <MobileNav />

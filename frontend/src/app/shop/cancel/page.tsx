@@ -41,13 +41,13 @@ export default function CancelPage() {
 
               <div className="flex flex-col gap-3 pt-4">
                 <Link href="/shop" className="block">
-                  <Button className="w-full bg-gradient-to-br from-foreground/40 to-primary text-background font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
+                  <Button variant="cta" className="w-full">
                     Back to Shop
                   </Button>
                 </Link>
 
                 <Link href="/" className="block">
-                  <Button variant="outline" className="w-full border-border text-accent hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:shadow-lg hover:scale-[1.02] transition-all">
+                  <Button variant="outline" className="w-full">
                     Return to Home
                   </Button>
                 </Link>

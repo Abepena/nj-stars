@@ -8,30 +8,42 @@ interface ConfettiPiece {
   delay: number
   duration: number
   color: string
-  size: number
+  width: number
+  height: number
   rotation: number
+  wobble: number
+  shape: "rect" | "circle" | "strip"
 }
 
-// NJ Stars brand colors for confetti
-const CONFETTI_COLORS = [
-  "var(--primary)",      // Pink
-  "var(--secondary)",    // Teal
-  "var(--accent)",       // Hot pink
-  "var(--tertiary)",     // Purple
-  "#FFD700",             // Gold
-  "#FFFFFF",             // White
+// NJ Stars team colors - pink, teal, and accent colors
+const TEAM_COLORS = [
+  "#e84393",  // Hot pink (primary)
+  "#00cec9",  // Teal (secondary)
+  "#d63031",  // Red accent
+  "#fdcb6e",  // Gold/amber
+  "#ffffff",  // White
+  "#e84393",  // Extra pink for more pink confetti
+  "#00cec9",  // Extra teal for more teal confetti
 ]
 
 function generateConfetti(count: number): ConfettiPiece[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 2 + Math.random() * 2,
-    color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-    size: 8 + Math.random() * 8,
-    rotation: Math.random() * 360,
-  }))
+  return Array.from({ length: count }, (_, i) => {
+    const shapes: ("rect" | "circle" | "strip")[] = ["rect", "circle", "strip"]
+    const shape = shapes[Math.floor(Math.random() * shapes.length)]
+
+    return {
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 0.8,
+      duration: 1.2 + Math.random() * 1.5, // Faster: 1.2-2.7s instead of 2-4s
+      color: TEAM_COLORS[Math.floor(Math.random() * TEAM_COLORS.length)],
+      width: shape === "strip" ? 3 : 6 + Math.random() * 6,
+      height: shape === "strip" ? 12 + Math.random() * 8 : 6 + Math.random() * 6,
+      rotation: Math.random() * 360,
+      wobble: 15 + Math.random() * 30, // Horizontal wobble amount
+      shape,
+    }
+  })
 }
 
 export function ConfettiCelebration() {
@@ -39,13 +51,13 @@ export function ConfettiCelebration() {
   const [isVisible, setIsVisible] = useState(true)
 
   useEffect(() => {
-    // Generate confetti on mount
-    setConfetti(generateConfetti(50))
+    // Generate more confetti pieces for denser effect
+    setConfetti(generateConfetti(80))
 
     // Hide after animation completes
     const timer = setTimeout(() => {
       setIsVisible(false)
-    }, 4000)
+    }, 3500)
 
     return () => clearTimeout(timer)
   }, [])
@@ -57,35 +69,22 @@ export function ConfettiCelebration() {
       {confetti.map((piece) => (
         <div
           key={piece.id}
-          className="absolute animate-confetti-fall"
+          className="absolute confetti-rain"
           style={{
             left: `${piece.x}%`,
             top: "-20px",
-            width: `${piece.size}px`,
-            height: `${piece.size}px`,
+            width: `${piece.width}px`,
+            height: `${piece.height}px`,
             backgroundColor: piece.color,
-            borderRadius: Math.random() > 0.5 ? "50%" : "2px",
-            transform: `rotate(${piece.rotation}deg)`,
+            borderRadius: piece.shape === "circle" ? "50%" : "2px",
+            opacity: 0.9,
+            ["--wobble" as string]: `${piece.wobble}px`,
+            ["--rotation" as string]: `${piece.rotation}deg`,
             animationDelay: `${piece.delay}s`,
             animationDuration: `${piece.duration}s`,
           }}
         />
       ))}
-
-      {/* Burst effect from center */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div
-            key={`burst-${i}`}
-            className="absolute w-3 h-3 rounded-full animate-burst"
-            style={{
-              backgroundColor: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-              transform: `rotate(${i * 30}deg)`,
-              animationDelay: `${i * 0.05}s`,
-            }}
-          />
-        ))}
-      </div>
     </div>
   )
 }
