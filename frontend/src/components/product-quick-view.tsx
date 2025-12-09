@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { X, ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingCart, Loader2, Check } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CheckoutButton } from "@/components/checkout-button"
+import { useCart } from "@/lib/cart"
 
 interface Product {
   id: number
@@ -46,6 +46,10 @@ function getCategoryColor(category: string) {
 
 export function ProductQuickView({ product, open, onOpenChange }: ProductQuickViewProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [quantity, setQuantity] = useState(1)
+  const [isAdding, setIsAdding] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
+  const { addToCart } = useCart()
 
   // Generate multiple placeholder images for carousel
   const productImages = [
@@ -53,6 +57,19 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     `${product.image_url}&seed=1`,
     `${product.image_url}&seed=2`,
   ]
+
+  const handleAddToCart = async () => {
+    setIsAdding(true)
+    try {
+      await addToCart(product.id, quantity)
+      setJustAdded(true)
+      setTimeout(() => setJustAdded(false), 2000)
+    } catch (error) {
+      console.error('Failed to add to cart:', error)
+    } finally {
+      setIsAdding(false)
+    }
+  }
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % productImages.length)
@@ -190,15 +207,60 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
               </div>
             )}
 
-            <div className="flex flex-col gap-2 mt-auto pt-4">
+            <div className="flex flex-col gap-3 mt-auto pt-4">
+              {/* Quantity Selector */}
+              {product.stock_quantity > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">Quantity:</span>
+                  <div className="flex items-center border rounded-md">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-3 py-1 hover:bg-muted transition-colors"
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-1 border-x min-w-[3rem] text-center">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                      className="px-3 py-1 hover:bg-muted transition-colors"
+                      disabled={quantity >= product.stock_quantity}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Add to Cart Button */}
               {product.stock_quantity > 0 ? (
-                <CheckoutButton
-                  productId={product.id}
-                  productName={product.name}
-                  price={parseFloat(product.price)}
-                />
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={handleAddToCart}
+                  disabled={isAdding}
+                >
+                  {isAdding ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : justAdded ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Added to Cart!
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Add to Cart
+                    </>
+                  )}
+                </Button>
               ) : (
-                <Button disabled className="w-full text-accent">
+                <Button disabled className="w-full text-accent" size="lg">
                   Out of Stock
                 </Button>
               )}

@@ -1,9 +1,38 @@
 # NJ Stars Platform - Next Steps & Roadmap
 
 > **Purpose:** Clear action items and roadmap for production deployment and future enhancements
-> **Last Updated:** December 6, 2025
+> **Last Updated:** December 9, 2025
+>
+> **Related Documents:**
+> - [Meeting Notes - Dec 9, 2025](./meeting%20notes/MEETING_NOTES_2025-12-09.md) - Custom products, revenue sharing, Instagram API
+> - [Meeting Notes - Dec 8, 2025](./meeting%20notes/MEETING_NOTES_2025-12-08.md) - Stakeholder meeting deliverables
 
 This document outlines the steps needed to take the NJ Stars platform from development to production, plus optional enhancements for future phases.
+
+---
+
+## 🔥 IMMEDIATE PRIORITIES (Dec 9, 2025)
+
+### Revenue Sharing Agreement
+Kenny has agreed to **20% platform fee** on all website revenue (events, merch, tryouts, camps).
+Coach private training: **5% platform fee** (to incentivize platform use over DMs/CashApp).
+
+### High Priority Tasks
+
+| Task | Priority | Status | Section |
+|------|----------|--------|---------|
+| Instagram API Integration | 🔴 Critical | Pending | [4.8](#48-multi-instagram-huddle--medium-added-dec-8) |
+| Custom Products/Invoice System | 🔴 Critical | Pending | [4.10](#410-custom-products-system--critical-added-dec-9) |
+| Coach Payout System | 🔴 High | Pending | [4.7](#47-coach-payout-system--medium-added-dec-8) |
+| Tryout Registration Form | 🔴 High | Pending | [4.2](#42-tryout-registration-form--high-updated-dec-8) |
+
+### Completed Today (Dec 9)
+- [x] Sticky sidebar filters for Shop page (reusable component)
+- [x] Product cards: click = QuickView (no buttons)
+- [x] Updated product names (removed "NJ Stars" prefix)
+- [x] Better product images from Unsplash
+- [x] Coach model, admin, API, seed data
+- [x] CoachCard component and CoachesSection on homepage
 
 ---
 
@@ -122,10 +151,24 @@ GOOGLE_CLIENT_SECRET=...
 | **Phase 1:** Production Setup | 1-2 weeks | 🔴 Critical | Pending |
 | **Phase 2:** Content & Testing | 1 week | 🔴 Critical | Pending |
 | **Phase 3:** Launch & Monitoring | 1 week | 🟠 High | Pending |
-| **Phase 4:** Enhancements | 4-8 weeks | 🟡 Medium | Future |
+| **Phase 4:** Enhancements | 4-8 weeks | 🟡 Medium | In Progress |
 | **Phase 5:** Mobile App | 6-8 weeks | 🟡 Medium | Future |
 
 **Total Time to Launch:** ~3-4 weeks
+
+### Dec 8, 2025 Meeting - New Priority Items
+
+| Feature | Priority | Effort | Section |
+|---------|----------|--------|---------|
+| Shopping Cart | 🔴 Critical | 3-5 days | [4.4](#44-shopping-cart-system--critical-added-dec-8) |
+| Shop UX (Card = QuickView) | 🔴 High | 2-3 days | [4.5](#45-shop-ux-improvements--high-added-dec-8) |
+| Tryout Registration Form | 🔴 High | 2-3 days | [4.2](#42-tryout-registration-form--high-updated-dec-8) |
+| Coach Management | 🔴 High | 2-3 days | [4.6](#46-coach-management-system--high-added-dec-8) |
+| Coach Payouts | 🟠 Medium | 1-2 weeks | [4.7](#47-coach-payout-system--medium-added-dec-8) |
+| Multi-Instagram Huddle | 🟠 Medium | 1 week | [4.8](#48-multi-instagram-huddle--medium-added-dec-8) |
+| Hero Video | 🟡 Medium | 1-2 days | [4.9](#49-hero-video-integration--medium-added-dec-8) |
+
+> **Full Meeting Notes:** [MEETING_NOTES_2025-12-08.md](./meeting%20notes/MEETING_NOTES_2025-12-08.md)
 
 ---
 
@@ -694,7 +737,381 @@ pip install sendgrid
 
 ---
 
-### 4.2 Nice-to-Have Features 🟢 LOW
+### 4.2 Tryout Registration Form 🔴 HIGH (Updated Dec 8)
+
+**Time:** 2-3 days
+
+**Reference:** [Current Google Form](https://docs.google.com/forms/d/1i00gs-lvsGbOgTvJCAVqy1emsd1oF0hkdU1tQwaoIUQ/viewform)
+
+**Goal:** Replace the external Google Form with an integrated tryout signup form that matches the NJ Stars UI styling and stores registrations in the database.
+
+> **Dec 8 Meeting Update:** Form should be modal-based, auto-populate for logged-in users, and support multi-child registration. See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#5-tryout-registration-form-) for full requirements.
+
+**Form Fields (All Required):**
+
+| Field | Type | Options/Notes |
+|-------|------|---------------|
+| Player's Full Name | Text input | Required |
+| Player's D.O.B. | Date picker | MM/DD/YYYY format |
+| Player's Grade | Dropdown | 3, 4, 5, 6, 7, 8 |
+| Player's Jersey Size | Dropdown | Youth Medium, Youth Large, Adult Small, Adult Medium, Adult Large, Adult XL |
+| Guardian's Full Name | Text input | Required |
+| Guardian's Email | Email input | Required, use for confirmation |
+| Guardian's Phone Number | Phone input | Required |
+
+**Auto-Population Feature:**
+- If user is logged in, auto-populate relevant fields from their profile:
+  - Guardian's name, email, phone from user account
+  - Player info if they have a linked player profile
+- Show pre-filled fields as editable (user can still modify)
+- For returning users, consider storing player info for quick re-registration
+
+**Implementation Notes:**
+- [ ] Create `TryoutRegistration` model in Django (`apps/registrations/`)
+- [ ] Add DRF endpoint `POST /api/registrations/tryouts/`
+- [ ] Build form component in Next.js with shadcn/ui form elements
+- [ ] Add form validation (client-side and server-side)
+- [ ] Send confirmation email to guardian on submission
+- [ ] Admin view in Django to see/export registrations
+- [ ] Fetch user profile data on mount to pre-fill form fields
+- [ ] Consider adding: event/date selection if multiple tryout dates
+- [ ] Link form to specific tryout event announcements on the site
+
+**UI Considerations:**
+- Use existing shadcn/ui form components (`Input`, `Select`, `DatePicker`, `Button`)
+- Match the card-based styling used elsewhere on the site
+- Include success/error states with toast notifications
+- Mobile responsive design
+- Visual indicator for auto-filled fields (e.g., subtle highlight or "from your profile" label)
+
+---
+
+### 4.3 Parent & Player Portals 🟡 MEDIUM
+
+**Time:** 1-2 weeks
+
+**Goal:** Create dedicated dashboard experiences for parents/guardians and players with role-specific features and streamlined workflows.
+
+---
+
+#### Parent/Guardian Portal
+
+**Core Features:**
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-Player Management** | Link multiple children/players to a single parent account. View all linked players from one dashboard. |
+| **Bulk Event Registration** | Sign up multiple children for the same event from a single form. Select which players to register, auto-fill their info. |
+| **Payment Management** | View and manage payments for all linked players. Pay outstanding balances, view payment history, set up recurring payments. |
+| **Schedule View** | Consolidated calendar showing all linked players' practices, games, and events. Color-coded by player. |
+| **Player Profiles** | View/edit each child's profile (contact info, jersey size, grade, medical info). |
+
+**Data Model:**
+```
+ParentProfile
+├── user (FK to User)
+├── phone_number
+├── secondary_email (optional)
+└── players (M2M to PlayerProfile)
+
+PlayerProfile
+├── full_name
+├── date_of_birth
+├── grade
+├── jersey_size
+├── team (FK to Team, nullable)
+├── guardian (FK to ParentProfile)
+└── medical_notes (optional, encrypted)
+```
+
+**Implementation Notes:**
+- [ ] Create `ParentProfile` and `PlayerProfile` models in `apps/core/`
+- [ ] Add parent-player linking API endpoints
+- [ ] Build parent dashboard page at `/portal/parent/`
+- [ ] Create bulk registration flow component
+- [ ] Consolidated calendar view with player filtering
+- [ ] Payment history and management views (integrate with Stripe customer portal)
+
+---
+
+#### Player Portal
+
+**Core Features:**
+
+| Feature | Description |
+|---------|-------------|
+| **My Schedule** | Personal calendar with practices, games, and events |
+| **Team Roster** | View teammates and coaches |
+| **My Stats** | Personal statistics and performance tracking (future) |
+| **Announcements** | Team-specific news and updates |
+
+**Implementation Notes:**
+- [ ] Build player dashboard page at `/portal/player/`
+- [ ] Personal schedule component
+- [ ] Team roster view with contact info (coach approved)
+- [ ] Stats display (placeholder for future tracking)
+
+---
+
+#### 🎓 Report Card Rewards Program (Nice-to-Have)
+
+**Concept:** Incentivize academic excellence by offering discounts on merch and private training sessions for players who submit report cards showing good grades.
+
+**How It Works:**
+1. Player/parent uploads photo of report card via portal
+2. Admin reviews and approves submission
+3. System generates discount code based on grade tier:
+   - **Honor Roll (A/B average):** 15% off merch, $10 off private session
+   - **High Honors (A average):** 25% off merch, $20 off private session
+   - **Principal's List:** 30% off merch, free private session
+4. Discount code tied to player's account, valid for set period (e.g., one semester)
+
+**Data Model:**
+```
+ReportCardSubmission
+├── player (FK to PlayerProfile)
+├── image (ImageField)
+├── submitted_at
+├── grade_period (e.g., "Fall 2025")
+├── status (pending, approved, rejected)
+├── approved_tier (honor_roll, high_honors, principals_list)
+├── discount_code (generated on approval)
+└── admin_notes
+```
+
+**Implementation Notes:**
+- [ ] Add image upload to player portal
+- [ ] Admin review queue in Django admin
+- [ ] Auto-generate unique discount codes on approval
+- [ ] Integrate discount codes with Stripe checkout
+- [ ] Notification to parent when code is ready
+- [ ] Track redemption history
+
+**UI Considerations:**
+- Celebration animation on approval notification
+- Display active discounts prominently on parent dashboard
+- Show "Submit Report Card" CTA during report card season
+
+---
+
+### 4.4 Shopping Cart System 🔴 CRITICAL (Added Dec 8)
+
+**Time:** 3-5 days
+
+**Current State:** No cart - direct Stripe checkout only
+
+**Goal:** Implement a full shopping cart system to improve UX and enable multi-item purchases.
+
+> **Full Requirements:** See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#7-shopping-cart-functionality-)
+
+**Backend Implementation:**
+- [ ] Create `Cart` model in `apps/payments/models.py`
+- [ ] Create `CartItem` model with product/variant FK
+- [ ] DRF endpoints: `GET/POST /api/cart/`, `PATCH/DELETE /api/cart/items/{id}/`
+- [ ] Cart merging on user login (guest → authenticated)
+- [ ] Cart expiration/cleanup for abandoned carts
+
+**Frontend Implementation:**
+- [ ] Cart state management (React Context or Zustand)
+- [ ] `useCart()` hook for add/remove/update operations
+- [ ] Cart icon in header with item count badge
+- [ ] Cart drawer/modal component (slide-in from right)
+- [ ] Quantity adjustment (+/- buttons)
+- [ ] Remove item functionality
+- [ ] Subtotal calculation display
+- [ ] "Continue Shopping" and "Checkout" CTAs
+
+**Guest Cart Persistence:**
+- [ ] Use localStorage for guest carts
+- [ ] Merge localStorage cart into DB cart on login
+- [ ] Cart survives browser refresh
+
+---
+
+### 4.5 Shop UX Improvements 🔴 HIGH (Added Dec 8)
+
+**Time:** 2-3 days
+
+**Goal:** Simplify product cards for better mobile UX - make entire card clickable as quick view trigger.
+
+> **Full Requirements:** See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#6-shop-ux-improvements-)
+
+**Changes Required:**
+- [ ] Remove all buttons from product cards (no "Add to Cart", "Quick View", etc.)
+- [ ] Make entire card clickable → opens Quick View modal
+- [ ] Add color/variant swatches below product image (apparel only)
+- [ ] Quick View modal contains:
+  - Size/color selector
+  - "Add to Cart" button
+  - "View Details" link to full product page
+- [ ] Update hover states for card (subtle scale/shadow)
+
+**Component Updates:**
+- [ ] Refactor `ProductCard` component
+- [ ] Update `ProductQuickView` modal with cart integration
+- [ ] Add variant selector component (reusable)
+
+---
+
+### 4.6 Coach Management System 🔴 HIGH (Added Dec 8)
+
+**Time:** 2-3 days
+
+**Goal:** Add coaching staff to the platform with admin management and public profiles.
+
+> **Full Requirements:** See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#1-coach-management-system-)
+
+**Initial Coaches:**
+| Name | Role | Instagram |
+|------|------|-----------|
+| Trajan "Tray" Chapman | Head Coach & Trainer | @traygotbounce |
+| Chris Morales | Skills Clinic Coach | @coach.cee |
+| Kenneth Andrade | Founder (Coach K) | @kenny_164 |
+
+**Backend Implementation:**
+- [ ] Create `Coach` model in `apps/core/models.py`:
+  - name, display_name, role, bio, photo
+  - instagram_handle, email, phone
+  - specialties, is_active
+- [ ] Register in Django admin
+- [ ] DRF endpoint: `GET /api/coaches/`
+- [ ] Optional: Link coaches to events
+
+**Frontend Implementation:**
+- [ ] Create `CoachCard` component
+- [ ] Add coaches section to About page (or dedicated `/coaches` page)
+- [ ] Display photo, name, role, brief bio
+- [ ] Link to Instagram profile
+
+**Content Source:** Permission granted to use content from njstarseliteaau.com and @njstarselite_aau Instagram.
+
+---
+
+### 4.7 Coach Payout System 🟠 MEDIUM (Added Dec 8)
+
+**Time:** 1-2 weeks
+
+**Goal:** Enable coaches to receive payouts from platform revenue (training sessions, events, etc.)
+
+> **Full Requirements:** See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#2-coach-payout-system-)
+
+**Prerequisites:**
+- Coach Management System (4.6)
+- Stripe Connect account setup
+
+**Backend Implementation:**
+- [ ] Create `CoachProfile` model (extends Coach with payment info)
+- [ ] Create `CoachEarning` model (tracks revenue per coach)
+- [ ] Create `Payout` model (tracks payout status)
+- [ ] Integrate Stripe Connect for automated payouts
+- [ ] Admin interface for payout management
+- [ ] DRF endpoints for coach earnings dashboard
+
+**Frontend Implementation:**
+- [ ] Coach dashboard page (`/portal/coach/`)
+- [ ] Earnings summary widget
+- [ ] Payout history table
+- [ ] Upcoming sessions/events
+
+---
+
+### 4.8 Multi-Instagram Huddle 🟠 MEDIUM (Added Dec 8)
+
+**Time:** 1 week
+
+**Goal:** Connect multiple coach Instagram accounts and merge posts into unified news feed ("The Huddle").
+
+> **Full Requirements:** See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#3-instagram-huddle-enhancement-)
+
+**Backend Implementation:**
+- [ ] Create `InstagramAccount` model:
+  - account_name, handle, access_token, user_id
+  - is_active (toggle for fetching)
+  - linked_coach (optional FK to Coach)
+- [ ] Update `InstagramPost` model with source_account FK
+- [ ] Modify fetch logic to pull from all active accounts
+- [ ] Admin interface to manage connected accounts
+- [ ] Scheduled task for auto-fetching (Celery/APScheduler)
+
+**Frontend Implementation:**
+- [ ] Display coach name/handle on each post in feed
+- [ ] Filter posts by coach (optional)
+- [ ] Unified feed sorting by date
+
+**Accounts to Connect:**
+- @njstarselite_aau (team account)
+- @traygotbounce (Tray)
+- @coach.cee (Coach Cee)
+- @kenny_164 (Coach K)
+
+---
+
+### 4.9 Hero Video Integration 🟡 MEDIUM (Added Dec 8)
+
+**Time:** 1-2 days
+
+**Goal:** Display highlight videos from Instagram in hero section with opaque overlay.
+
+> **Full Requirements:** See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#4-hero-section-video-integration-)
+
+**Implementation:**
+- [ ] Add `hero_video_url` field to Wagtail `HomePage` model
+- [ ] Update `Hero` component to detect video vs image
+- [ ] Use HTML5 `<video>` tag with autoplay, muted, loop
+- [ ] Add dark overlay (rgba(0,0,0,0.5) or similar)
+- [ ] Fallback to static image if video unavailable
+- [ ] Mobile: Consider showing image instead (bandwidth)
+- [ ] Lazy load video for performance
+
+**Video Sources:**
+- Pull from @njstarselite_aau Instagram
+- Consider hosting on Cloudinary/S3 for reliability
+
+---
+
+### 4.10 Custom Products System 🔴 CRITICAL (Added Dec 9)
+
+**Time:** 3-5 days
+
+**Goal:** Allow coaches to create one-off custom products/invoices for private training, custom packages, etc.
+
+> **Full Requirements:** See [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-09.md#1-custom-productsservices-system--high-priority)
+
+**Use Case:**
+Client DMs coach for custom training → Coach creates invoice on platform → Client pays via Stripe → Coach gets paid (minus 5% platform fee)
+
+**Backend Implementation:**
+- [ ] Create `CustomProduct` model in `apps/payments/models.py`:
+  - coach (FK), title, description, price
+  - recipient_email, recipient_name (optional)
+  - slug (unique shareable code)
+  - status (active, paid, expired, cancelled)
+  - stripe_payment_intent_id, paid_at
+- [ ] Create `CustomProductPayment` model for payment records
+- [ ] DRF endpoints:
+  - `POST /api/custom-products/` (create - coach only)
+  - `GET /api/custom-products/` (list coach's products)
+  - `GET /api/custom-products/{slug}/` (public invoice data)
+  - `POST /api/custom-products/{slug}/checkout/` (Stripe session)
+- [ ] Webhook handler for custom product payments
+- [ ] Admin interface for viewing all custom products
+
+**Frontend Implementation:**
+- [ ] Public invoice page at `/pay/[slug]`:
+  - Coach photo and name
+  - Service title and description
+  - Price and Pay Now button
+  - Stripe Checkout integration
+- [ ] Success/cancelled redirect pages
+- [ ] (Future) Coach dashboard for creating invoices
+
+**Revenue Split:**
+- Platform: 5% of custom product sales
+- Coach: 95% of custom product sales
+
+---
+
+### 4.11 Nice-to-Have Features 🟢 LOW
 
 #### Social Features
 - Comment system on blog posts
@@ -710,6 +1127,57 @@ pip install sendgrid
 - Inventory alerts (low stock)
 - Wishlist
 - Gift cards
+
+#### 🎉 Checkout Success Celebration
+
+**Goal:** Add a fun, celebratory animation when a user successfully completes a merch purchase to create a positive emotional moment.
+
+**Implementation Options:**
+
+| Option | Library | Notes |
+|--------|---------|-------|
+| **Confetti Burst** | `canvas-confetti` | Lightweight (~3KB), no deps, easy to trigger |
+| **Lottie Animation** | `lottie-react` | More customizable, can use custom animations |
+| **CSS Keyframes** | Native | Zero deps, simple star/sparkle burst |
+
+**Recommended: Canvas Confetti**
+```bash
+npm install canvas-confetti
+```
+
+**Trigger Points:**
+- On `/checkout/success` page load (after Stripe redirect)
+- On successful order confirmation modal
+- On report card reward approval (tie into existing celebration mention)
+
+**UX Guidelines:**
+- Keep it brief (1-2 seconds max)
+- Don't block content - animation should overlay
+- Respect `prefers-reduced-motion` media query for accessibility
+- Use team colors (black/white/hot pink confetti) for brand consistency
+- Optional: Add a subtle sound effect (with user preference toggle)
+
+**Example Usage:**
+```typescript
+// On success page mount
+import confetti from 'canvas-confetti';
+
+useEffect(() => {
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#000000', '#FFFFFF', '#FF69B4'] // NJ Stars colors: black, white, hot pink
+  });
+}, []);
+```
+
+**Implementation Notes:**
+- [ ] Install `canvas-confetti` package
+- [ ] Create reusable `useCelebration` hook
+- [ ] Add to checkout success page
+- [ ] Add reduced motion check
+- [ ] Consider adding to other success moments (event registration, tryout signup)
 
 #### Team Management
 - Practice attendance tracking
@@ -773,28 +1241,36 @@ pip install sendgrid
 3. ✅ Wagtail CMS fully integrated with Next.js frontend
 4. ✅ News feed merges blog posts with Instagram
 5. ✅ Shop page with multi-select filters and product tags
-6. 🔴 Set up Stripe live mode API keys for production
-7. 🔴 Choose hosting providers (backend + frontend)
-8. 🔴 Set up production database
+6. ✅ Product Quick View modal implemented
+7. ✅ Hero section with CMS control
+8. 🔴 **Shopping Cart functionality** (see [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#7-shopping-cart-functionality-))
+9. 🔴 **Shop UX: Card = Quick View** (remove buttons from cards)
+10. 🔴 Set up Stripe live mode API keys for production
 
 ### This Month
-9. 🔴 Deploy backend to production
-10. 🔴 Deploy frontend to production
-11. 🔴 Configure Stripe webhooks for production
-12. 🟠 Add real content (products, blog posts, events) via Wagtail CMS
-13. 🟠 User acceptance testing
-14. 🚀 Launch!
+11. 🔴 **Tryout Registration Form Modal** (replace Google Form)
+12. 🔴 **Coach Management System** (add Tray, Coach Cee, Coach K)
+13. 🔴 Deploy backend to production
+14. 🔴 Deploy frontend to production
+15. 🔴 Configure Stripe webhooks for production
+16. 🟠 Add real content (products, blog posts, events) via Wagtail CMS
+17. 🟠 User acceptance testing
+18. 🚀 Launch!
 
 ### Next Month
-15. 🟡 Set up monitoring and analytics (Sentry, Google Analytics)
-16. 🟡 Implement email notifications (newsletter integration)
-17. 🟡 Add advanced admin features
-18. 🟡 Collect user feedback and iterate
+19. 🟠 **Coach Payout System** (Stripe Connect integration)
+20. 🟠 **Multi-Instagram Huddle** (connect multiple coach accounts)
+21. 🟡 **Hero Video Integration** (pull from Instagram)
+22. 🟡 Set up monitoring and analytics (Sentry, Google Analytics)
+23. 🟡 Implement email notifications (newsletter integration)
+24. 🟡 Add advanced admin features
+25. 🟡 Collect user feedback and iterate
 
 ### Quarter 2
-19. 📱 Start mobile app development
-20. 🟢 Add nice-to-have features
-21. 🟢 Marketing and growth
+26. 📱 Start mobile app development
+27. 🟢 Parent/Child Portal with multi-player management
+28. 🟢 Add nice-to-have features
+29. 🟢 Marketing and growth
 
 ---
 

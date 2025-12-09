@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.utils.text import slugify
+from django.utils import timezone
+from datetime import timedelta
 import secrets
 
 User = get_user_model()
@@ -346,3 +348,134 @@ class OrderItem(models.Model):
     def total_price(self):
         """Calculate total price for this line item"""
         return self.product_price * self.quantity
+
+
+class Cart(models.Model):
+    """Shopping cart for users and guests
+
+    Authenticated users: cart persisted in DB, linked to user
+    Guest users: cart tracked by session_key, can be merged on login
+    """
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cart',
+        null=True,
+        blank=True,
+        help_text="Authenticated user's cart"
+    )
+    session_key = models.CharField(
+        max_length=40,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Session key for guest carts"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            # Ensure cart has either user OR session_key, not both empty
+            models.CheckConstraint(
+                check=models.Q(user__isnull=False) | models.Q(session_key__isnull=False),
+                name='cart_must_have_owner'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['session_key']),
+            models.Index(fields=['updated_at']),
+        ]
+
+    def __str__(self):
+        if self.user:
+            return f"Cart for {self.user.email}"
+        return f"Guest Cart ({self.session_key[:8]}...)"
+
+    @property
+    def item_count(self):
+        """Total number of items in cart"""
+        return sum(item.quantity for item in self.items.all())
+
+    @property
+    def subtotal(self):
+        """Calculate cart subtotal"""
+        return sum(item.total_price for item in self.items.all())
+
+    def merge_from_guest_cart(self, guest_cart):
+        """Merge items from a guest cart into this user cart
+
+        Called when a guest user logs in and has items in their cart.
+        Items are added to existing quantities or created if new.
+        """
+        for guest_item in guest_cart.items.all():
+            existing_item = self.items.filter(product=guest_item.product).first()
+            if existing_item:
+                existing_item.quantity += guest_item.quantity
+                existing_item.save()
+            else:
+                CartItem.objects.create(
+                    cart=self,
+                    product=guest_item.product,
+                    quantity=guest_item.quantity
+                )
+        guest_cart.delete()
+
+    def clear(self):
+        """Remove all items from cart"""
+        self.items.all().delete()
+
+    @classmethod
+    def cleanup_expired_guest_carts(cls, days=7):
+        """Remove guest carts that haven't been updated in X days"""
+        cutoff = timezone.now() - timedelta(days=days)
+        expired = cls.objects.filter(
+            user__isnull=True,
+            updated_at__lt=cutoff
+        )
+        count = expired.count()
+        expired.delete()
+        return count
+
+
+class CartItem(models.Model):
+    """Individual items in a shopping cart"""
+
+    cart = models.ForeignKey(
+        Cart,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='cart_items'
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['cart', 'product']
+        ordering = ['-added_at']
+
+    def __str__(self):
+        return f"{self.quantity}x {self.product.name}"
+
+    @property
+    def total_price(self):
+        """Calculate total price for this cart item"""
+        return self.product.price * self.quantity
+
+    @property
+    def is_available(self):
+        """Check if product is still available and in stock"""
+        if not self.product.is_active:
+            return False
+        return self.product.in_stock
+
+    def save(self, *args, **kwargs):
+        # Update cart's updated_at timestamp
+        super().save(*args, **kwargs)
+        Cart.objects.filter(pk=self.cart_id).update(updated_at=timezone.now())

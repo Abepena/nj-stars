@@ -3,6 +3,7 @@ import { Hero } from "@/components/hero";
 import { LayoutShell } from "@/components/layout-shell";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { FeaturedMerch } from "@/components/featured-merch";
+import { CoachesSection } from "@/components/coaches-section";
 import { fetchHomePage } from "@/lib/wagtail-client";
 
 // Force dynamic rendering to avoid static generation issues
@@ -51,6 +52,9 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      {/* Coaches Section */}
+      <CoachesSection />
 
       {/* Newsletter Signup - from Wagtail CMS */}
       <NewsletterSignup

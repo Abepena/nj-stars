@@ -7,6 +7,8 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { MobileNav } from "@/components/mobile-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { CartDrawer } from "@/components/cart-drawer"
+import { useCart } from "@/lib/cart"
 import { ShoppingCart } from "lucide-react"
 
 const links = [
@@ -18,7 +20,11 @@ const links = [
 export function SiteHeader() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const { cart } = useCart()
   const [textLogo, setTextLogo] = useState("/brand/logos/Text Logo.svg")
+  const [cartOpen, setCartOpen] = useState(false)
+
+  const itemCount = cart?.item_count || 0
 
   // Update logo based on theme (client-side only to avoid SSR issues)
   useEffect(() => {
@@ -77,11 +83,19 @@ export function SiteHeader() {
           <ThemeToggle />
 
           {/* Shopping Cart */}
-          <Link href="/shop">
-            <Button variant="ghost" size="icon" className="group h-9 w-9">
-              <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="group relative h-9 w-9"
+            onClick={() => setCartOpen(true)}
+          >
+            <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
+            {itemCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+                {itemCount > 99 ? '99+' : itemCount}
+              </span>
+            )}
+          </Button>
 
           {/* Sign In or Portal */}
           {!session ? (
@@ -105,11 +119,19 @@ export function SiteHeader() {
           <ThemeToggle />
 
           {/* Shopping Cart */}
-          <Link href="/shop">
-            <Button variant="ghost" size="icon" className="group h-9 w-9">
-              <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="group relative h-9 w-9"
+            onClick={() => setCartOpen(true)}
+          >
+            <ShoppingCart className="h-5 w-5 text-primary transition-colors group-hover:text-foreground" />
+            {itemCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+                {itemCount > 99 ? '99+' : itemCount}
+              </span>
+            )}
+          </Button>
 
           {/* Sign In Link - only show if not authenticated */}
           {!session && (
@@ -124,6 +146,9 @@ export function SiteHeader() {
           <MobileNav />
         </div>
       </div>
+
+      {/* Cart Drawer */}
+      <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
     </nav>
   )
 }

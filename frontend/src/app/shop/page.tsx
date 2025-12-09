@@ -2,18 +2,15 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
 import { Card, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { CheckoutButton } from "@/components/checkout-button"
+import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/page-header"
 import { LayoutShell } from "@/components/layout-shell"
 import { ErrorMessage } from "@/components/error-message"
-import { LoadingSpinner } from "@/components/loading-spinner"
 import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleton"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { ProductQuickView } from "@/components/product-quick-view"
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react"
+import { FilterSidebar, type FilterCategory } from "@/components/filter-sidebar"
 
 interface Product {
   id: number
@@ -27,6 +24,8 @@ interface Product {
   category: string
   in_stock: boolean
   featured: boolean
+  best_selling?: boolean
+  on_sale?: boolean
 }
 
 // Helper function for category colors
@@ -34,99 +33,52 @@ function getCategoryColor(category: string, isActive: boolean = false) {
   const colors: Record<string, { active: string; inactive: string }> = {
     jersey: {
       active: "bg-accent/15 text-accent border border-accent/30",
-      inactive: "bg-accent/5 text-accent/50 border border-accent/10"
+      inactive: "bg-accent/5 text-accent/70 border border-accent/20 hover:bg-accent/10"
     },
     apparel: {
       active: "bg-secondary/15 text-secondary border border-secondary/30",
-      inactive: "bg-secondary/5 text-secondary/50 border border-secondary/10"
+      inactive: "bg-secondary/5 text-secondary/70 border border-secondary/20 hover:bg-secondary/10"
     },
     accessories: {
       active: "bg-tertiary/15 text-tertiary border border-tertiary/30",
-      inactive: "bg-tertiary/5 text-tertiary/50 border border-tertiary/10"
+      inactive: "bg-tertiary/5 text-tertiary/70 border border-tertiary/20 hover:bg-tertiary/10"
     },
     equipment: {
       active: "bg-info/15 text-info border border-info/30",
-      inactive: "bg-info/5 text-info/50 border border-info/10"
+      inactive: "bg-info/5 text-info/70 border border-info/20 hover:bg-info/10"
     },
   }
   const colorSet = colors[category] || { active: "bg-muted text-muted-foreground border border-border", inactive: "bg-muted/30 text-muted-foreground/50 border border-border/30" }
   return isActive ? colorSet.active : colorSet.inactive
 }
 
-// Product Card with Image Carousel
-function ProductCard({ product }: { product: Product }) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [quickViewOpen, setQuickViewOpen] = useState(false)
-
-  // Generate multiple placeholder images for carousel
-  const productImages = [
-    product.image_url,
-    `${product.image_url}&seed=1`,
-    `${product.image_url}&seed=2`,
-  ]
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % productImages.length)
-  }
-
-  const previousImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
-  }
+// Product Card - entire card is clickable to open QuickView
+function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
+  const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
 
   return (
-    <>
-      <Card className="overflow-hidden flex flex-col h-auto md:h-[540px] group">
-      {/* Image Carousel - responsive aspect ratio */}
-      <div className="relative w-full aspect-[4/3] md:h-[432px] md:aspect-auto">
-        {productImages[currentImageIndex] ? (
-          <>
-            <Image
-              src={productImages[currentImageIndex]}
-              alt={product.name}
-              fill
-              className="object-cover"
-            />
-            {/* Quick View Button - appears on hover */}
-            <button
-              onClick={() => setQuickViewOpen(true)}
-              className="absolute top-4 right-4 bg-background/90 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-              aria-label={`Quick view ${product.name}`}
-            >
-              <Eye className="w-5 h-5" />
-            </button>
-            {/* Carousel Controls */}
-            {productImages.length > 1 && (
-              <>
-                <button
-                  onClick={previousImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                  aria-label="Next image"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-                {/* Image Indicators */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                  {productImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentImageIndex ? 'bg-background' : 'bg-background/50'
-                      }`}
-                      aria-label={`View image ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </>
+    <Card
+      className="overflow-hidden flex flex-col h-auto cursor-pointer group transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      aria-label={`View ${product.name} - $${parseFloat(product.price).toFixed(2)}`}
+    >
+      {/* Image */}
+      <div className="relative w-full aspect-square overflow-hidden">
+        {product.image_url ? (
+          <Image
+            src={product.image_url}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+          />
         ) : (
           <div className="h-full w-full bg-muted flex items-center justify-center p-8 relative">
             <Image
@@ -137,59 +89,60 @@ function ProductCard({ product }: { product: Product }) {
             />
           </div>
         )}
+
+        {/* Tags overlay */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+          {product.featured && (
+            <Badge className="bg-primary text-primary-foreground text-xs">Featured</Badge>
+          )}
+          {product.best_selling && (
+            <Badge className="bg-secondary text-secondary-foreground text-xs">Best Seller</Badge>
+          )}
+          {hasDiscount && (
+            <Badge className="bg-accent text-accent-foreground text-xs">Sale</Badge>
+          )}
+        </div>
+
+        {/* Out of stock overlay */}
+        {product.stock_quantity === 0 && (
+          <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+            <span className="text-lg font-semibold text-muted-foreground">Out of Stock</span>
+          </div>
+        )}
       </div>
 
-      {/* Content - 20% of card */}
+      {/* Content */}
       <div className="flex flex-col flex-1 p-4">
-        <div className="flex items-start justify-between mb-2">
-          <CardTitle className="text-base line-clamp-1 flex-1">{product.name}</CardTitle>
-          <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${getCategoryColor(product.category, true)}`}>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <CardTitle className="text-base line-clamp-2 flex-1 group-hover:text-primary transition-colors">
+            {product.name}
+          </CardTitle>
+        </div>
+
+        <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold">
+              ${parseFloat(product.price).toFixed(2)}
+            </span>
+            {hasDiscount && (
+              <span className="text-sm text-muted-foreground line-through">
+                ${parseFloat(product.compare_at_price!).toFixed(2)}
+              </span>
+            )}
+          </div>
+          <span className={`px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider ${getCategoryColor(product.category, true)}`}>
             {product.category}
           </span>
         </div>
 
-        <div className="flex items-center justify-between mt-auto">
-          <p className="text-xl font-bold">
-            ${parseFloat(product.price).toFixed(2)}
+        {/* Low stock warning */}
+        {product.stock_quantity > 0 && product.stock_quantity < 10 && (
+          <p className="text-xs text-warning mt-2">
+            Only {product.stock_quantity} left!
           </p>
-          {product.stock_quantity < 10 && product.stock_quantity > 0 && (
-            <p className="text-xs text-orange-600">
-              {product.stock_quantity} left
-            </p>
-          )}
-        </div>
-
-        <div className="mt-2 space-y-2">
-          {product.stock_quantity > 0 ? (
-            <CheckoutButton
-              productId={product.id}
-              productName={product.name}
-              price={parseFloat(product.price)}
-            />
-          ) : (
-            <Button disabled className="w-full text-accent">
-              Out of Stock
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full"
-            onClick={() => setQuickViewOpen(true)}
-          >
-            Quick View
-          </Button>
-        </div>
+        )}
       </div>
     </Card>
-
-      {/* Quick View Modal */}
-      <ProductQuickView
-        product={product}
-        open={quickViewOpen}
-        onOpenChange={setQuickViewOpen}
-      />
-    </>
   )
 }
 
@@ -200,6 +153,7 @@ export default function ShopPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null)
 
   useEffect(() => {
     async function fetchProducts() {
@@ -247,11 +201,22 @@ export default function ShopPage() {
     setFilteredProducts(filtered)
   }, [searchQuery, selectedCategories, products])
 
-  const categories = [
-    { value: "jersey", label: "Jersey" },
-    { value: "apparel", label: "Apparel" },
-    { value: "accessories", label: "Accessories" },
-    { value: "equipment", label: "Equipment" },
+  // Calculate category counts
+  const getCategoryCounts = () => {
+    const counts: Record<string, number> = {}
+    products.forEach(product => {
+      counts[product.category] = (counts[product.category] || 0) + 1
+    })
+    return counts
+  }
+
+  const categoryCounts = getCategoryCounts()
+
+  const categories: FilterCategory[] = [
+    { value: "jersey", label: "Jerseys", count: categoryCounts["jersey"] || 0 },
+    { value: "apparel", label: "Apparel", count: categoryCounts["apparel"] || 0 },
+    { value: "accessories", label: "Accessories", count: categoryCounts["accessories"] || 0 },
+    { value: "equipment", label: "Equipment", count: categoryCounts["equipment"] || 0 },
   ]
 
   const toggleCategory = (category: string) => {
@@ -262,6 +227,11 @@ export default function ShopPage() {
     )
   }
 
+  const clearFilters = () => {
+    setSelectedCategories([])
+    setSearchQuery("")
+  }
+
   return (
     <LayoutShell>
       <PageHeader
@@ -269,7 +239,7 @@ export default function ShopPage() {
         subtitle="Show your NJ Stars pride with official team merchandise."
       />
 
-      <section className="py-16">
+      <section className="py-8">
         <div className="container mx-auto px-4">
           <Breadcrumbs
             items={[
@@ -277,91 +247,69 @@ export default function ShopPage() {
               { label: "Shop" },
             ]}
           />
-          {/* Search and Filter */}
-          <div className="max-w-4xl mx-auto mb-8 space-y-4">
-            <div>
-              <label htmlFor="shop-search" className="sr-only">
-                Search products
-              </label>
-              <Input
-                id="shop-search"
-                type="text"
-                placeholder="Search products by name or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </div>
 
-            <div className="flex flex-wrap gap-2 items-center">
-              {categories.map((category) => {
-                const isActive = selectedCategories.includes(category.value)
-                return (
-                  <button
-                    key={category.value}
-                    onClick={() => toggleCategory(category.value)}
-                    className={`min-h-[44px] min-w-[44px] px-4 py-2 rounded text-sm font-semibold uppercase tracking-wider transition-all duration-200 ease-in-out hover:scale-105 inline-flex items-center justify-center ${getCategoryColor(
-                      category.value,
-                      isActive
-                    )}`}
-                    aria-label={`Filter by ${category.label}`}
-                    aria-pressed={isActive}
-                  >
-                    {category.label}
-                  </button>
-                )
-              })}
-              {(selectedCategories.length > 0 || searchQuery) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedCategories([])
-                    setSearchQuery("")
-                  }}
-                  className="min-h-[44px]"
-                >
-                  Clear Filters ({selectedCategories.length + (searchQuery ? 1 : 0)})
-                </Button>
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sticky Sidebar Filters */}
+            <FilterSidebar
+              title="Filters"
+              searchPlaceholder="Search products..."
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              categories={categories}
+              selectedCategories={selectedCategories}
+              onCategoryToggle={toggleCategory}
+              onClearFilters={clearFilters}
+              totalCount={products.length}
+              filteredCount={filteredProducts.length}
+              getCategoryColor={getCategoryColor}
+            />
+
+            {/* Products Grid */}
+            <main className="flex-1">
+              {error && (
+                <div className="mb-8">
+                  <ErrorMessage error={error} />
+                </div>
               )}
-            </div>
 
-            {searchQuery || selectedCategories.length > 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredProducts.length} of {products.length} products
-              </p>
-            ) : null}
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <ProductCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : !error && filteredProducts.length === 0 ? (
+                <div className="text-center py-16">
+                  <p className="text-xl text-muted-foreground">
+                    {searchQuery || selectedCategories.length > 0
+                      ? "No products match your search criteria."
+                      : "No products available at the moment. Check back soon!"}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onClick={() => setQuickViewProduct(product)}
+                    />
+                  ))}
+                </div>
+              )}
+            </main>
           </div>
-
-          {error && (
-            <div className="max-w-4xl mx-auto mb-8">
-              <ErrorMessage error={error} />
-            </div>
-          )}
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <ProductCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : !error && filteredProducts.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-xl text-muted-foreground">
-                {searchQuery || selectedCategories.length > 0
-                  ? "No products match your search criteria."
-                  : "No products available at the moment. Check back soon!"}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
         </div>
       </section>
+
+      {/* Quick View Modal */}
+      {quickViewProduct && (
+        <ProductQuickView
+          product={quickViewProduct}
+          open={!!quickViewProduct}
+          onOpenChange={(open) => !open && setQuickViewProduct(null)}
+        />
+      )}
     </LayoutShell>
   )
 }

@@ -59,6 +59,23 @@ export interface Event {
   max_participants?: number
 }
 
+export interface Coach {
+  id: number
+  name: string
+  display_name: string
+  slug: string
+  role: string
+  title: string
+  bio: string
+  photo_url: string
+  instagram_handle: string
+  instagram_url: string | null
+  specialties: string
+  specialties_list: string[]
+  is_active: boolean
+  order: number
+}
+
 export interface LoginCredentials {
   email: string
   password: string
@@ -291,6 +308,22 @@ class APIClient {
    */
   async getEvent(id: number): Promise<Event> {
     return this.request<Event>(`/api/v1/events/${id}`)
+  }
+
+  // ==================== Coaches ====================
+
+  /**
+   * Get all active coaches
+   */
+  async getCoaches(): Promise<{ results: Coach[] }> {
+    return this.request<{ results: Coach[] }>('/api/coaches/')
+  }
+
+  /**
+   * Get single coach by slug
+   */
+  async getCoach(slug: string): Promise<Coach> {
+    return this.request<Coach>(`/api/coaches/${slug}/`)
   }
 
   // ==================== Stripe ====================
