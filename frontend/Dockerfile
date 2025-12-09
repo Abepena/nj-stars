@@ -10,9 +10,10 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json ./
+COPY package-lock.json ./
 
-# Install dependencies (no lockfile present)
-RUN npm install
+# Install dependencies using lockfile for reproducibility
+RUN npm ci
 
 # Stage 2: Builder
 FROM node:18-alpine AS builder

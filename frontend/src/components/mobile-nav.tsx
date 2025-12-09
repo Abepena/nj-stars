@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Menu } from "lucide-react"
+import { Menu, Sun, Moon } from "lucide-react"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -23,12 +24,15 @@ export function MobileNav() {
   const [open, setOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [textLogo, setTextLogo] = useState("/brand/logos/Text Logo.svg")
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme()
 
   // Only render this nav on small screens to avoid off-canvas overflow on desktop
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
     handleResize()
+    setMounted(true)
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
@@ -87,18 +91,37 @@ export function MobileNav() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className={`text-lg font-medium hover:text-primary transition-colors py-2 ${
-                  isActive ? "border-b-2 border-primary" : ""
-                }`}
+                className="text-lg font-medium hover:text-primary transition-colors py-2"
               >
-                {link.label}
+                <span className={isActive ? "border-b-2 border-primary pb-0.5" : ""}>
+                  {link.label}
+                </span>
               </Link>
             )
           })}
+
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex items-center justify-between w-full py-2 text-lg font-medium hover:text-primary transition-colors"
+          >
+            <span>{mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+            {mounted && (
+              theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )
+            )}
+          </button>
+
           <div className="pt-4 border-t border-border">
             <Link href="/portal/login" onClick={() => setOpen(false)}>
-              <Button className="bg-gradient-to-br from-foreground/40 to-primary text-background font-semibold w-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
-                Portal Login
+              <Button
+                variant="ghost"
+                className="w-full text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out"
+              >
+                Sign In
               </Button>
             </Link>
           </div>

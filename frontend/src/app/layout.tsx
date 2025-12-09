@@ -46,6 +46,25 @@ export const metadata: Metadata = {
   },
 }
 
+// Script to prevent theme flash - runs before React hydration
+const themeScript = `
+  (function() {
+    try {
+      var theme = localStorage.getItem('nj-stars-theme');
+      if (theme === 'light' || theme === 'dark') {
+        document.documentElement.classList.add(theme);
+      } else if (theme === 'system') {
+        var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.classList.add(systemTheme);
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    } catch (e) {
+      document.documentElement.classList.add('dark');
+    }
+  })();
+`
+
 export default function RootLayout({
   children,
 }: {
@@ -53,6 +72,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>
           {children}

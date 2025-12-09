@@ -4,7 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 from apps.events.models import Event, EventType
 from apps.payments.models import SubscriptionPlan, Product
-from apps.core.models import InstagramPost
+from apps.core.models import Coach, InstagramPost
 
 
 class Command(BaseCommand):
@@ -21,6 +21,9 @@ class Command(BaseCommand):
 
         # Create Products
         self.create_products()
+
+        # Create Coaches
+        self.create_coaches()
 
         # Create Instagram Posts
         self.create_instagram_posts()
@@ -198,88 +201,276 @@ class Command(BaseCommand):
     def create_products(self):
         self.stdout.write('Creating products...')
 
+        # Better Unsplash images - actual basketball jerseys and apparel
         products = [
             {
-                'name': 'NJ Stars Practice Jersey - Black',
+                'name': 'Game Jersey - Black',
+                'slug': 'game-jersey-black',
+                'description': 'Official game jersey in black. Premium moisture-wicking fabric with sublimated team logo and numbers. Built for competition.',
+                'price': Decimal('65.00'),
+                'compare_at_price': Decimal('75.00'),
+                'category': 'jersey',
+                # Black basketball jersey
+                'image_url': 'https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 50,
+                'featured': True,
+                'best_selling': True,
+                'on_sale': True,
+            },
+            {
+                'name': 'Game Jersey - White',
+                'slug': 'game-jersey-white',
+                'description': 'Official game jersey in white. Premium moisture-wicking fabric with sublimated team logo and numbers. Away game ready.',
+                'price': Decimal('65.00'),
+                'category': 'jersey',
+                # White basketball jersey on court
+                'image_url': 'https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 45,
+                'featured': True,
+                'best_selling': False,
+                'on_sale': False,
+            },
+            {
+                'name': 'Practice Jersey',
                 'slug': 'practice-jersey-black',
-                'description': 'Official NJ Stars Elite practice jersey in black. Moisture-wicking performance fabric with team logo.',
+                'description': 'Lightweight practice jersey in black. Breathable mesh fabric perfect for training sessions.',
                 'price': Decimal('35.00'),
-                'category': 'apparel',
-                'image_url': 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800',
+                'category': 'jersey',
+                # Basketball practice jersey
+                'image_url': 'https://images.unsplash.com/photo-1518063319789-7217e6706b04?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 100,
+                'featured': False,
+                'best_selling': True,
+                'on_sale': False,
             },
             {
-                'name': 'NJ Stars Practice Jersey - White',
-                'slug': 'practice-jersey-white',
-                'description': 'Official NJ Stars Elite practice jersey in white. Moisture-wicking performance fabric with team logo.',
-                'price': Decimal('35.00'),
-                'category': 'apparel',
-                'image_url': 'https://images.unsplash.com/photo-1622445275576-721325763afe?w=800',
-                'is_active': True,
-                'stock_quantity': 100,
-            },
-            {
-                'name': 'NJ Stars Warm-Up Hoodie',
+                'name': 'Warm-Up Hoodie',
                 'slug': 'warmup-hoodie',
-                'description': 'Premium warm-up hoodie with embroidered NJ Stars logo. Perfect for pre-game or casual wear.',
+                'description': 'Premium heavyweight hoodie with embroidered logo. Kangaroo pocket, drawstring hood. Perfect for pre-game warmups or casual wear.',
                 'price': Decimal('55.00'),
                 'category': 'apparel',
+                # Black hoodie
                 'image_url': 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 75,
+                'featured': True,
+                'best_selling': True,
+                'on_sale': False,
             },
             {
-                'name': 'NJ Stars Shorts - Black',
-                'slug': 'shorts-black',
-                'description': 'Performance basketball shorts with NJ Stars branding. Lightweight and breathable.',
-                'price': Decimal('30.00'),
+                'name': 'Performance Shorts',
+                'slug': 'performance-shorts',
+                'description': 'Elite performance basketball shorts with team branding. 9" inseam, side pockets, moisture-wicking fabric.',
+                'price': Decimal('40.00'),
+                'compare_at_price': Decimal('45.00'),
                 'category': 'apparel',
-                'image_url': 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800',
+                # Basketball shorts
+                'image_url': 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 120,
+                'featured': False,
+                'best_selling': False,
+                'on_sale': True,
             },
             {
-                'name': 'NJ Stars Dad Hat',
-                'slug': 'dad-hat',
-                'description': 'Adjustable dad hat with embroidered NJ Stars logo. Classic fit.',
-                'price': Decimal('25.00'),
+                'name': 'Training T-Shirt',
+                'slug': 'training-tshirt',
+                'description': 'Lightweight training t-shirt with wordmark logo. Dri-fit technology keeps you cool during intense workouts.',
+                'price': Decimal('28.00'),
+                'category': 'apparel',
+                # Athletic t-shirt
+                'image_url': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 90,
+                'featured': False,
+                'best_selling': False,
+                'on_sale': False,
+            },
+            {
+                'name': 'Snapback Cap',
+                'slug': 'snapback-cap',
+                'description': 'Classic snapback cap with embroidered logo. Adjustable fit, flat brim, structured crown.',
+                'price': Decimal('30.00'),
                 'category': 'accessories',
-                'image_url': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800',
+                # Black snapback cap
+                'image_url': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 50,
+                'featured': True,
+                'best_selling': False,
+                'on_sale': False,
             },
             {
-                'name': 'NJ Stars Water Bottle',
+                'name': 'Insulated Water Bottle',
                 'slug': 'water-bottle',
-                'description': '32oz insulated water bottle with NJ Stars Elite graphics. Keeps drinks cold for 24 hours.',
-                'price': Decimal('20.00'),
+                'description': '32oz double-wall insulated stainless steel water bottle. Keeps drinks cold 24hrs, hot 12hrs.',
+                'price': Decimal('25.00'),
                 'category': 'accessories',
-                'image_url': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800',
+                # Sports water bottle
+                'image_url': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 60,
+                'featured': False,
+                'best_selling': True,
+                'on_sale': False,
             },
             {
-                'name': 'NJ Stars Backpack',
+                'name': 'Team Backpack',
                 'slug': 'team-backpack',
-                'description': 'Spacious team backpack with multiple compartments. Perfect for practice gear and school.',
-                'price': Decimal('45.00'),
+                'description': 'Spacious team backpack with laptop sleeve, shoe compartment, and multiple pockets. Durable construction.',
+                'price': Decimal('55.00'),
+                'compare_at_price': Decimal('65.00'),
                 'category': 'accessories',
-                'image_url': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800',
+                # Sports backpack
+                'image_url': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 40,
+                'featured': True,
+                'best_selling': False,
+                'on_sale': True,
+            },
+            {
+                'name': 'Official Basketball',
+                'slug': 'team-basketball',
+                'description': 'Official composite leather basketball. Indoor/outdoor use. Regulation size 7 (29.5"). Great for practice and games.',
+                'price': Decimal('35.00'),
+                'category': 'equipment',
+                # Basketball close-up
+                'image_url': 'https://images.unsplash.com/photo-1494199505258-5f95387f933c?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 30,
+                'featured': False,
+                'best_selling': True,
+                'on_sale': False,
+            },
+            {
+                'name': 'Compression Sleeve',
+                'slug': 'compression-sleeve',
+                'description': 'Performance arm compression sleeve. Provides muscle support and UV protection. Sold as single.',
+                'price': Decimal('18.00'),
+                'category': 'equipment',
+                # Arm sleeve / sports gear
+                'image_url': 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 80,
+                'featured': False,
+                'best_selling': False,
+                'on_sale': False,
+            },
+            {
+                'name': 'Travel Duffle Bag',
+                'slug': 'travel-duffle-bag',
+                'description': 'Large capacity team duffle bag with separate shoe compartment. Water-resistant fabric with adjustable shoulder strap.',
+                'price': Decimal('75.00'),
+                'compare_at_price': Decimal('85.00'),
+                'category': 'accessories',
+                # Duffle bag
+                'image_url': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 35,
+                'featured': True,
+                'best_selling': False,
+                'on_sale': True,
+            },
+            {
+                'name': 'Reversible Practice Jersey',
+                'slug': 'reversible-practice-jersey',
+                'description': 'Two jerseys in one! Reversible mesh practice jersey with black on one side and white on the other. Perfect for scrimmages.',
+                'price': Decimal('45.00'),
+                'category': 'jersey',
+                # Reversible jersey
+                'image_url': 'https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 60,
+                'featured': True,
+                'best_selling': True,
+                'on_sale': False,
+            },
+            # TEST PRODUCT - $0.50 minimum for Stripe checkout testing
+            {
+                'name': '[TEST] Checkout Test Item',
+                'slug': 'test-checkout-item',
+                'description': 'This is a $0.50 test product for testing the checkout flow. Do not purchase unless testing.',
+                'price': Decimal('0.50'),
+                'category': 'equipment',
+                'image_url': '',
+                'is_active': True,
+                'stock_quantity': 999,
+                'featured': False,
+                'best_selling': False,
+                'on_sale': False,
             },
         ]
 
         for product_data in products:
-            product, created = Product.objects.get_or_create(
+            product, created = Product.objects.update_or_create(
                 slug=product_data['slug'],
                 defaults=product_data
             )
             if created:
                 self.stdout.write(f'  Created: {product.name}')
             else:
-                self.stdout.write(f'  Exists: {product.name}')
+                self.stdout.write(f'  Updated: {product.name}')
+
+    def create_coaches(self):
+        self.stdout.write('Creating coaches...')
+
+        # Real coach data from NJ Stars Elite
+        # photo_url left empty - frontend will show placeholder avatar icon
+        coaches = [
+            {
+                'name': 'Trajan Chapman',
+                'display_name': 'Tray',
+                'slug': 'trajan-chapman',
+                'role': 'head_coach',
+                'title': 'Head Coach & Trainer',
+                'bio': 'Trajan "Tray" Chapman is the head coach and lead trainer for NJ Stars Elite. With years of experience in player development and competitive coaching, Tray brings an intense focus on fundamentals, basketball IQ, and mental toughness to every session.',
+                'photo_url': '',
+                'instagram_handle': 'traygotbounce',
+                'specialties': 'player development, ball handling, shooting mechanics, defensive fundamentals',
+                'is_active': True,
+                'order': 1,
+            },
+            {
+                'name': 'Chris Morales',
+                'display_name': 'Coach Cee',
+                'slug': 'chris-morales',
+                'role': 'skills_coach',
+                'title': 'Skills Clinic Coach',
+                'bio': 'Coach Cee specializes in skills development clinics and individual training. His approach focuses on building confidence through repetition and breaking down complex moves into learnable steps.',
+                'photo_url': '',
+                'instagram_handle': 'coach.cee',
+                'specialties': 'skills clinics, individual training, footwork, finishing',
+                'is_active': True,
+                'order': 2,
+            },
+            {
+                'name': 'Kenneth Andrade',
+                'display_name': 'Coach K',
+                'slug': 'kenneth-andrade',
+                'role': 'founder',
+                'title': 'Founder & Coach',
+                'bio': 'Kenneth "Coach K" Andrade is the founder of NJ Stars Elite AAU Basketball. His vision to create an elite youth basketball program in New Jersey has grown into a thriving organization that develops both athletes and young people.',
+                'photo_url': '',
+                'instagram_handle': 'kenny_164',
+                'specialties': 'program development, team strategy, leadership, community building',
+                'is_active': True,
+                'order': 3,
+            },
+        ]
+
+        for coach_data in coaches:
+            coach, created = Coach.objects.get_or_create(
+                slug=coach_data['slug'],
+                defaults=coach_data
+            )
+            if created:
+                self.stdout.write(f'  Created: {coach.display_name}')
+            else:
+                self.stdout.write(f'  Exists: {coach.display_name}')
 
     def create_instagram_posts(self):
         self.stdout.write('Creating Instagram posts...')

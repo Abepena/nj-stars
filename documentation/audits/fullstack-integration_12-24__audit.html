@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Stars Full-Stack Integration Audit | December 2024</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #666666;
+            --accent: #ff69b4;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --border: #2a2a2a;
+            --card-bg: #161616;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .meta {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Executive Summary */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card.success .number { color: var(--success); }
+        .stat-card.warning .number { color: var(--warning); }
+        .stat-card.error .number { color: var(--error); }
+        .stat-card.info .number { color: var(--info); }
+        .stat-card.accent .number { color: var(--accent); }
+
+        /* Health Score */
+        .health-score {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(var(--success) 0% 78%, var(--border) 78% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .score-circle::before {
+            content: '';
+            width: 120px;
+            height: 120px;
+            background: var(--card-bg);
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .score-circle span {
+            position: relative;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .score-details h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-details p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .score-breakdown {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .breakdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .breakdown-item .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .breakdown-item .dot.green { background: var(--success); }
+        .breakdown-item .dot.yellow { background: var(--warning); }
+        .breakdown-item .dot.red { background: var(--error); }
+        .breakdown-item .dot.gray { background: var(--text-tertiary); }
+
+        /* Section Headers */
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+            display: inline-block;
+        }
+
+        .section h3 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 1.5rem 0 1rem;
+        }
+
+        /* Integration Matrix Table */
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .matrix-table th,
+        .matrix-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .matrix-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .matrix-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .matrix-table tr:hover {
+            background: rgba(255, 105, 180, 0.05);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.connected {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+        }
+
+        .status-badge.partial {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .status-badge.missing {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+
+        .status-badge.none {
+            background: rgba(102, 102, 102, 0.15);
+            color: var(--text-tertiary);
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .priority-badge.p0 { background: var(--error); color: white; }
+        .priority-badge.p1 { background: var(--warning); color: black; }
+        .priority-badge.p2 { background: var(--info); color: white; }
+        .priority-badge.p3 { background: var(--text-tertiary); color: white; }
+
+        /* Feature Cards */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .feature-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .feature-card .description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-top: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .feature-card .status-row:first-of-type {
+            border-top: none;
+        }
+
+        .feature-card .status-label {
+            color: var(--text-secondary);
+        }
+
+        /* API Coverage */
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .api-endpoint {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .api-endpoint .method {
+            font-family: monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .api-endpoint .method.get { background: #22c55e33; color: var(--success); }
+        .api-endpoint .method.post { background: #3b82f633; color: var(--info); }
+        .api-endpoint .method.patch { background: #f59e0b33; color: var(--warning); }
+        .api-endpoint .method.delete { background: #ef444433; color: var(--error); }
+
+        .api-endpoint .path {
+            font-family: monospace;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .api-endpoint .consumer {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Critical Issues */
+        .issues-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .issue-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--error);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+        }
+
+        .issue-item.warning {
+            border-left-color: var(--warning);
+        }
+
+        .issue-item.info {
+            border-left-color: var(--info);
+        }
+
+        .issue-item h4 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issue-item p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .issue-item code {
+            background: var(--bg-tertiary);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--accent);
+        }
+
+        /* Collapsible */
+        details {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        details summary {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        details summary:hover {
+            background: rgba(255, 105, 180, 0.05);
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid var(--border);
+        }
+
+        details .content {
+            padding: 1.5rem;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .card, .stat-card, .feature-card, .api-endpoint, .issue-item, details {
+                break-inside: avoid;
+                border: 1px solid #ddd;
+            }
+
+            .status-badge, .priority-badge {
+                border: 1px solid currentColor;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.75rem;
+            }
+
+            .health-score {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .score-breakdown {
+                justify-content: center;
+            }
+
+            .meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Full-Stack Integration Audit</h1>
+            <p>NJ Stars Elite AAU Platform</p>
+            <div class="meta">
+                <span>Generated: December 9, 2024</span>
+                <span>Frontend: Next.js 14</span>
+                <span>Backend: Django 5.0 + Wagtail 7.2</span>
+            </div>
+        </header>
+
+        <!-- Executive Summary -->
+        <section class="section">
+            <h2>Executive Summary</h2>
+            <div class="summary-grid">
+                <div class="stat-card info">
+                    <div class="number">9</div>
+                    <div class="label">Pages</div>
+                </div>
+                <div class="stat-card accent">
+                    <div class="number">35</div>
+                    <div class="label">Components</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="number">26</div>
+                    <div class="label">API Endpoints</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="number">14</div>
+                    <div class="label">Django Models</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="number">6</div>
+                    <div class="label">Integration Gaps</div>
+                </div>
+                <div class="stat-card error">
+                    <div class="number">3</div>
+                    <div class="label">Critical Bugs</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Health Score -->
+        <section class="health-score">
+            <div class="score-circle">
+                <span>78%</span>
+            </div>
+            <div class="score-details">
+                <h2>Integration Health Score</h2>
+                <p>The platform has strong core integrations with shopping cart, products, events, and CMS working well. Key gaps exist in event registration flow, newsletter subscriptions, and portal dashboard data.</p>
+                <div class="score-breakdown">
+                    <div class="breakdown-item">
+                        <span class="dot green"></span>
+                        <span>14 Fully Connected</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="dot yellow"></span>
+                        <span>4 Partial Integration</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="dot red"></span>
+                        <span>6 Missing Integration</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="dot gray"></span>
+                        <span>11 UI Only (No API)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Critical Issues -->
+        <section class="section">
+            <h2>Critical Issues</h2>
+            <div class="issues-list">
+                <div class="issue-item">
+                    <h4><span class="priority-badge p0">P0</span> Quick View Missing Variant Selection</h4>
+                    <p>ProductQuickView modal has NO size/color selection. Users can add products without specifying variants, leading to incorrect orders. Most customers use Quick View over detail page.</p>
+                    <p><strong>File:</strong> <code>components/product-quick-view.tsx</code></p>
+                    <p><strong>Fix:</strong> Add size dropdown and color swatches from <code>VARIANT_CONFIGS</code>, pass selected variants to <code>addToBag()</code></p>
+                </div>
+                <div class="issue-item">
+                    <h4><span class="priority-badge p0">P0</span> Hardcoded API URLs</h4>
+                    <p>Two components use hardcoded <code>http://localhost:8000</code> instead of environment variable. This will break in production.</p>
+                    <p><strong>Files:</strong> <code>shop/page.tsx:223</code>, <code>checkout-button.tsx:30</code></p>
+                    <p><strong>Fix:</strong> Replace with <code>process.env.NEXT_PUBLIC_API_URL</code></p>
+                </div>
+                <div class="issue-item warning">
+                    <h4><span class="priority-badge p1">P1</span> Product Variants Not Persisted</h4>
+                    <p>Size and color selection UI is complete on product detail page, but selected variants are not saved with cart items.</p>
+                    <p><strong>File:</strong> <code>shop/[slug]/page.tsx</code></p>
+                    <p><strong>Fix:</strong> Extend CartItem model and API to include <code>selected_size</code> and <code>selected_color</code></p>
+                </div>
+                <div class="issue-item warning">
+                    <h4><span class="priority-badge p1">P1</span> Portal Dashboard Mock Data</h4>
+                    <p>Dashboard shows hardcoded stats (3 events, 5 announcements) instead of real user data.</p>
+                    <p><strong>File:</strong> <code>portal/dashboard/page.tsx</code></p>
+                    <p><strong>Fix:</strong> Create API endpoints for user stats, upcoming events, and announcements</p>
+                </div>
+                <div class="issue-item info">
+                    <h4><span class="priority-badge p2">P2</span> Event Registration Flow Missing</h4>
+                    <p>Events page shows "Register" buttons but no registration modal or checkout flow is implemented.</p>
+                    <p><strong>Backend:</strong> <code>/api/events/registrations/</code> endpoint exists</p>
+                    <p><strong>Fix:</strong> Create registration modal component connecting to existing API</p>
+                </div>
+                <div class="issue-item info">
+                    <h4><span class="priority-badge p2">P2</span> Newsletter Not Integrated</h4>
+                    <p>NewsletterSignup component exists but has no backend integration.</p>
+                    <p><strong>Fix:</strong> Create <code>POST /api/newsletter/subscribe</code> endpoint</p>
+                </div>
+                <div class="issue-item info">
+                    <h4><span class="priority-badge p2">P2</span> API Client Underutilized</h4>
+                    <p>Centralized <code>api-client.ts</code> is defined but most components make direct fetch() calls instead.</p>
+                    <p><strong>Fix:</strong> Refactor components to use apiClient singleton for consistency</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Component Integration Matrix -->
+        <section class="section">
+            <h2>Component Integration Matrix</h2>
+
+            <h3>Pages</h3>
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>API Endpoint</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Home Page</strong></td>
+                        <td><code>/api/v2/pages/?type=cms.HomePage</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Full Wagtail CMS integration</td>
+                    </tr>
+                    <tr>
+                        <td><strong>News/Huddle Page</strong></td>
+                        <td><code>/api/instagram/</code>, <code>/api/v2/pages/?type=cms.BlogPage</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Merges blog + Instagram feeds</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Shop Page</strong></td>
+                        <td><code>/api/payments/products/</code></td>
+                        <td><span class="status-badge partial">Partial</span></td>
+                        <td><span class="priority-badge p0">P0</span></td>
+                        <td>Hardcoded localhost URL</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Product Detail</strong></td>
+                        <td><code>/api/payments/products/{slug}/</code></td>
+                        <td><span class="status-badge partial">Partial</span></td>
+                        <td><span class="priority-badge p1">P1</span></td>
+                        <td>Variants not persisted to cart</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Events Page</strong></td>
+                        <td><code>/api/events/</code>, <code>/api/events/registrations/my_event_ids/</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Calendar sync working</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Portal Login</strong></td>
+                        <td>NextAuth (Google OAuth)</td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>OAuth + credentials auth</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Portal Dashboard</strong></td>
+                        <td>NextAuth session only</td>
+                        <td><span class="status-badge partial">Partial</span></td>
+                        <td><span class="priority-badge p1">P1</span></td>
+                        <td>Mock stats data</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Success Page</strong></td>
+                        <td><code>/api/payments/checkout/session/{id}/</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Clears purchased items from bag</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cancel Page</strong></td>
+                        <td>None</td>
+                        <td><span class="status-badge none">N/A</span></td>
+                        <td>-</td>
+                        <td>Static page</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Key Components</h3>
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>API Endpoint</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>BagDrawer</strong></td>
+                        <td><code>/api/payments/cart/*</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Full CRUD + checkout</td>
+                    </tr>
+                    <tr>
+                        <td><strong>FeaturedMerch</strong></td>
+                        <td><code>/api/payments/products/?featured=true</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Add-to-bag working</td>
+                    </tr>
+                    <tr>
+                        <td><strong>NewsFeed</strong></td>
+                        <td><code>/api/instagram/</code>, <code>/api/v2/pages/</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Graceful fallback</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CoachesSection</strong></td>
+                        <td><code>/api/coaches/</code></td>
+                        <td><span class="status-badge connected">Connected</span></td>
+                        <td>-</td>
+                        <td>Carousel with Instagram links</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ProductQuickView</strong></td>
+                        <td>Uses BagProvider</td>
+                        <td><span class="status-badge partial">Partial</span></td>
+                        <td><span class="priority-badge p0">P0</span></td>
+                        <td>Missing variant selection (size/color)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CheckoutButton</strong></td>
+                        <td><code>/api/payments/checkout/product/</code></td>
+                        <td><span class="status-badge partial">Partial</span></td>
+                        <td><span class="priority-badge p0">P0</span></td>
+                        <td>Hardcoded localhost URL</td>
+                    </tr>
+                    <tr>
+                        <td><strong>NewsletterSignup</strong></td>
+                        <td>None</td>
+                        <td><span class="status-badge missing">Missing</span></td>
+                        <td><span class="priority-badge p2">P2</span></td>
+                        <td>Backend endpoint needed</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hero</strong></td>
+                        <td>Props from parent (CMS)</td>
+                        <td><span class="status-badge none">UI Only</span></td>
+                        <td>-</td>
+                        <td>Display component</td>
+                    </tr>
+                    <tr>
+                        <td><strong>FilterSidebar</strong></td>
+                        <td>None</td>
+                        <td><span class="status-badge none">UI Only</span></td>
+                        <td>-</td>
+                        <td>Client-side filtering</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- API Coverage -->
+        <section class="section">
+            <h2>API Coverage Map</h2>
+
+            <details open>
+                <summary>Core API - Coaches & Instagram (4 endpoints)</summary>
+                <div class="content">
+                    <div class="api-grid">
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/coaches/</span>
+                            <span class="consumer status-badge connected">CoachesSection</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/coaches/{slug}/</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/instagram/</span>
+                            <span class="consumer status-badge connected">NewsFeed</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/instagram/{id}/</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details>
+                <summary>Events API (8 endpoints)</summary>
+                <div class="content">
+                    <div class="api-grid">
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/events/</span>
+                            <span class="consumer status-badge connected">EventsPage</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/events/{slug}/</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method post">POST</span>
+                            <span class="path">/api/events/registrations/</span>
+                            <span class="consumer status-badge missing">No Frontend</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/events/registrations/</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/events/registrations/my_event_ids/</span>
+                            <span class="consumer status-badge connected">EventsPage</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/events/registrations/upcoming/</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/events/registrations/past/</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/events/registrations/calendar.ics</span>
+                            <span class="consumer status-badge connected">EventsPage</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details>
+                <summary>Payments API (10 endpoints)</summary>
+                <div class="content">
+                    <div class="api-grid">
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/payments/products/</span>
+                            <span class="consumer status-badge connected">ShopPage</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/payments/products/{slug}/</span>
+                            <span class="consumer status-badge connected">ProductDetail</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/payments/subscription-plans/</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/payments/cart/</span>
+                            <span class="consumer status-badge connected">BagProvider</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method post">POST</span>
+                            <span class="path">/api/payments/cart/</span>
+                            <span class="consumer status-badge connected">BagProvider</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method patch">PATCH</span>
+                            <span class="path">/api/payments/cart/items/{id}/</span>
+                            <span class="consumer status-badge connected">BagDrawer</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method delete">DELETE</span>
+                            <span class="path">/api/payments/cart/items/{id}/</span>
+                            <span class="consumer status-badge connected">BagDrawer</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method post">POST</span>
+                            <span class="path">/api/payments/checkout/cart/</span>
+                            <span class="consumer status-badge connected">BagDrawer</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method post">POST</span>
+                            <span class="path">/api/payments/checkout/event/</span>
+                            <span class="consumer status-badge missing">No Frontend</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/payments/checkout/session/{id}/</span>
+                            <span class="consumer status-badge connected">SuccessPage</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details>
+                <summary>Wagtail CMS API (4 page types)</summary>
+                <div class="content">
+                    <div class="api-grid">
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/v2/pages/?type=cms.HomePage</span>
+                            <span class="consumer status-badge connected">HomePage</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/v2/pages/?type=cms.BlogPage</span>
+                            <span class="consumer status-badge connected">NewsFeed</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/v2/pages/?type=cms.BlogIndexPage</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                        <div class="api-endpoint">
+                            <span class="method get">GET</span>
+                            <span class="path">/api/v2/pages/?type=cms.TeamPage</span>
+                            <span class="consumer status-badge none">Unused</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <!-- Feature Status Cards -->
+        <section class="section">
+            <h2>Feature Status Cards</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <h3>Shopping Cart</h3>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <p class="description">Full shopping bag with item selection, quantity management, and Stripe checkout.</p>
+                    <div class="status-row">
+                        <span class="status-label">Frontend</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Backend</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Stripe Integration</span>
+                        <span class="status-badge connected">Working</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <h3>Product Catalog</h3>
+                        <span class="status-badge partial">Partial</span>
+                    </div>
+                    <p class="description">Product listing and detail pages with filtering. Variants not persisted.</p>
+                    <div class="status-row">
+                        <span class="status-label">Frontend</span>
+                        <span class="status-badge partial">Has Bug</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Backend</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Variant Support</span>
+                        <span class="status-badge missing">UI Only</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <h3>Event Management</h3>
+                        <span class="status-badge partial">Partial</span>
+                    </div>
+                    <p class="description">Event listing with calendar views. Registration flow not implemented.</p>
+                    <div class="status-row">
+                        <span class="status-label">Event List</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Calendar Sync</span>
+                        <span class="status-badge connected">Working</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Registration</span>
+                        <span class="status-badge missing">No Frontend</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <h3>CMS Integration</h3>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <p class="description">Wagtail CMS for homepage hero, blog posts, and team roster.</p>
+                    <div class="status-row">
+                        <span class="status-label">Homepage</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Blog Posts</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Team Page</span>
+                        <span class="status-badge none">Unused</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <h3>User Portal</h3>
+                        <span class="status-badge partial">Partial</span>
+                    </div>
+                    <p class="description">Authentication working, dashboard needs real data integration.</p>
+                    <div class="status-row">
+                        <span class="status-label">Login/OAuth</span>
+                        <span class="status-badge connected">Working</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Dashboard Stats</span>
+                        <span class="status-badge missing">Mock Data</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">User Profile</span>
+                        <span class="status-badge missing">Not Built</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card-header">
+                        <h3>Coach Management</h3>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <p class="description">Coach profiles with Instagram integration and carousel display.</p>
+                    <div class="status-row">
+                        <span class="status-label">Frontend</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Backend</span>
+                        <span class="status-badge connected">Complete</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Admin Panel</span>
+                        <span class="status-badge connected">Working</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Backend Models -->
+        <section class="section">
+            <h2>Backend Model Coverage</h2>
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>App</th>
+                        <th>Serializer</th>
+                        <th>API View</th>
+                        <th>Frontend Consumer</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Coach</strong></td>
+                        <td>core</td>
+                        <td><span class="status-badge connected">Yes</span></td>
+                        <td><span class="status-badge connected">ViewSet</span></td>
+                        <td>CoachesSection</td>
+                        <td><span class="status-badge connected">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>InstagramPost</strong></td>
+                        <td>core</td>
+                        <td><span class="status-badge connected">Yes</span></td>
+                        <td><span class="status-badge connected">ViewSet</span></td>
+                        <td>NewsFeed</td>
+                        <td><span class="status-badge connected">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Event</strong></td>
+                        <td>events</td>
+                        <td><span class="status-badge connected">Yes</span></td>
+                        <td><span class="status-badge connected">ViewSet</span></td>
+                        <td>EventsPage</td>
+                        <td><span class="status-badge connected">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>EventRegistration</strong></td>
+                        <td>registrations</td>
+                        <td><span class="status-badge connected">Yes</span></td>
+                        <td><span class="status-badge connected">ViewSet</span></td>
+                        <td>None</td>
+                        <td><span class="status-badge missing">No Frontend</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Product</strong></td>
+                        <td>payments</td>
+                        <td><span class="status-badge connected">Yes</span></td>
+                        <td><span class="status-badge connected">ViewSet</span></td>
+                        <td>ShopPage, ProductDetail</td>
+                        <td><span class="status-badge connected">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cart / CartItem</strong></td>
+                        <td>payments</td>
+                        <td><span class="status-badge connected">Yes</span></td>
+                        <td><span class="status-badge connected">APIView</span></td>
+                        <td>BagProvider, BagDrawer</td>
+                        <td><span class="status-badge connected">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Order / OrderItem</strong></td>
+                        <td>payments</td>
+                        <td><span class="status-badge none">No</span></td>
+                        <td><span class="status-badge none">No</span></td>
+                        <td>None (internal)</td>
+                        <td><span class="status-badge none">Backend Only</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>SubscriptionPlan</strong></td>
+                        <td>payments</td>
+                        <td><span class="status-badge connected">Yes</span></td>
+                        <td><span class="status-badge connected">ViewSet</span></td>
+                        <td>None</td>
+                        <td><span class="status-badge none">Unused</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Subscription</strong></td>
+                        <td>payments</td>
+                        <td><span class="status-badge none">No</span></td>
+                        <td><span class="status-badge none">No</span></td>
+                        <td>None</td>
+                        <td><span class="status-badge none">Not Implemented</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Payment</strong></td>
+                        <td>payments</td>
+                        <td><span class="status-badge none">No</span></td>
+                        <td><span class="status-badge none">No</span></td>
+                        <td>None (webhook)</td>
+                        <td><span class="status-badge none">Backend Only</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>HomePage</strong></td>
+                        <td>cms</td>
+                        <td><span class="status-badge connected">Wagtail</span></td>
+                        <td><span class="status-badge connected">Wagtail API</span></td>
+                        <td>HomePage</td>
+                        <td><span class="status-badge connected">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>BlogPage</strong></td>
+                        <td>cms</td>
+                        <td><span class="status-badge connected">Wagtail</span></td>
+                        <td><span class="status-badge connected">Wagtail API</span></td>
+                        <td>NewsFeed</td>
+                        <td><span class="status-badge connected">Complete</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>TeamPage</strong></td>
+                        <td>cms</td>
+                        <td><span class="status-badge connected">Wagtail</span></td>
+                        <td><span class="status-badge connected">Wagtail API</span></td>
+                        <td>None</td>
+                        <td><span class="status-badge none">Unused</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>PlayerProfile</strong></td>
+                        <td>cms</td>
+                        <td><span class="status-badge connected">Wagtail</span></td>
+                        <td><span class="status-badge connected">Wagtail API</span></td>
+                        <td>None</td>
+                        <td><span class="status-badge none">Unused</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Footer -->
+        <footer style="text-align: center; padding: 2rem; color: var(--text-tertiary); border-top: 1px solid var(--border); margin-top: 2rem;">
+            <p>Generated by Claude Code Full-Stack Integration Audit</p>
+            <p>NJ Stars Elite AAU Platform | December 2024</p>
+        </footer>
+    </div>
+</body>
+</html>

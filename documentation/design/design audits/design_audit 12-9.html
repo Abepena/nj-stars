@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NJ Stars Elite Basketball - UI/UX Design Audit Report</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // NJ Stars palette (dark theme)
+            'nj-bg-primary': 'hsl(20, 13%, 9%)',
+            'nj-bg-secondary': 'hsl(20, 9.4%, 12.5%)',
+            'nj-bg-tertiary': 'hsl(20, 7.1%, 16.5%)',
+            'nj-text-primary': 'hsl(26.7, 16.4%, 89.2%)',
+            'nj-text-secondary': 'hsl(38.8, 6.8%, 65%)',
+            'nj-text-tertiary': 'hsl(38.8, 6.8%, 55%)',
+            'nj-primary': 'hsl(331.7, 73.9%, 53.3%)',
+            'nj-secondary': 'hsl(188.7, 94.5%, 42.7%)',
+            'nj-accent': 'hsl(353.4, 55%, 48.8%)',
+            'nj-tertiary': 'hsl(37.7, 92.1%, 50.2%)',
+            'nj-success': 'hsl(154.8, 38%, 48%)',
+            'nj-warning': 'hsl(33.3, 59.8%, 58%)',
+            'nj-info': 'hsl(214.2, 28.3%, 49.8%)',
+            'nj-border': 'hsl(27.3, 8%, 26.9%)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: hsl(20, 13%, 9%);
+      color: hsl(26.7, 16.4%, 89.2%);
+    }
+    .priority-critical { background: hsl(353.4, 55%, 48.8%); color: white; }
+    .priority-high { background: hsl(33.3, 59.8%, 58%); color: hsl(20, 13%, 9%); }
+    .priority-medium { background: hsl(188.7, 94.5%, 42.7%); color: hsl(20, 13%, 9%); }
+    .priority-low { background: hsl(154.8, 38%, 48%); color: white; }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .before-box {
+      border: 2px solid hsl(353.4, 55%, 48.8%);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      background: hsl(20, 9.4%, 12.5%);
+    }
+
+    .after-box {
+      border: 2px solid hsl(154.8, 38%, 48%);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      background: hsl(20, 9.4%, 12.5%);
+    }
+
+    .issue-card {
+      background: hsl(20, 9.4%, 12.5%);
+      border: 1px solid hsl(27.3, 8%, 26.9%);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .toc-link {
+      color: hsl(188.7, 94.5%, 42.7%);
+      text-decoration: none;
+    }
+    .toc-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Demo button styles matching the project */
+    .demo-btn-default {
+      background: hsl(331.7, 73.9%, 53.3%);
+      color: hsl(26.7, 16.4%, 89.2%);
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+    .demo-btn-default:hover {
+      background: hsl(331.7, 73.9%, 48%);
+    }
+
+    .demo-btn-ghost {
+      background: transparent;
+      color: hsl(26.7, 16.4%, 89.2%);
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+    .demo-btn-ghost:hover {
+      background: hsl(20, 7.1%, 16.5%);
+    }
+
+    /* Touch target demo */
+    .touch-target-bad {
+      width: 32px;
+      height: 32px;
+      background: hsl(353.4, 55%, 48.8%);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+    }
+
+    .touch-target-good {
+      width: 44px;
+      height: 44px;
+      background: hsl(154.8, 38%, 48%);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+    }
+
+    /* Nav link demo */
+    .nav-link-bad {
+      border-bottom: 2px solid hsl(331.7, 73.9%, 53.3%);
+      padding: 0.5rem 1rem;
+      display: inline-block;
+      background: hsl(20, 7.1%, 16.5%);
+    }
+
+    .nav-link-good {
+      padding: 0.5rem 1rem;
+      display: inline-block;
+    }
+    .nav-link-good span {
+      border-bottom: 2px solid hsl(331.7, 73.9%, 53.3%);
+    }
+
+    code {
+      background: hsl(20, 7.1%, 16.5%);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    pre {
+      background: hsl(20, 7.1%, 16.5%);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-nj-border py-6">
+    <div class="max-w-6xl mx-auto px-4">
+      <h1 class="text-3xl font-bold mb-2">NJ Stars Elite Basketball</h1>
+      <p class="text-nj-text-secondary text-lg">UI/UX Design Audit Report</p>
+      <p class="text-nj-text-tertiary text-sm mt-2">Generated: December 9, 2025</p>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Table of Contents -->
+    <nav class="issue-card mb-8" id="toc">
+      <h2 class="text-xl font-bold mb-4">Table of Contents</h2>
+      <ol class="space-y-2 list-decimal list-inside">
+        <li><a href="#executive-summary" class="toc-link">Executive Summary</a></li>
+        <li><a href="#accessibility" class="toc-link">Accessibility Issues (WCAG 2.1 AA)</a></li>
+        <li><a href="#mobile-nav" class="toc-link">Mobile Navigation Issues</a></li>
+        <li><a href="#touch-targets" class="toc-link">Touch Target Improvements</a></li>
+        <li><a href="#ui-polish" class="toc-link">UI Polish & Aesthetics</a></li>
+        <li><a href="#ux-usability" class="toc-link">UX & Usability</a></li>
+        <li><a href="#design-system" class="toc-link">Design System Consistency</a></li>
+        <li><a href="#roadmap" class="toc-link">Implementation Roadmap</a></li>
+      </ol>
+    </nav>
+
+    <!-- Executive Summary -->
+    <section id="executive-summary" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">1</span>
+        Executive Summary
+      </h2>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">3 Critical Friction Points</h3>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+            <h4 class="font-semibold mt-2">Mobile Nav Underline</h4>
+            <p class="text-sm text-nj-text-secondary mt-1">Active nav links underline the container instead of text (CRITICAL.md issue)</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+            <h4 class="font-semibold mt-2">Touch Targets Too Small</h4>
+            <p class="text-sm text-nj-text-secondary mt-1">Some interactive elements below 44x44px minimum (quantity buttons, carousel dots)</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+            <h4 class="font-semibold mt-2">Sign In Button Inconsistency</h4>
+            <p class="text-sm text-nj-text-secondary mt-1">Mobile nav Sign In button doesn't match header styling (CRITICAL.md issue)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Audit Metrics</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-accent">2</span>
+            <p class="text-sm text-nj-text-secondary">Critical</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-warning">4</span>
+            <p class="text-sm text-nj-text-secondary">High</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-secondary">8</span>
+            <p class="text-sm text-nj-text-secondary">Medium</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-success">4</span>
+            <p class="text-sm text-nj-text-secondary">Low</p>
+          </div>
+        </div>
+        <p class="text-sm text-nj-success mt-4">✓ 1 item already fixed: Skip Navigation Link added to layout-shell.tsx</p>
+      </div>
+    </section>
+
+    <!-- Accessibility Issues -->
+    <section id="accessibility" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">2</span>
+        Accessibility Issues (WCAG 2.1 AA)
+      </h2>
+
+      <!-- Issue 1: Skip Link - FIXED -->
+      <div class="issue-card" style="border-color: hsl(154.8, 38%, 48%);">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-low px-2 py-1 rounded text-xs font-bold">FIXED ✓</span>
+          <h3 class="font-semibold">Skip Navigation Link</h3>
+        </div>
+        <p class="text-nj-success mb-4">
+          ✓ Already implemented! The site has a "Skip to main content" link for keyboard users.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>frontend/src/components/layout-shell.tsx:15-20</code></p>
+        <p class="text-sm text-nj-text-secondary mt-2">Implementation includes sr-only styling that becomes visible on focus, links to #main-content, and proper focus ring styling.</p>
+      </div>
+
+      <!-- Issue 2: Form Labels -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+          <h3 class="font-semibold">Search Input Label is sr-only but Placeholder Relied Upon</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The filter sidebar search has <code>sr-only</code> label (good), but relies solely on placeholder text for visual users. Placeholder disappears when typing.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>frontend/src/components/filter-sidebar.tsx:209-218</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-2">Current</p>
+            <div class="bg-nj-bg-primary p-3 rounded">
+              <input type="text" placeholder="Search products..." class="w-full bg-nj-bg-tertiary border border-nj-border rounded px-3 py-2 text-nj-text-primary placeholder:text-nj-text-tertiary">
+            </div>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-2">Recommended</p>
+            <div class="bg-nj-bg-primary p-3 rounded">
+              <label class="text-sm text-nj-text-secondary mb-1 block">Search Products</label>
+              <input type="text" placeholder="e.g. Jersey, Hoodie..." class="w-full bg-nj-bg-tertiary border border-nj-border rounded px-3 py-2 text-nj-text-primary placeholder:text-nj-text-tertiary">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 3: Color Contrast on Muted Text -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+          <h3 class="font-semibold">Color Contrast - text-tertiary</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The <code>--text-tertiary</code> color at 55% lightness on dark backgrounds may be below 4.5:1 contrast ratio for some text sizes.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>frontend/src/app/globals.css:14</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-2">Current (text-tertiary)</p>
+            <p style="color: hsl(38.8, 6.8%, 55%);">This text may fail WCAG AA contrast requirements on dark backgrounds.</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-2">Recommended (bump to 60%)</p>
+            <p style="color: hsl(38.8, 6.8%, 60%);">This text has improved contrast while maintaining visual hierarchy.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mobile Navigation Issues -->
+    <section id="mobile-nav" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">3</span>
+        Mobile Navigation Issues
+      </h2>
+
+      <!-- Issue: Nav Link Underline -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+          <h3 class="font-semibold">Active Nav Links Underline Container Instead of Text</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          From CRITICAL.md: "underline text for navigation links not their container". The current implementation applies <code>border-b-2</code> to the link element, which creates a full-width underline rather than text-width.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>frontend/src/components/mobile-nav.tsx:90-92</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-2">Current (Container Underline)</p>
+            <div class="flex flex-col gap-2 mt-4">
+              <div class="nav-link-bad">News</div>
+              <div class="nav-link-bad">Shop</div>
+              <div class="nav-link-bad">Events</div>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">Border spans full container width</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-2">Recommended (Text Underline)</p>
+            <div class="flex flex-col gap-2 mt-4">
+              <div class="nav-link-good"><span>News</span></div>
+              <div class="nav-link-good"><span>Shop</span></div>
+              <div class="nav-link-good"><span>Events</span></div>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">Border matches text width only</p>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <p class="text-sm font-semibold mb-2">Code Fix:</p>
+          <pre><code>// Before (mobile-nav.tsx:90-92)
+className={`text-lg font-medium ... ${
+  isActive ? "border-b-2 border-primary" : ""
+}`}
+
+// After
+className="text-lg font-medium ..."
+// Wrap text in span:
+&lt;span className={isActive ? "border-b-2 border-primary pb-0.5" : ""}&gt;
+  {link.label}
+&lt;/span&gt;</code></pre>
+        </div>
+      </div>
+
+      <!-- Issue: Sign In Button Styling -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+          <h3 class="font-semibold">Mobile Nav Sign In Button Doesn't Match Header</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          From CRITICAL.md: "match sign in button styling from the site header". The mobile nav uses a full CTA gradient button while the desktop header uses a ghost variant with hover gradient.
+        </p>
+        <p class="text-sm"><strong>Files:</strong></p>
+        <ul class="text-sm list-disc list-inside text-nj-text-secondary">
+          <li><code>frontend/src/components/site-header.tsx:103</code> (desktop - ghost variant)</li>
+          <li><code>frontend/src/components/mobile-nav.tsx:99-104</code> (mobile - full gradient)</li>
+        </ul>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-2">Mobile (Current - Full Gradient)</p>
+            <button class="w-full py-2 px-4 rounded-md font-semibold text-sm" style="background: linear-gradient(to bottom right, rgba(232,227,223,0.4), hsl(331.7, 73.9%, 53.3%)); color: hsl(20, 13%, 9%);">
+              Portal Login
+            </button>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-2">Desktop (Ghost with Hover)</p>
+            <button class="demo-btn-ghost" style="color: hsl(331.7, 73.9%, 53.3%);">
+              Sign In
+            </button>
+            <p class="text-xs text-nj-text-tertiary mt-2">Should match this style</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Touch Targets -->
+    <section id="touch-targets" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">4</span>
+        Touch Target Improvements
+      </h2>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Touch Targets Below 44x44px Minimum</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          WCAG 2.1 Level AA requires touch targets to be at least 44x44 CSS pixels. Several interactive elements fall below this threshold.
+        </p>
+
+        <h4 class="font-semibold mt-4 mb-2">Affected Elements:</h4>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Element</th>
+              <th class="text-left py-2">Current Size</th>
+              <th class="text-left py-2">File</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Quantity +/- buttons (QuickView)</td>
+              <td class="py-2">~36x28px</td>
+              <td class="py-2"><code>product-quick-view.tsx:216-230</code></td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Image carousel dots</td>
+              <td class="py-2">8x8px (w-2 h-2)</td>
+              <td class="py-2"><code>product-quick-view.tsx:131-139</code></td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Color swatch buttons</td>
+              <td class="py-2">16x16px (w-4 h-4)</td>
+              <td class="py-2"><code>shop/page.tsx:140-147</code></td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Thumbnail gallery buttons</td>
+              <td class="py-2">80x80px (OK on desktop)</td>
+              <td class="py-2"><code>shop/[slug]/page.tsx:291-305</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="comparison-grid mt-6">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-4">Current Touch Targets</p>
+            <div class="flex items-center gap-4">
+              <div class="touch-target-bad">-</div>
+              <div class="touch-target-bad">+</div>
+              <div class="flex gap-1">
+                <span class="w-2 h-2 rounded-full bg-nj-text-secondary"></span>
+                <span class="w-2 h-2 rounded-full bg-nj-text-tertiary"></span>
+              </div>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">32px buttons, 8px dots</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-4">Recommended (44px min)</p>
+            <div class="flex items-center gap-4">
+              <div class="touch-target-good">-</div>
+              <div class="touch-target-good">+</div>
+              <div class="flex gap-2">
+                <span class="w-4 h-4 rounded-full bg-nj-text-primary cursor-pointer"></span>
+                <span class="w-4 h-4 rounded-full bg-nj-text-tertiary cursor-pointer"></span>
+              </div>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">44px buttons, 16px dots with larger hit area</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- UI Polish -->
+    <section id="ui-polish" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">5</span>
+        UI Polish & Aesthetics
+      </h2>
+
+      <!-- Typography Consistency -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+          <h3 class="font-semibold">Typography Hierarchy - Section Headers</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          Section headers on the homepage use inconsistent sizing. "The Huddle" and "Featured Merch" use <code>text-4xl</code> while other sections may vary.
+        </p>
+        <p class="text-sm"><strong>Recommendation:</strong> Create a consistent section header component or utility class.</p>
+      </div>
+
+      <!-- Button Variant Usage -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-low px-2 py-1 rounded text-xs font-bold">LOW</span>
+          <h3 class="font-semibold">Button Variants - 7 Variants May Be Over-Engineering</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The button component has 7 variants: default, destructive, outline, secondary, ghost, link, cta, accent. This is comprehensive but may lead to inconsistent usage.
+        </p>
+
+        <div class="mt-4">
+          <p class="text-sm font-semibold mb-3">Current Button Variants:</p>
+          <div class="flex flex-wrap gap-3">
+            <button class="demo-btn-default">Default</button>
+            <button class="demo-btn-ghost">Ghost</button>
+            <button class="px-4 py-2 rounded-md font-medium border border-nj-border bg-transparent hover:bg-nj-bg-tertiary">Outline</button>
+            <button class="px-4 py-2 rounded-md font-medium" style="background: hsl(188.7, 94.5%, 42.7%); color: hsl(26.7, 16.4%, 89.2%);">Secondary</button>
+            <button class="px-4 py-2 rounded-md font-medium" style="background: linear-gradient(to bottom right, rgba(232,227,223,0.4), hsl(331.7, 73.9%, 53.3%)); color: hsl(20, 13%, 9%);">CTA</button>
+            <button class="px-4 py-2 rounded-md font-medium" style="background: hsl(353.4, 55%, 48.8%); color: hsl(26.7, 16.4%, 89.2%);">Accent</button>
+          </div>
+        </div>
+
+        <p class="text-sm text-nj-text-secondary mt-4">
+          <strong>Suggestion:</strong> Document when to use each variant in a design system guide.
+        </p>
+      </div>
+
+      <!-- Skeleton Loaders -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-low px-2 py-1 rounded text-xs font-bold">LOW</span>
+          <h3 class="font-semibold">Skeleton Loaders - Good Implementation</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The project uses skeleton loaders (not spinners) which is a UX best practice for perceived performance. The <code>ProductCardSkeleton</code> matches the actual card structure well.
+        </p>
+        <p class="text-sm text-nj-success">No changes needed.</p>
+      </div>
+    </section>
+
+    <!-- UX & Usability -->
+    <section id="ux-usability" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">6</span>
+        UX & Usability
+      </h2>
+
+      <!-- Mobile Sticky Footer -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-low px-2 py-1 rounded text-xs font-bold">LOW</span>
+          <h3 class="font-semibold">Mobile Sticky Add to Cart - Good Implementation</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The product detail page has a Nike-style sticky footer for mobile users. This is excellent for conversion as the CTA is always visible.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>frontend/src/app/shop/[slug]/page.tsx:611-652</code></p>
+        <p class="text-sm text-nj-success">Well implemented - follows e-commerce best practices.</p>
+      </div>
+
+      <!-- QuickView Stock Display -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+          <h3 class="font-semibold">QuickView Shows Exact Stock Numbers</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          While the product detail page uses marketing-friendly messaging ("Almost Gone!", "Limited Drop"), the QuickView modal shows exact stock counts like "3 in stock".
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>frontend/src/components/product-quick-view.tsx:198-199</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-2">QuickView (Current)</p>
+            <p class="text-nj-success">3 in stock</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-2">QuickView (Recommended)</p>
+            <p class="text-nj-accent">Almost Gone!</p>
+          </div>
+        </div>
+        <p class="text-sm text-nj-text-secondary mt-3">
+          Consistency with product detail page messaging creates urgency without revealing inventory.
+        </p>
+      </div>
+
+      <!-- Empty State -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+          <h3 class="font-semibold">Empty State Could Be More Engaging</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          When no products match filters, the message is functional but could include a CTA to clear filters or browse popular items.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>frontend/src/app/shop/page.tsx:462-468</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-2">Current Empty State</p>
+            <div class="text-center py-8">
+              <p class="text-nj-text-secondary">No products match your search criteria.</p>
+            </div>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-2">Recommended Empty State</p>
+            <div class="text-center py-8">
+              <p class="text-nj-text-secondary mb-4">No products match your filters.</p>
+              <button class="demo-btn-default">Clear Filters</button>
+              <p class="text-sm text-nj-text-tertiary mt-4">or check out our <a href="#" class="text-nj-secondary underline">featured items</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Design System Consistency -->
+    <section id="design-system" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">7</span>
+        Design System Consistency
+      </h2>
+
+      <!-- Color Token Usage -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-low px-2 py-1 rounded text-xs font-bold">LOW</span>
+          <h3 class="font-semibold">Excellent Color Token System</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The project has a well-structured color token system with semantic naming (bg-primary, text-secondary, etc.) and proper light/dark mode support.
+        </p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <div>
+            <div class="w-full h-12 rounded-lg mb-2" style="background: hsl(331.7, 73.9%, 53.3%);"></div>
+            <p class="text-xs">Primary (Hot Pink)</p>
+          </div>
+          <div>
+            <div class="w-full h-12 rounded-lg mb-2" style="background: hsl(188.7, 94.5%, 42.7%);"></div>
+            <p class="text-xs">Secondary (Teal)</p>
+          </div>
+          <div>
+            <div class="w-full h-12 rounded-lg mb-2" style="background: hsl(353.4, 55%, 48.8%);"></div>
+            <p class="text-xs">Accent (Red)</p>
+          </div>
+          <div>
+            <div class="w-full h-12 rounded-lg mb-2" style="background: hsl(37.7, 92.1%, 50.2%);"></div>
+            <p class="text-xs">Tertiary (Amber)</p>
+          </div>
+        </div>
+        <p class="text-sm text-nj-success mt-4">Well implemented design token system.</p>
+      </div>
+
+      <!-- Category Color Duplication -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+          <h3 class="font-semibold">getCategoryColor Function Duplicated</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The <code>getCategoryColor</code> helper function is duplicated in multiple files. This should be centralized.
+        </p>
+        <p class="text-sm"><strong>Found in:</strong></p>
+        <ul class="text-sm list-disc list-inside text-nj-text-secondary">
+          <li><code>shop/page.tsx:30-51</code></li>
+          <li><code>shop/[slug]/page.tsx:71-79</code></li>
+          <li><code>product-quick-view.tsx:37-45</code></li>
+          <li><code>filter-sidebar.tsx:83-141</code></li>
+        </ul>
+        <p class="text-sm text-nj-text-secondary mt-3">
+          <strong>Recommendation:</strong> Move to <code>lib/utils.ts</code> or create <code>lib/category-colors.ts</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- Implementation Roadmap -->
+    <section id="roadmap" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">8</span>
+        Implementation Roadmap
+      </h2>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Week 1: Critical Fixes</h3>
+        <p class="text-sm text-nj-text-secondary mb-4">Priority: Items from CRITICAL.md + Accessibility</p>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Task</th>
+              <th class="text-left py-2">Priority</th>
+              <th class="text-left py-2">Est. Time</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Fix mobile nav link underline (text only)</td>
+              <td class="py-2"><span class="priority-critical px-2 py-0.5 rounded text-xs">CRITICAL</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Match mobile Sign In button to header style</td>
+              <td class="py-2"><span class="priority-critical px-2 py-0.5 rounded text-xs">CRITICAL</span></td>
+              <td class="py-2">10 min</td>
+            </tr>
+            <tr class="border-b border-nj-border" style="opacity: 0.5; text-decoration: line-through;">
+              <td class="py-2">Add skip navigation link</td>
+              <td class="py-2"><span class="priority-low px-2 py-0.5 rounded text-xs">DONE ✓</span></td>
+              <td class="py-2">-</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Increase touch targets to 44px minimum</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">45 min</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-sm text-nj-text-tertiary mt-3">Total: ~1 hour 10 min (skip link already done)</p>
+      </div>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Week 2: UX Consistency</h3>
+        <p class="text-sm text-nj-text-secondary mb-4">Priority: User experience polish</p>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Task</th>
+              <th class="text-left py-2">Priority</th>
+              <th class="text-left py-2">Est. Time</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Update QuickView stock messaging</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Enhance empty state with CTA</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">20 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add visible search label option</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Bump text-tertiary contrast</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">5 min</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-sm text-nj-text-tertiary mt-3">Total: ~1 hour</p>
+      </div>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Week 3+: Code Quality & DRY</h3>
+        <p class="text-sm text-nj-text-secondary mb-4">Priority: Maintainability</p>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Task</th>
+              <th class="text-left py-2">Priority</th>
+              <th class="text-left py-2">Est. Time</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Centralize getCategoryColor function</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">30 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Document button variant usage</td>
+              <td class="py-2"><span class="priority-low px-2 py-0.5 rounded text-xs">LOW</span></td>
+              <td class="py-2">20 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Create section header component</td>
+              <td class="py-2"><span class="priority-low px-2 py-0.5 rounded text-xs">LOW</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-sm text-nj-text-tertiary mt-3">Total: ~1 hour</p>
+      </div>
+    </section>
+
+    <!-- Summary Table -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Summary</h2>
+      <div class="issue-card">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Phase</th>
+              <th class="text-left py-2">Tasks</th>
+              <th class="text-left py-2">Est. Time</th>
+              <th class="text-left py-2">Impact</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Week 1: Critical</td>
+              <td class="py-2">3 tasks (1 done)</td>
+              <td class="py-2">~1 hour 10 min</td>
+              <td class="py-2">Accessibility compliance, CRITICAL.md items</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Week 2: UX</td>
+              <td class="py-2">4 tasks</td>
+              <td class="py-2">~1 hour</td>
+              <td class="py-2">Consistency, user experience polish</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Week 3+: Code Quality</td>
+              <td class="py-2">3 tasks</td>
+              <td class="py-2">~1 hour</td>
+              <td class="py-2">Maintainability, DRY principles</td>
+            </tr>
+            <tr class="font-semibold">
+              <td class="py-2">Total Remaining</td>
+              <td class="py-2">10 tasks</td>
+              <td class="py-2">~3 hours</td>
+              <td class="py-2"></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-sm text-nj-success mt-4">✓ 1 of 11 tasks already complete (Skip Navigation Link)</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-nj-border py-6 mt-8">
+    <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
+      <p class="text-sm text-nj-text-tertiary">
+        Generated by Claude Code - Design Audit v1.0
+      </p>
+      <a href="#toc" class="text-sm text-nj-secondary hover:underline">
+        Back to Top
+      </a>
+    </div>
+  </footer>
+</body>
+</html>

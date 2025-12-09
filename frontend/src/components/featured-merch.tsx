@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Card, CardDescription, CardTitle } from "@/components/ui/card"
+import { Check, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
-import { LoadingSpinner } from "@/components/loading-spinner"
 import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleton"
+import { ProductQuickView } from "@/components/product-quick-view"
+import { useBag } from "@/lib/bag"
 
 interface Product {
   id: number
@@ -26,26 +27,25 @@ interface Product {
   in_stock: boolean
 }
 
-type ProductTag = 'featured' | 'best_selling' | 'on_sale'
-
-// Product tag colors and labels - using design tokens
-const TAG_CONFIG: Record<ProductTag, { label: string; className: string }> = {
-  featured: { label: 'FEATURED', className: 'bg-secondary/15 text-secondary' },
-  best_selling: { label: 'BEST SELLING', className: 'bg-warning/15 text-warning' },
-  on_sale: { label: 'ON SALE!', className: 'bg-destructive/15 text-destructive' },
-}
-
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 interface FeaturedMerchProps {
   limit?: number
   showSeeMore?: boolean
+  title?: string
+  subtitle?: string
 }
 
-export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchProps) {
+export function FeaturedMerch({
+  limit = 3,
+  showSeeMore = false,
+  title = "The Locker Room",
+  subtitle = "Rep NJ Stars with official team gear"
+}: FeaturedMerchProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null)
 
   useEffect(() => {
     async function fetchProducts() {
@@ -87,10 +87,24 @@ export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchP
   // Show skeleton while loading
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3].map((i) => (
-          <ProductCardSkeleton key={i} />
-        ))}
+      <div className="space-y-8">
+        {/* Mobile/Tablet: Header skeleton */}
+        <div className="lg:hidden text-center mb-6">
+          <div className="h-8 w-48 bg-muted animate-pulse rounded mx-auto" />
+          <div className="h-4 w-64 bg-muted animate-pulse rounded mx-auto mt-2" />
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Desktop Header skeleton */}
+          <div className="hidden lg:flex lg:col-span-2 flex-col justify-center p-6 lg:p-8">
+            <div className="h-10 w-56 bg-muted animate-pulse rounded" />
+            <div className="h-5 w-72 bg-muted animate-pulse rounded mt-2" />
+            <div className="h-12 w-32 bg-muted animate-pulse rounded mt-5" />
+          </div>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   }
@@ -123,98 +137,179 @@ export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchP
   }
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-      {showSeeMore && (
-        <div className="flex justify-center">
-          <Link href="/shop">
-            <Button variant="outline" size="lg" className="px-8">
-              See More →
-            </Button>
-          </Link>
+    <>
+      <div className="space-y-8">
+        {/* Mobile/Tablet: Header above grid */}
+        <div className="lg:hidden text-center mb-6">
+          <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+          <p className="text-muted-foreground mt-1">{subtitle}</p>
         </div>
+
+        {/* Desktop (lg+): 4-column grid with header in first 2 cols, Mobile/Tablet: 2-column grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Desktop Header - spans 2 columns, 1 row only, hidden on mobile/tablet */}
+          <div className="hidden lg:flex lg:col-span-2 flex-col justify-center p-6 lg:p-8">
+            <h2 className="lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight">{title}</h2>
+            <p className="text-muted-foreground mt-2 text-base lg:text-lg">{subtitle}</p>
+            {showSeeMore && (
+              <div className="mt-5">
+                <Link href="/shop">
+                  <Button variant="outline" size="lg" className="px-8">
+                    Gear Up →
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onClick={() => setQuickViewProduct(product)}
+            />
+          ))}
+        </div>
+
+        {/* Mobile/Tablet: Show "Gear Up" button below grid */}
+        {showSeeMore && (
+          <div className="flex justify-center lg:hidden">
+            <Link href="/shop">
+              <Button variant="outline" size="lg" className="px-8">
+                Gear Up →
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Quick View Modal */}
+      {quickViewProduct && (
+        <ProductQuickView
+          product={quickViewProduct}
+          open={!!quickViewProduct}
+          onOpenChange={(open) => !open && setQuickViewProduct(null)}
+        />
       )}
-    </div>
+    </>
   )
 }
 
-function ProductCard({ product }: { product: Product }) {
-  // Determine which tag to show (priority: on_sale > best_selling > featured)
-  const getTag = (): ProductTag | null => {
-    if (product.on_sale) return 'on_sale'
-    if (product.best_selling) return 'best_selling'
-    if (product.featured) return 'featured'
-    return null
+interface ProductCardProps {
+  product: Product
+  onClick: () => void
+}
+
+function ProductCard({ product, onClick }: ProductCardProps) {
+  const { addToBag } = useBag()
+  const [isAdding, setIsAdding] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  const handleAddToBag = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!product.in_stock || isAdding || showSuccess) return
+
+    setIsAdding(true)
+    try {
+      await addToBag(product.id, 1)
+      // Show success state
+      setShowSuccess(true)
+      // Reset after animation
+      setTimeout(() => setShowSuccess(false), 2000)
+    } catch {
+      // Error is handled by bag context
+    } finally {
+      setIsAdding(false)
+    }
   }
 
-  const tag = getTag()
-  const tagConfig = tag ? TAG_CONFIG[tag] : null
-
-  const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
-
-  const cardContent = (
-    <Card className="overflow-hidden flex flex-col h-auto md:h-[540px] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-      {/* Image - responsive aspect ratio */}
-      {product.image_url ? (
-        <div className="relative w-full aspect-[4/3] md:h-[432px] md:aspect-auto">
+  return (
+    <article
+      className="flex flex-col cursor-pointer group"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      aria-label={`View ${product.name}`}
+    >
+      {/* Image - square aspect ratio with rounded corners */}
+      <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-muted">
+        {product.image_url ? (
           <Image
             src={product.image_url}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
-        </div>
-      ) : (
-        <div className="w-full aspect-[4/3] md:h-[432px] md:aspect-auto bg-muted flex items-center justify-center p-8 relative">
-          <Image
-            src="/brand/logos/logo square thick muted.svg"
-            alt={product.name}
-            fill
-            className="opacity-30 object-contain p-8"
-          />
-        </div>
-      )}
-
-      {/* Content - 20% of card */}
-      <div className="flex flex-col flex-1 p-4">
-        <div className="flex items-start justify-between mb-1">
-          <CardTitle className="line-clamp-1 text-base font-bold flex-1">{product.name}</CardTitle>
-          {tagConfig && (
-            <span className={`ml-2 px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${tagConfig.className}`}>
-              {tagConfig.label}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-lg font-bold text-foreground">${product.price}</span>
-          {hasDiscount && (
-            <span className="text-sm text-muted-foreground line-through">
-              ${product.compare_at_price}
-            </span>
-          )}
-        </div>
-
-        {!product.in_stock && (
-          <CardDescription className="text-xs text-red-500 mb-2">
-            Out of Stock
-          </CardDescription>
+        ) : (
+          <div className="h-full w-full flex items-center justify-center p-8 relative">
+            <Image
+              src="/brand/logos/logo square thick muted.svg"
+              alt={product.name}
+              fill
+              className="opacity-30 object-contain p-8"
+            />
+          </div>
         )}
 
-        <span className="text-accent hover:text-accent/80 text-sm inline-flex items-center gap-1 transition-colors mt-auto">
-          Shop Now →
+        {/* Hover overlay with price and add to cart button */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
+          {/* Price badge - bottom left */}
+          <div className="absolute bottom-3 left-3">
+            <span className="bg-white text-black text-sm font-semibold px-3 py-1.5 rounded-full shadow-lg">
+              ${parseFloat(product.price).toFixed(2)}
+              {product.compare_at_price && (
+                <span className="ml-1.5 text-muted-foreground line-through text-xs">
+                  ${parseFloat(product.compare_at_price).toFixed(2)}
+                </span>
+              )}
+            </span>
+          </div>
+
+          {/* Add to bag button - top right */}
+          <button
+            onClick={handleAddToBag}
+            disabled={!product.in_stock || isAdding}
+            className={`absolute top-3 right-3 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 disabled:opacity-50 ${
+              showSuccess
+                ? 'bg-green-500 scale-110 animate-success-pulse'
+                : 'bg-white hover:bg-gray-100'
+            }`}
+            aria-label={showSuccess ? "Added to bag" : "Add to bag"}
+          >
+            {showSuccess ? (
+              <Check className="w-5 h-5 text-white animate-checkmark" strokeWidth={3} />
+            ) : (
+              <ShoppingBag className="w-5 h-5 text-black" />
+            )}
+          </button>
+        </div>
+
+        {/* Out of stock overlay */}
+        {!product.in_stock && (
+          <div className="absolute inset-0 bg-background/70 flex items-center justify-center rounded-lg">
+            <span className="text-sm font-medium text-muted-foreground">Sold Out</span>
+          </div>
+        )}
+      </div>
+
+      {/* Content - flat layout */}
+      <div className="flex flex-col pt-3 space-y-1">
+        {/* Product name */}
+        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+          {product.name}
+        </h3>
+
+        {/* Category */}
+        <span className="text-xs text-muted-foreground">
+          {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
         </span>
       </div>
-    </Card>
-  )
-
-  return (
-    <Link href={`/shop/${product.slug}`}>
-      {cardContent}
-    </Link>
+    </article>
   )
 }

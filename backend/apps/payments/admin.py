@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SubscriptionPlan, Subscription, Payment, Product, Order, OrderItem
+from .models import SubscriptionPlan, Subscription, Payment, Product, Order, OrderItem, Cart, CartItem
 
 
 @admin.register(SubscriptionPlan)
@@ -51,3 +51,24 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ['order_number', 'created_at', 'updated_at']
     date_hierarchy = 'created_at'
     inlines = [OrderItemInline]
+
+
+class CartItemInline(admin.TabularInline):
+    model = CartItem
+    extra = 0
+    readonly_fields = ['total_price', 'added_at']
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'session_key_short', 'item_count', 'subtotal', 'updated_at']
+    list_filter = ['updated_at']
+    search_fields = ['user__email', 'session_key']
+    readonly_fields = ['created_at', 'updated_at', 'item_count', 'subtotal']
+    inlines = [CartItemInline]
+
+    def session_key_short(self, obj):
+        if obj.session_key:
+            return f"{obj.session_key[:8]}..."
+        return "-"
+    session_key_short.short_description = "Session Key"
