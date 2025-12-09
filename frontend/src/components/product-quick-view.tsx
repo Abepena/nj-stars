@@ -14,6 +14,14 @@ import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 
+interface ProductImage {
+  id: number
+  url: string
+  alt_text: string
+  is_primary: boolean
+  sort_order: number
+}
+
 interface Product {
   id: number
   name: string
@@ -22,6 +30,8 @@ interface Product {
   price: string
   compare_at_price: string | null
   image_url: string
+  primary_image_url: string | null
+  images: ProductImage[]
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -43,12 +53,19 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const [isFadingOut, setIsFadingOut] = useState(false)
   const { addToBag } = useBag()
 
-  // Generate multiple placeholder images for carousel
-  const productImages = [
-    product.image_url,
-    `${product.image_url}&seed=1`,
-    `${product.image_url}&seed=2`,
-  ]
+  // Build image gallery from uploaded images, falling back to legacy image_url
+  const productImages: { url: string; alt: string }[] = (() => {
+    if (product.images && product.images.length > 0) {
+      return product.images.map((img) => ({
+        url: img.url,
+        alt: img.alt_text || product.name,
+      }))
+    }
+    if (product.primary_image_url || product.image_url) {
+      return [{ url: product.primary_image_url || product.image_url, alt: product.name }]
+    }
+    return []
+  })()
 
   const handleAddToBag = async () => {
     setIsAdding(true)
@@ -107,8 +124,8 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
             {productImages[currentImageIndex] ? (
               <>
                 <Image
-                  src={productImages[currentImageIndex]}
-                  alt={product.name}
+                  src={productImages[currentImageIndex].url}
+                  alt={productImages[currentImageIndex].alt}
                   fill
                   className="object-cover rounded-lg"
                 />

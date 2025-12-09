@@ -206,8 +206,8 @@ class Product(models.Model):
         ]
     )
 
-    # Media
-    image_url = models.URLField(max_length=500, blank=True)
+    # Media (legacy single image - kept for backwards compatibility)
+    image_url = models.URLField(max_length=500, blank=True, help_text="Legacy single image URL")
 
     # Status
     is_active = models.BooleanField(default=True)
@@ -242,6 +242,89 @@ class Product(models.Model):
         if not self.manage_inventory:
             return True
         return self.stock_quantity > 0
+
+    @property
+    def primary_image_url(self):
+        """Get the primary image URL (from carousel images or legacy image_url)"""
+        primary = self.images.filter(is_primary=True).first()
+        if primary:
+            return primary.url  # Uses the url property which handles both upload and URL
+        first_image = self.images.first()
+        if first_image:
+            return first_image.url
+        return self.image_url or None
+
+
+def product_image_path(instance, filename):
+    """Generate upload path for product images: products/<product_id>/<filename>"""
+    return f'products/{instance.product.id}/{filename}'
+
+
+class ProductImage(models.Model):
+    """Multiple images for a product - supports both file uploads and URLs"""
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    # Option 1: Upload an image file
+    image = models.ImageField(
+        upload_to=product_image_path,
+        blank=True,
+        null=True,
+        help_text="Upload an image file (recommended: 800x800px or larger)"
+    )
+    # Option 2: Provide an image URL
+    image_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="Or paste an image URL (e.g., from Unsplash)"
+    )
+    alt_text = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Alt text for accessibility"
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        help_text="Set as the main product image"
+    )
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        help_text="Order in the carousel (lower = first)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'created_at']
+        indexes = [
+            models.Index(fields=['product', 'sort_order']),
+        ]
+
+    def __str__(self):
+        return f"{self.product.name} - Image {self.sort_order + 1}"
+
+    @property
+    def url(self):
+        """Return the image URL - prefers uploaded file, falls back to URL"""
+        if self.image:
+            return self.image.url
+        return self.image_url or None
+
+    def clean(self):
+        """Validate that at least one image source is provided"""
+        from django.core.exceptions import ValidationError
+        if not self.image and not self.image_url:
+            raise ValidationError("Please provide either an uploaded image or an image URL.")
+
+    def save(self, *args, **kwargs):
+        # If this is marked as primary, unmark others
+        if self.is_primary:
+            ProductImage.objects.filter(
+                product=self.product, is_primary=True
+            ).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
 
 
 class Order(models.Model):

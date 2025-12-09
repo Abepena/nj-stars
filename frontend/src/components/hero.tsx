@@ -20,7 +20,7 @@ const defaults = {
 };
 
 // Local hero video from brand assets
-const HERO_VIDEO_URL = "/brand/videos/hero.mov" 
+const HERO_VIDEO_URL = "/brand/videos/hero.mp4" 
 
 export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroProps) {
   return (

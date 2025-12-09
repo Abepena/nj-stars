@@ -10,6 +10,14 @@ import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleto
 import { ProductQuickView } from "@/components/product-quick-view"
 import { useBag } from "@/lib/bag"
 
+interface ProductImage {
+  id: number
+  url: string
+  alt_text: string
+  is_primary: boolean
+  sort_order: number
+}
+
 interface Product {
   id: number
   name: string
@@ -19,6 +27,8 @@ interface Product {
   compare_at_price: string | null
   category: string
   image_url: string
+  primary_image_url: string | null
+  images: ProductImage[]
   is_active: boolean
   featured: boolean
   best_selling: boolean
@@ -239,9 +249,9 @@ function ProductCard({ product, onClick }: ProductCardProps) {
     >
       {/* Image - square aspect ratio with rounded corners */}
       <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-muted">
-        {product.image_url ? (
+        {(product.primary_image_url || product.image_url) ? (
           <Image
-            src={product.image_url}
+            src={product.primary_image_url || product.image_url}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
