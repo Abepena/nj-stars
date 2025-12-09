@@ -6,8 +6,8 @@ export function middleware(request: NextRequest) {
   const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true'
 
   if (maintenanceMode) {
-    // Allow access to the under-construction page itself
-    if (request.nextUrl.pathname === '/under-construction') {
+    // Allow access to the warming-up page itself
+    if (request.nextUrl.pathname === '/warming-up') {
       return NextResponse.next()
     }
 
@@ -21,8 +21,8 @@ export function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    // Redirect all other pages to under-construction
-    return NextResponse.redirect(new URL('/under-construction', request.url))
+    // Redirect all other pages to warming-up
+    return NextResponse.redirect(new URL('/warming-up', request.url))
   }
 
   return NextResponse.next()

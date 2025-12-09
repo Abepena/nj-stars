@@ -2,6 +2,7 @@
 Django==5.0.1
 djangorestframework==3.15.2
 django-cors-headers==4.3.1
+django-filter==24.3
 
 # Wagtail CMS
 wagtail==7.2.1
@@ -12,6 +13,7 @@ django-allauth==0.61.1
 
 # Database
 psycopg2-binary==2.9.9
+dj-database-url==2.1.0
 
 # Payments
 stripe==8.0.0

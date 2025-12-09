@@ -19,7 +19,10 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 ]
 
 # Security settings for production
-SECURE_SSL_REDIRECT = True
+# Note: Railway handles SSL termination, so we disable SECURE_SSL_REDIRECT
+# to prevent redirect loops with health checks
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
@@ -28,6 +31,19 @@ X_FRAME_OPTIONS = 'DENY'
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+# Trust Railway's proxy
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://*.railway.app,https://*.njstarselite.com,https://*.vercel.app',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# CORS: Allow Vercel preview deployments (pattern match)
+# This supplements CORS_ALLOWED_ORIGINS from base.py
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",  # All Vercel preview URLs
+]
 
 # Email configuration (add when ready)
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
