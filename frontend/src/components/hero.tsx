@@ -19,8 +19,8 @@ const defaults = {
   ctaLabel: "Register for Tryouts",
 };
 
-// Free stock basketball video from Mixkit (https://mixkit.co/free-stock-video/basketball/)
-const HERO_VIDEO_URL = "https://assets.mixkit.co/videos/44468/44468-720.mp4";
+// Local hero video from brand assets
+const HERO_VIDEO_URL = "/brand/videos/hero.mov" 
 
 export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroProps) {
   return (
