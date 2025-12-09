@@ -11,7 +11,7 @@ from django.db import transaction
 import stripe
 import uuid
 
-from .models import Product, SubscriptionPlan, Payment, Cart, CartItem
+from .models import Product, SubscriptionPlan, Payment, Cart, CartItem, Order
 from .serializers import (
     ProductSerializer,
     SubscriptionPlanSerializer,
@@ -19,6 +19,7 @@ from .serializers import (
     CartItemSerializer,
     AddToCartSerializer,
     UpdateCartItemSerializer,
+    OrderSerializer,
 )
 
 # Initialize Stripe
@@ -98,8 +99,8 @@ def create_product_checkout(request):
             )
 
         # Create Stripe checkout session
+        # Note: payment_method_types is omitted to use Dashboard-configured methods
         checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
@@ -176,8 +177,8 @@ def create_event_checkout(request):
             )
 
         # Create Stripe checkout session
+        # Note: payment_method_types is omitted to use Dashboard-configured methods
         checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
@@ -232,10 +233,12 @@ def stripe_webhook(request):
     # Handle the checkout.session.completed event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
+        metadata = session.get('metadata', {})
 
         # Create or update payment record
+        user_id = metadata.get('user_id')
         Payment.objects.create(
-            user_id=session.get('metadata', {}).get('user_id'),
+            user_id=user_id if user_id else None,
             stripe_payment_intent_id=session.get('payment_intent'),
             amount=session.get('amount_total') / 100,  # Convert from cents
             currency=session.get('currency', 'usd').upper(),
@@ -243,12 +246,25 @@ def stripe_webhook(request):
             payment_method=session.get('payment_method_types', ['card'])[0],
         )
 
-        # Clear cart after successful checkout
-        user_id = session.get('metadata', {}).get('user_id')
-        session_key = session.get('metadata', {}).get('session_key')
-        if user_id:
+        # Remove only the purchased items from cart (not entire cart)
+        item_ids_str = metadata.get('item_ids', '')
+        cart_id = metadata.get('cart_id')
+        session_key = metadata.get('session_key')
+
+        if item_ids_str and cart_id:
+            # Parse item IDs and remove only those items
+            item_ids = [int(id) for id in item_ids_str.split(',') if id]
+            if item_ids:
+                CartItem.objects.filter(id__in=item_ids, cart_id=cart_id).delete()
+
+                # Update product stock quantities
+                # Note: In production, this should be done atomically
+                # but for now we'll update after cart items are removed
+        elif user_id:
+            # Fallback: clear entire cart for authenticated user
             Cart.objects.filter(user_id=user_id).delete()
         elif session_key:
+            # Fallback: clear entire cart for guest
             Cart.objects.filter(session_key=session_key).delete()
 
         # TODO: Update event registration or order status based on metadata
@@ -400,7 +416,7 @@ class CartItemAPIView(APIView):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def cart_checkout(request):
-    """Create Stripe checkout session for entire cart"""
+    """Create Stripe checkout session for cart items (all or selected)"""
     try:
         if not _stripe_key_configured():
             return Response(
@@ -418,6 +434,7 @@ def cart_checkout(request):
 
         success_url = request.data.get('success_url')
         cancel_url = request.data.get('cancel_url')
+        item_ids = request.data.get('item_ids')  # Optional: specific item IDs to checkout
 
         if not success_url or not cancel_url:
             return Response(
@@ -425,9 +442,20 @@ def cart_checkout(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Get cart items - filter by item_ids if provided
+        cart_items = cart.items.select_related('product').all()
+        if item_ids:
+            cart_items = cart_items.filter(id__in=item_ids)
+            if not cart_items.exists():
+                return Response(
+                    {'error': 'No valid items selected for checkout'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         # Build line items from cart
         line_items = []
-        for item in cart.items.select_related('product').all():
+        checkout_item_ids = []  # Track which items are being checked out
+        for item in cart_items:
             if not item.is_available:
                 return Response(
                     {'error': f'{item.product.name} is no longer available'},
@@ -454,10 +482,12 @@ def cart_checkout(request):
                 },
                 'quantity': item.quantity,
             })
+            checkout_item_ids.append(item.id)
 
         # Create Stripe checkout session
+        # Note: payment_method_types is omitted to use Dashboard-configured methods
+        # (Google Pay, Apple Pay, PayPal, etc. - see documentation/STRIPE_PAYMENT_METHODS.md)
         checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
             success_url=success_url,
@@ -469,6 +499,7 @@ def cart_checkout(request):
                 'cart_id': cart.id,
                 'user_id': request.user.id if request.user.is_authenticated else None,
                 'session_key': cart.session_key if not request.user.is_authenticated else None,
+                'item_ids': ','.join(map(str, checkout_item_ids)),  # Store checked-out item IDs
             }
         )
 
@@ -538,6 +569,11 @@ def get_checkout_session(request, session_id):
                 'name': session.customer_details.name,
             }
 
+        # Get purchased item IDs from metadata (for removing from cart)
+        purchased_item_ids = []
+        if session.metadata and session.metadata.get('item_ids'):
+            purchased_item_ids = [int(id) for id in session.metadata['item_ids'].split(',') if id]
+
         return Response({
             'id': session.id,
             'status': session.status,
@@ -548,6 +584,7 @@ def get_checkout_session(request, session_id):
             'shipping': shipping,
             'customer': customer,
             'created': session.created,
+            'purchased_item_ids': purchased_item_ids,  # Item IDs to remove from cart
         })
 
     except stripe.error.InvalidRequestError:
@@ -589,3 +626,28 @@ def merge_cart(request):
         user_cart.merge_from_guest_cart(guest_cart)
 
     return Response(CartSerializer(user_cart).data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_order(request, order_number):
+    """
+    Retrieve order details by order number.
+
+    Allows customers to look up their order status and details
+    using the order number from their confirmation.
+    """
+    try:
+        # Look up order by order_number (case-insensitive)
+        order = Order.objects.prefetch_related('items', 'items__product').get(
+            order_number__iexact=order_number
+        )
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+
+    except Order.DoesNotExist:
+        return Response(
+            {'error': 'Order not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )

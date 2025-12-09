@@ -62,7 +62,7 @@ class Command(BaseCommand):
         self.stdout.write("Pages created:")
         self.stdout.write("  - HomePage (root)")
         self.stdout.write("  - BlogIndexPage ('The Huddle')")
-        self.stdout.write("  - 3 sample BlogPages")
+        self.stdout.write("  - 4 sample BlogPages")
         self.stdout.write("  - TeamPage ('Our Team')")
         self.stdout.write("  - 5 sample PlayerProfiles")
         self.stdout.write("")
@@ -105,9 +105,9 @@ class Command(BaseCommand):
             cta_label="Register for Tryouts",
             cta_url="",  # Left blank - will link to events page
             show_huddle_section=True,
-            huddle_limit=3,
+            huddle_limit=4,
             show_merch_section=True,
-            merch_limit=3,
+            merch_limit=6,
             show_newsletter_signup=True,
             newsletter_heading="Stay in the Game",
             newsletter_subheading="Get the latest news, event updates, and exclusive content delivered to your inbox.",
@@ -238,6 +238,31 @@ class Command(BaseCommand):
                     {
                         "type": "paragraph",
                         "value": "<p>Sessions run every Wednesday from 6-8 PM at our training facility. Open to all skill levels ages 10-17. Cost: $20 per session or $60 for a monthly pass.</p>",
+                    },
+                ],
+            },
+            {
+                "title": "Open Gym Sessions Every Saturday",
+                "slug": "open-gym-saturdays",
+                "date": (now - timedelta(days=21)).date(),
+                "category": "news",
+                "intro": "Join us every Saturday for open gym! A great opportunity to work on your game and play pickup with fellow Stars athletes.",
+                "body": [
+                    {
+                        "type": "paragraph",
+                        "value": "<p>We're excited to offer weekly open gym sessions for all NJ Stars athletes and prospective players. This is the perfect opportunity to get extra reps in and build chemistry with your teammates.</p>",
+                    },
+                    {
+                        "type": "heading",
+                        "value": "Session Details",
+                    },
+                    {
+                        "type": "paragraph",
+                        "value": "<p><strong>When:</strong> Every Saturday, 9:00 AM - 12:00 PM<br/><strong>Where:</strong> Bergen County Sports Complex, Courts 2 & 3<br/><strong>Cost:</strong> Free for current team members, $10 drop-in for others</p>",
+                    },
+                    {
+                        "type": "paragraph",
+                        "value": "<p>Open gym includes supervised pickup games, shooting stations, and skill work areas. Coaches will be available for individual feedback and guidance. Bring your A-game!</p>",
                     },
                 ],
             },

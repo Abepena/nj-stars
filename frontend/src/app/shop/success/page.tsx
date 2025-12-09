@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -9,8 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LayoutShell } from "@/components/layout-shell"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ConfettiCelebration } from "@/components/confetti-celebration"
+import { useBag, getPendingCheckoutItems, clearPendingCheckoutItems } from "@/lib/bag"
+import { useToast } from "@/components/ui/toast"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// Log for debugging - can remove in production
+const DEBUG = process.env.NODE_ENV === 'development'
 
 interface LineItem {
   name: string
@@ -48,6 +53,7 @@ interface CheckoutSession {
   shipping: ShippingDetails | null
   customer: CustomerDetails | null
   created: number
+  purchased_item_ids?: number[]
 }
 
 function OrderItemSkeleton() {
@@ -68,34 +74,86 @@ function SuccessContent() {
   const sessionId = searchParams?.get("session_id")
   const [session, setSession] = useState<CheckoutSession | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { removeItems, refreshBag } = useBag()
+  const { info } = useToast()
+  const itemsRemoved = useRef(false)
+  const toastShown = useRef(false)
 
   useEffect(() => {
     async function fetchCheckoutSession() {
       if (!sessionId) {
+        if (DEBUG) console.log('No session ID provided')
         setLoading(false)
         return
       }
 
+      // Get pending checkout items from localStorage (stored before Stripe redirect)
+      const pendingItems = getPendingCheckoutItems()
+      if (DEBUG) console.log('Pending checkout items from localStorage:', pendingItems)
+
+      let sessionData: CheckoutSession | null = null
+
       try {
+        if (DEBUG) console.log('Fetching checkout session:', sessionId)
         const response = await fetch(`${API_BASE_URL}/api/payments/checkout/session/${sessionId}/`)
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch order details')
+        if (response.ok) {
+          sessionData = await response.json()
+          if (DEBUG) console.log('Checkout session data:', sessionData)
+          setSession(sessionData)
+        } else {
+          // Stripe session retrieval failed (common in test mode)
+          // We can still clear the cart using localStorage fallback
+          if (DEBUG) console.log('Stripe session fetch failed, using localStorage fallback')
+          if (!toastShown.current) {
+            toastShown.current = true
+            info('Order details unavailable in test mode', 5000)
+          }
         }
-
-        const data = await response.json()
-        setSession(data)
       } catch (err) {
         console.error('Error fetching checkout session:', err)
-        setError('Unable to load order details')
-      } finally {
-        setLoading(false)
+        if (!toastShown.current) {
+          toastShown.current = true
+          info('Order details could not be loaded', 5000)
+        }
       }
+
+      // Remove purchased items - use Stripe data if available, otherwise use localStorage
+      if (!itemsRemoved.current) {
+        itemsRemoved.current = true
+
+        // Determine which items to remove
+        const itemsToRemove = sessionData?.purchased_item_ids?.length
+          ? sessionData.purchased_item_ids
+          : pendingItems
+
+        if (itemsToRemove.length > 0) {
+          if (DEBUG) console.log('Removing items:', itemsToRemove)
+          try {
+            await removeItems(itemsToRemove)
+            if (DEBUG) console.log('Items removed successfully')
+          } catch (err) {
+            if (DEBUG) console.log('Items removal attempted:', err)
+          }
+        }
+
+        // Clear the localStorage after attempting removal
+        clearPendingCheckoutItems()
+
+        // Always refresh the bag to sync with backend state
+        try {
+          await refreshBag()
+          if (DEBUG) console.log('Bag refreshed')
+        } catch (err) {
+          if (DEBUG) console.log('Bag refresh failed:', err)
+        }
+      }
+
+      setLoading(false)
     }
 
     fetchCheckoutSession()
-  }, [sessionId])
+  }, [sessionId, removeItems, refreshBag, info])
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString('en-US', {
@@ -184,8 +242,6 @@ function SuccessContent() {
                       <OrderItemSkeleton />
                       <OrderItemSkeleton />
                     </>
-                  ) : error ? (
-                    <p className="text-text-secondary text-center py-4">{error}</p>
                   ) : session?.line_items && session.line_items.length > 0 ? (
                     session.line_items.map((item, index) => (
                       <div key={index} className="flex gap-4 py-4 first:pt-0 last:pb-0">

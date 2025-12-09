@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, SubscriptionPlan, Cart, CartItem
+from .models import Product, SubscriptionPlan, Cart, CartItem, Order, OrderItem
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -149,3 +149,66 @@ class UpdateCartItemSerializer(serializers.Serializer):
     def validate_quantity(self, value):
         """Quantity of 0 means remove item"""
         return value
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    """Serializer for order items"""
+
+    product_image = serializers.SerializerMethodField()
+    total_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = OrderItem
+        fields = [
+            'id',
+            'product_name',
+            'product_price',
+            'quantity',
+            'total_price',
+            'product_image',
+        ]
+        read_only_fields = ['id']
+
+    def get_product_image(self, obj):
+        """Get product image URL if product still exists"""
+        if obj.product:
+            return obj.product.image_url
+        return None
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    """Serializer for Order model"""
+
+    items = OrderItemSerializer(many=True, read_only=True)
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = [
+            'id',
+            'order_number',
+            'status',
+            'status_display',
+            'subtotal',
+            'shipping',
+            'tax',
+            'total',
+            'shipping_name',
+            'shipping_email',
+            'shipping_address_line1',
+            'shipping_address_line2',
+            'shipping_city',
+            'shipping_state',
+            'shipping_zip',
+            'shipping_country',
+            'items',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_status_display(self, obj):
+        """Return human-readable status"""
+        return obj.get_status_display()

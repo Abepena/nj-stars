@@ -7,9 +7,9 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { MobileNav } from "@/components/mobile-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { CartDrawer } from "@/components/cart-drawer"
-import { useCart } from "@/lib/cart"
-import { ShoppingCart } from "lucide-react"
+import { BagDrawer } from "@/components/bag-drawer"
+import { useBag } from "@/lib/bag"
+import { ShoppingBag } from "lucide-react"
 
 const links = [
   { href: "/news", label: "News" },
@@ -20,11 +20,11 @@ const links = [
 export function SiteHeader() {
   const pathname = usePathname()
   const { data: session } = useSession()
-  const { cart } = useCart()
+  const { bag } = useBag()
   const [textLogo, setTextLogo] = useState("/brand/logos/Text Logo.svg")
-  const [cartOpen, setCartOpen] = useState(false)
+  const [bagOpen, setBagOpen] = useState(false)
 
-  const itemCount = cart?.item_count || 0
+  const itemCount = bag?.item_count || 0
 
   // Update logo based on theme (client-side only to avoid SSR issues)
   useEffect(() => {
@@ -82,14 +82,14 @@ export function SiteHeader() {
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Shopping Cart */}
+          {/* Shopping Bag */}
           <Button
             variant="ghost"
             size="icon"
             className="group relative h-9 w-9"
-            onClick={() => setCartOpen(true)}
+            onClick={() => setBagOpen(true)}
           >
-            <ShoppingCart className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
+            <ShoppingBag className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                 {itemCount > 99 ? '99+' : itemCount}
@@ -115,14 +115,14 @@ export function SiteHeader() {
 
         {/* Mobile Navigation & Actions - visible on mobile only, positioned on right */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 md:hidden flex items-center gap-3">
-          {/* Shopping Cart */}
+          {/* Shopping Bag */}
           <Button
             variant="ghost"
             size="icon"
             className="group relative h-9 w-9"
-            onClick={() => setCartOpen(true)}
+            onClick={() => setBagOpen(true)}
           >
-            <ShoppingCart className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
+            <ShoppingBag className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                 {itemCount > 99 ? '99+' : itemCount}
@@ -135,8 +135,8 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* Cart Drawer */}
-      <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
+      {/* Bag Drawer */}
+      <BagDrawer open={bagOpen} onOpenChange={setBagOpen} />
     </nav>
   )
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCart } from '@/lib/cart'
+import { useBag } from '@/lib/bag'
 import {
   Sheet,
   SheetContent,
@@ -15,22 +15,34 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  ShoppingCart,
+  ShoppingBag,
   Minus,
   Plus,
   Trash2,
   Loader2,
-  ShoppingBag,
   AlertCircle,
+  Check,
 } from 'lucide-react'
 
-interface CartDrawerProps {
+interface BagDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
-  const { cart, isLoading, updateQuantity, removeItem, checkout } = useCart()
+export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
+  const {
+    bag,
+    isLoading,
+    updateQuantity,
+    removeItem,
+    checkout,
+    selectedItems,
+    toggleItemSelection,
+    selectAllItems,
+    deselectAllItems,
+    getSelectedSubtotal,
+    getSelectedCount,
+  } = useBag()
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [updatingItems, setUpdatingItems] = useState<Set<number>>(new Set())
 
@@ -77,18 +89,21 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
     }
   }
 
-  const itemCount = cart?.item_count || 0
-  const subtotal = cart?.subtotal || '0.00'
+  const itemCount = bag?.item_count || 0
+  const selectedCount = getSelectedCount()
+  const selectedSubtotal = getSelectedSubtotal()
+  const allAvailableSelected = bag?.items.filter(item => item.is_available).every(item => selectedItems.has(item.id)) ?? false
+  const hasSelectedItems = selectedItems.size > 0
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col sm:max-w-lg">
         <SheetHeader className="space-y-2.5 pr-6">
           <SheetTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            Your Cart
+            <ShoppingBag className="h-5 w-5" />
+            Your Bag
             {itemCount > 0 && (
-              <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+              <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">
                 {itemCount} {itemCount === 1 ? 'item' : 'items'}
               </span>
             )}
@@ -97,15 +112,41 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
 
         <Separator className="my-4" />
 
+        {/* Select All / Deselect All */}
+        {bag && bag.items.length > 0 && (
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={allAvailableSelected ? deselectAllItems : selectAllItems}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <div
+                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  allAvailableSelected
+                    ? 'bg-primary border-primary'
+                    : 'border-muted-foreground/50 hover:border-muted-foreground'
+                }`}
+              >
+                {allAvailableSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+              </div>
+              {allAvailableSelected ? 'Deselect all' : 'Select all'}
+            </button>
+            {hasSelectedItems && (
+              <span className="text-sm text-muted-foreground">
+                {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
+              </span>
+            )}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : !cart || cart.items.length === 0 ? (
+        ) : !bag || bag.items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
             <ShoppingBag className="h-16 w-16 text-muted-foreground/50" />
             <div>
-              <p className="text-lg font-medium">Your cart is empty</p>
+              <p className="text-lg font-medium">Your bag is empty</p>
               <p className="text-sm text-muted-foreground">
                 Add some items to get started
               </p>
@@ -120,8 +161,9 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
           <>
             <ScrollArea className="flex-1 pr-4">
               <div className="space-y-4">
-                {cart.items.map(item => {
+                {bag.items.map(item => {
                   const isUpdating = updatingItems.has(item.id)
+                  const isSelected = selectedItems.has(item.id)
                   const price = parseFloat(item.product.price)
                   const comparePrice = item.product.compare_at_price
                     ? parseFloat(item.product.compare_at_price)
@@ -130,10 +172,28 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                   return (
                     <div
                       key={item.id}
-                      className={`flex gap-4 rounded-lg border p-3 transition-opacity ${
+                      className={`flex gap-3 rounded-lg border p-3 transition-all ${
                         isUpdating ? 'opacity-50' : ''
-                      } ${!item.is_available ? 'border-destructive/50 bg-destructive/5' : ''}`}
+                      } ${!item.is_available ? 'border-destructive/50 bg-destructive/5' : ''} ${
+                        isSelected ? 'border-primary/50 bg-primary/5' : ''
+                      }`}
                     >
+                      {/* Selection Checkbox */}
+                      <button
+                        onClick={() => item.is_available && toggleItemSelection(item.id)}
+                        disabled={!item.is_available}
+                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors self-center ${
+                          isSelected
+                            ? 'bg-primary border-primary'
+                            : item.is_available
+                            ? 'border-muted-foreground/50 hover:border-muted-foreground'
+                            : 'border-muted-foreground/30 cursor-not-allowed'
+                        }`}
+                        aria-label={isSelected ? 'Deselect item' : 'Select item'}
+                      >
+                        {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                      </button>
+
                       {/* Product Image */}
                       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                         {item.product.image_url ? (
@@ -231,11 +291,13 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
             <div className="space-y-4 pt-4">
               <Separator />
 
-              {/* Subtotal */}
+              {/* Selected Items Subtotal */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">${subtotal}</span>
+                  <span className="text-muted-foreground">
+                    Selected ({selectedCount} item{selectedCount !== 1 ? 's' : ''})
+                  </span>
+                  <span className="font-medium">${selectedSubtotal}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
@@ -249,7 +311,7 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
 
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Total</span>
-                <span>${subtotal}</span>
+                <span>${selectedSubtotal}</span>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -258,15 +320,17 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
-                  disabled={checkoutLoading || cart.items.some(item => !item.is_available)}
+                  disabled={checkoutLoading || !hasSelectedItems || bag.items.filter(item => selectedItems.has(item.id)).some(item => !item.is_available)}
                 >
                   {checkoutLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Processing...
                     </>
+                  ) : !hasSelectedItems ? (
+                    'Select items to checkout'
                   ) : (
-                    'Checkout'
+                    `Checkout (${selectedCount} item${selectedCount !== 1 ? 's' : ''})`
                   )}
                 </Button>
                 <SheetClose asChild>

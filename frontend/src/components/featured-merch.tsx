@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { Check, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
 import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleton"
 import { ProductQuickView } from "@/components/product-quick-view"
+import { useBag } from "@/lib/bag"
 
 interface Product {
   id: number
@@ -30,9 +32,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 interface FeaturedMerchProps {
   limit?: number
   showSeeMore?: boolean
+  title?: string
+  subtitle?: string
 }
 
-export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchProps) {
+export function FeaturedMerch({
+  limit = 3,
+  showSeeMore = false,
+  title = "The Locker Room",
+  subtitle = "Rep NJ Stars with official team gear"
+}: FeaturedMerchProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,10 +87,24 @@ export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchP
   // Show skeleton while loading
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-        {[1, 2, 3].map((i) => (
-          <ProductCardSkeleton key={i} />
-        ))}
+      <div className="space-y-8">
+        {/* Mobile/Tablet: Header skeleton */}
+        <div className="lg:hidden text-center mb-6">
+          <div className="h-8 w-48 bg-muted animate-pulse rounded mx-auto" />
+          <div className="h-4 w-64 bg-muted animate-pulse rounded mx-auto mt-2" />
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Desktop Header skeleton */}
+          <div className="hidden lg:flex lg:col-span-2 flex-col justify-center p-6 lg:p-8">
+            <div className="h-10 w-56 bg-muted animate-pulse rounded" />
+            <div className="h-5 w-72 bg-muted animate-pulse rounded mt-2" />
+            <div className="h-12 w-32 bg-muted animate-pulse rounded mt-5" />
+          </div>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   }
@@ -116,7 +139,29 @@ export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchP
   return (
     <>
       <div className="space-y-8">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+        {/* Mobile/Tablet: Header above grid */}
+        <div className="lg:hidden text-center mb-6">
+          <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+          <p className="text-muted-foreground mt-1">{subtitle}</p>
+        </div>
+
+        {/* Desktop (lg+): 4-column grid with header in first 2 cols, Mobile/Tablet: 2-column grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Desktop Header - spans 2 columns, 1 row only, hidden on mobile/tablet */}
+          <div className="hidden lg:flex lg:col-span-2 flex-col justify-center p-6 lg:p-8">
+            <h2 className="lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight">{title}</h2>
+            <p className="text-muted-foreground mt-2 text-base lg:text-lg">{subtitle}</p>
+            {showSeeMore && (
+              <div className="mt-5">
+                <Link href="/shop">
+                  <Button variant="outline" size="lg" className="px-8">
+                    Gear Up →
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+
           {products.map((product) => (
             <ProductCard
               key={product.id}
@@ -125,8 +170,10 @@ export function FeaturedMerch({ limit = 3, showSeeMore = false }: FeaturedMerchP
             />
           ))}
         </div>
+
+        {/* Mobile/Tablet: Show "Gear Up" button below grid */}
         {showSeeMore && (
-          <div className="flex justify-center">
+          <div className="flex justify-center lg:hidden">
             <Link href="/shop">
               <Button variant="outline" size="lg" className="px-8">
                 Gear Up →
@@ -154,6 +201,28 @@ interface ProductCardProps {
 }
 
 function ProductCard({ product, onClick }: ProductCardProps) {
+  const { addToBag } = useBag()
+  const [isAdding, setIsAdding] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  const handleAddToBag = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!product.in_stock || isAdding || showSuccess) return
+
+    setIsAdding(true)
+    try {
+      await addToBag(product.id, 1)
+      // Show success state
+      setShowSuccess(true)
+      // Reset after animation
+      setTimeout(() => setShowSuccess(false), 2000)
+    } catch {
+      // Error is handled by bag context
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
   return (
     <article
       className="flex flex-col cursor-pointer group"
@@ -188,6 +257,39 @@ function ProductCard({ product, onClick }: ProductCardProps) {
           </div>
         )}
 
+        {/* Hover overlay with price and add to cart button */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
+          {/* Price badge - bottom left */}
+          <div className="absolute bottom-3 left-3">
+            <span className="bg-white text-black text-sm font-semibold px-3 py-1.5 rounded-full shadow-lg">
+              ${parseFloat(product.price).toFixed(2)}
+              {product.compare_at_price && (
+                <span className="ml-1.5 text-muted-foreground line-through text-xs">
+                  ${parseFloat(product.compare_at_price).toFixed(2)}
+                </span>
+              )}
+            </span>
+          </div>
+
+          {/* Add to bag button - top right */}
+          <button
+            onClick={handleAddToBag}
+            disabled={!product.in_stock || isAdding}
+            className={`absolute top-3 right-3 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 disabled:opacity-50 ${
+              showSuccess
+                ? 'bg-green-500 scale-110 animate-success-pulse'
+                : 'bg-white hover:bg-gray-100'
+            }`}
+            aria-label={showSuccess ? "Added to bag" : "Add to bag"}
+          >
+            {showSuccess ? (
+              <Check className="w-5 h-5 text-white animate-checkmark" strokeWidth={3} />
+            ) : (
+              <ShoppingBag className="w-5 h-5 text-black" />
+            )}
+          </button>
+        </div>
+
         {/* Out of stock overlay */}
         {!product.in_stock && (
           <div className="absolute inset-0 bg-background/70 flex items-center justify-center rounded-lg">
@@ -196,7 +298,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
         )}
       </div>
 
-      {/* Content - flat layout, no prices on homepage */}
+      {/* Content - flat layout */}
       <div className="flex flex-col pt-3 space-y-1">
         {/* Product name */}
         <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">

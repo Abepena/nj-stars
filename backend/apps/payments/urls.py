@@ -11,6 +11,7 @@ from .views import (
     cart_checkout,
     merge_cart,
     get_checkout_session,
+    get_order,
 )
 
 router = DefaultRouter()
@@ -30,4 +31,6 @@ urlpatterns = [
     path('cart/merge/', merge_cart, name='cart-merge'),
     # Webhooks
     path('webhook/stripe/', stripe_webhook, name='stripe-webhook'),
+    # Order lookup
+    path('orders/<str:order_number>/', get_order, name='order-detail'),
 ]

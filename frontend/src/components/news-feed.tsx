@@ -162,7 +162,7 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
   // Show skeleton while loading
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {[1, 2, 3, 4].map((i) => (
           <NewsCardSkeleton key={i} />
         ))}
@@ -199,7 +199,7 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {feedItems.map((item) => (
           <FeedCard key={item.id} item={item} />
         ))}

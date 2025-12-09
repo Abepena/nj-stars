@@ -4,14 +4,14 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, ShoppingCart, Loader2, Check, ArrowLeft } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { LayoutShell } from "@/components/layout-shell"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { ProductDetailSkeleton } from "@/components/skeletons/product-detail-skeleton"
-import { useCart } from "@/lib/cart"
+import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 
 interface Product {
@@ -85,7 +85,7 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
 
-  const { addToCart } = useCart()
+  const { addToBag } = useBag()
 
   // Get variant config based on product category
   const variantConfig = product ? VARIANT_CONFIGS[product.category] || VARIANT_CONFIGS.equipment : null
@@ -144,15 +144,15 @@ export default function ProductDetailPage() {
     setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
   }
 
-  const handleAddToCart = async () => {
+  const handleAddToBag = async () => {
     if (!product) return
     setIsAdding(true)
     try {
-      await addToCart(product.id, quantity)
+      await addToBag(product.id, quantity)
       setJustAdded(true)
       setTimeout(() => setJustAdded(false), 2000)
     } catch (error) {
-      console.error("Failed to add to cart:", error)
+      console.error("Failed to add to bag:", error)
     } finally {
       setIsAdding(false)
     }
@@ -512,32 +512,32 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Add to Cart Button - hidden on mobile (covered by sticky footer) */}
+                {/* Add to Bag Button - hidden on mobile (covered by sticky footer) */}
                 <Button
                   className="w-full hidden lg:flex"
                   size="lg"
-                  onClick={handleAddToCart}
+                  onClick={handleAddToBag}
                   disabled={isAdding || !variantsSelected}
                 >
                   {isAdding ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Adding to Cart...
+                      Adding to Bag...
                     </>
                   ) : justAdded ? (
                     <>
                       <Check className="mr-2 h-5 w-5" />
-                      Added to Cart!
+                      Added to Bag!
                     </>
                   ) : !variantsSelected ? (
                     <>
-                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      <ShoppingBag className="mr-2 h-5 w-5" />
                       Select Options
                     </>
                   ) : (
                     <>
-                      <ShoppingCart className="mr-2 h-5 w-5" />
-                      Add to Cart — ${(parseFloat(product.price) * quantity).toFixed(2)}
+                      <ShoppingBag className="mr-2 h-5 w-5" />
+                      Add to Bag — ${(parseFloat(product.price) * quantity).toFixed(2)}
                     </>
                   )}
                 </Button>
@@ -616,7 +616,7 @@ export default function ProductDetailPage() {
             {/* Add to Bag button */}
             <Button
               className="flex-1 h-12 text-base font-semibold"
-              onClick={handleAddToCart}
+              onClick={handleAddToBag}
               disabled={isAdding || !variantsSelected}
             >
               {isAdding ? (
@@ -632,7 +632,7 @@ export default function ProductDetailPage() {
               ) : !variantsSelected ? (
                 "Select Options"
               ) : (
-                "Add to Cart"
+                "Add to Bag"
               )}
             </Button>
           </div>

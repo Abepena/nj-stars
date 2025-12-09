@@ -360,6 +360,35 @@ class Command(BaseCommand):
                 'best_selling': False,
                 'on_sale': False,
             },
+            {
+                'name': 'Travel Duffle Bag',
+                'slug': 'travel-duffle-bag',
+                'description': 'Large capacity team duffle bag with separate shoe compartment. Water-resistant fabric with adjustable shoulder strap.',
+                'price': Decimal('75.00'),
+                'compare_at_price': Decimal('85.00'),
+                'category': 'accessories',
+                # Duffle bag
+                'image_url': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 35,
+                'featured': True,
+                'best_selling': False,
+                'on_sale': True,
+            },
+            {
+                'name': 'Reversible Practice Jersey',
+                'slug': 'reversible-practice-jersey',
+                'description': 'Two jerseys in one! Reversible mesh practice jersey with black on one side and white on the other. Perfect for scrimmages.',
+                'price': Decimal('45.00'),
+                'category': 'jersey',
+                # Reversible jersey
+                'image_url': 'https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=800&q=80',
+                'is_active': True,
+                'stock_quantity': 60,
+                'featured': True,
+                'best_selling': True,
+                'on_sale': False,
+            },
             # TEST PRODUCT - $0.50 minimum for Stripe checkout testing
             {
                 'name': '[TEST] Checkout Test Item',
@@ -390,6 +419,7 @@ class Command(BaseCommand):
         self.stdout.write('Creating coaches...')
 
         # Real coach data from NJ Stars Elite
+        # photo_url left empty - frontend will show placeholder avatar icon
         coaches = [
             {
                 'name': 'Trajan Chapman',
@@ -398,7 +428,7 @@ class Command(BaseCommand):
                 'role': 'head_coach',
                 'title': 'Head Coach & Trainer',
                 'bio': 'Trajan "Tray" Chapman is the head coach and lead trainer for NJ Stars Elite. With years of experience in player development and competitive coaching, Tray brings an intense focus on fundamentals, basketball IQ, and mental toughness to every session.',
-                'photo_url': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+                'photo_url': '',
                 'instagram_handle': 'traygotbounce',
                 'specialties': 'player development, ball handling, shooting mechanics, defensive fundamentals',
                 'is_active': True,
@@ -411,7 +441,7 @@ class Command(BaseCommand):
                 'role': 'skills_coach',
                 'title': 'Skills Clinic Coach',
                 'bio': 'Coach Cee specializes in skills development clinics and individual training. His approach focuses on building confidence through repetition and breaking down complex moves into learnable steps.',
-                'photo_url': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&q=80',
+                'photo_url': '',
                 'instagram_handle': 'coach.cee',
                 'specialties': 'skills clinics, individual training, footwork, finishing',
                 'is_active': True,
@@ -424,7 +454,7 @@ class Command(BaseCommand):
                 'role': 'founder',
                 'title': 'Founder & Coach',
                 'bio': 'Kenneth "Coach K" Andrade is the founder of NJ Stars Elite AAU Basketball. His vision to create an elite youth basketball program in New Jersey has grown into a thriving organization that develops both athletes and young people.',
-                'photo_url': 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&q=80',
+                'photo_url': '',
                 'instagram_handle': 'kenny_164',
                 'specialties': 'program development, team strategy, leadership, community building',
                 'is_active': True,

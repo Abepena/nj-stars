@@ -2,15 +2,18 @@
 
 import { SessionProvider } from "next-auth/react"
 import { ThemeProvider } from "@/components/theme-provider"
-import { CartProvider } from "@/lib/cart"
+import { BagProvider } from "@/lib/bag"
+import { ToastProvider } from "@/components/ui/toast"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <ThemeProvider defaultTheme="dark" storageKey="nj-stars-theme">
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <ToastProvider>
+          <BagProvider>
+            {children}
+          </BagProvider>
+        </ToastProvider>
       </ThemeProvider>
     </SessionProvider>
   )

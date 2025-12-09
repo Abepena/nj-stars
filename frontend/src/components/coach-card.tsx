@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Instagram } from "lucide-react"
+import { Instagram, User } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,14 +44,10 @@ export function CoachCard({ coach }: CoachCardProps) {
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <Image
-              src="/brand/logos/logo square thick muted.svg"
-              alt={coach.display_name || coach.name}
-              width={120}
-              height={120}
-              className="opacity-30"
-            />
+          <div className="flex h-full items-center justify-center bg-muted/50">
+            <div className="rounded-full bg-muted p-6">
+              <User className="h-16 w-16 text-muted-foreground/50" />
+            </div>
           </div>
         )}
 

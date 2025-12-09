@@ -36,8 +36,10 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
         >
           <source src={HERO_VIDEO_URL} type="video/mp4" />
         </video>
-        {/* Dark overlay - lighter in center on desktop to see video */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/80 md:bg-gradient-to-t md:from-black/90 md:via-black/20 md:to-black/40" />
+        {/* Dark overlay for text contrast */}
+        <div className="absolute inset-0 bg-black/50" />
+        {/* Additional gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
       </div>
 
       {/* Content - Bottom on all screens, centered on desktop */}
@@ -45,8 +47,8 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
         <div className="container mx-auto px-4 text-center md:text-left">
           <div className="max-w-4xl">
           <h1 className="text-4xl pb-2 sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
-            {/* Pink accent line - smaller, closer to heading */}
-            <div className="w-12 h-0.5 bg-primary mb-3 mx-auto md:mx-0" />
+            {/* Pink accent line - gradient matching the bottom bar */}
+            <div className="w-full h-0.5 bg-gradient-to-r from-primary to-primary/0 mb-1 max-w-[200px] md:max-w-[280px] mx-auto md:mx-0" />
             <span className="block text-white drop-shadow-lg">{heading || defaults.heading}</span>
             <span className="relative inline-block text-3xl sm:text-4xl md:text-4xl lg:text-5xl mt-2 md:mt-3 text-white/90 drop-shadow-lg">
               {tagline || defaults.tagline}

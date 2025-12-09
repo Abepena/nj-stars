@@ -21,7 +21,26 @@ import {
   SheetClose
 } from "@/components/ui/sheet"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfWeek, endOfWeek, addMonths, subMonths } from "date-fns"
-import { Calendar, List, SlidersHorizontal, ChevronLeft, ChevronRight, Check, X, ChevronDown, User } from "lucide-react"
+import { Calendar, List, SlidersHorizontal, ChevronLeft, ChevronRight, Check, X, ChevronDown, User, Download, ExternalLink, CalendarPlus } from "lucide-react"
+
+// Brand icons as inline SVGs
+const GoogleCalendarIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.5 4h-3V2.5a.5.5 0 0 0-1 0V4h-7V2.5a.5.5 0 0 0-1 0V4h-3A2.5 2.5 0 0 0 2 6.5v13A2.5 2.5 0 0 0 4.5 22h15a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 19.5 4zM4.5 5.5h15a1 1 0 0 1 1 1V8H3.5V6.5a1 1 0 0 1 1-1zm15 15h-15a1 1 0 0 1-1-1V9.5h17v10a1 1 0 0 1-1 1z"/>
+    <path d="M12 11a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm0 5.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="#4285F4"/>
+  </svg>
+)
+
+const AppleIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+  </svg>
+)
+import {
+  generateGoogleCalendarUrl,
+  downloadEventIcs,
+  getICalendarSubscriptionUrl,
+} from "@/lib/calendar-utils"
 import { cn } from "@/lib/utils"
 
 interface Event {
@@ -587,6 +606,38 @@ export default function EventsPage() {
 
                 <FilterContent isMobile={false} />
 
+                {/* Calendar Sync - Only show for My Events */}
+                {session && timeFilter === "my_events" && myEventIds.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <Separator />
+                    <p className="text-sm font-semibold">Sync Calendar</p>
+                    <p className="text-xs text-muted-foreground">
+                      Subscribe to your events in your favorite calendar app.
+                    </p>
+                    <div className="space-y-2">
+                      <a
+                        href={getICalendarSubscriptionUrl()}
+                        download="njstars-my-events.ics"
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download .ics file
+                      </a>
+                      <button
+                        onClick={() => {
+                          const url = getICalendarSubscriptionUrl()
+                          navigator.clipboard.writeText(url)
+                          alert('Calendar URL copied! Paste this in your calendar app\'s "Subscribe" feature.')
+                        }}
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Copy subscription URL
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Clear Filters */}
                 {hasActiveFilters && (
                   <div className="space-y-3">
@@ -674,6 +725,7 @@ function CalendarView({
   onMonthChange: (date: Date) => void
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [showSyncMenu, setShowSyncMenu] = useState(false)
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -707,9 +759,65 @@ function CalendarView({
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-lg font-semibold">
-            {format(currentMonth, "MMMM yyyy")}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold">
+              {format(currentMonth, "MMMM yyyy")}
+            </h2>
+            {/* Sync to Calendar - subtle icon button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSyncMenu(!showSyncMenu)}
+                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                aria-label="Sync to calendar"
+                title="Add to your calendar"
+              >
+                <CalendarPlus className="w-4 h-4" />
+              </button>
+              {showSyncMenu && (
+                <>
+                  {/* Backdrop to close menu */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowSyncMenu(false)}
+                  />
+                  <div className="absolute top-full right-0 mt-1 bg-background border border-border rounded-lg shadow-lg py-1 min-w-[220px] z-20">
+                    <p className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b border-border">
+                      Add to your calendar
+                    </p>
+                    <button
+                      onClick={() => {
+                        // Open Google Calendar with subscription
+                        window.open('https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(getICalendarSubscriptionUrl()), '_blank')
+                        setShowSyncMenu(false)
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+                    >
+                      <GoogleCalendarIcon className="w-4 h-4" />
+                      Add to Google Calendar
+                    </button>
+                    <a
+                      href={getICalendarSubscriptionUrl()}
+                      download="njstars-events.ics"
+                      className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted transition-colors"
+                      onClick={() => setShowSyncMenu(false)}
+                    >
+                      <AppleIcon className="w-4 h-4" />
+                      Add to Apple Calendar
+                    </a>
+                    <a
+                      href={getICalendarSubscriptionUrl()}
+                      download="njstars-events.ics"
+                      className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted transition-colors border-t border-border"
+                      onClick={() => setShowSyncMenu(false)}
+                    >
+                      <Download className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Download for other apps</span>
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
           <button
             onClick={() => onMonthChange(addMonths(currentMonth, 1))}
             className="p-2 hover:bg-muted rounded-md transition-colors"
@@ -932,9 +1040,37 @@ function CalendarView({
 
 // Event Card Component
 function EventCard({ event }: { event: Event }) {
+  const [calendarMenuOpen, setCalendarMenuOpen] = useState(false)
   const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || { label: event.event_type, className: 'text-muted-foreground' }
   const formattedDate = format(new Date(event.start_datetime), "EEE, MMM dd")
   const formattedTime = format(new Date(event.start_datetime), "h:mm a")
+
+  const handleAddToGoogleCalendar = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const url = generateGoogleCalendarUrl({
+      title: event.title,
+      description: event.description,
+      location: event.location,
+      start_datetime: event.start_datetime,
+      end_datetime: event.end_datetime,
+      slug: event.slug,
+    })
+    window.open(url, '_blank', 'noopener,noreferrer')
+    setCalendarMenuOpen(false)
+  }
+
+  const handleDownloadIcs = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    downloadEventIcs({
+      title: event.title,
+      description: event.description,
+      location: event.location,
+      start_datetime: event.start_datetime,
+      end_datetime: event.end_datetime,
+      slug: event.slug,
+    })
+    setCalendarMenuOpen(false)
+  }
 
   return (
     <article className="flex flex-col cursor-pointer group">
@@ -969,6 +1105,49 @@ function EventCard({ event }: { event: Event }) {
             {event.spots_remaining} spots left
           </div>
         )}
+
+        {/* Calendar button - shown on hover */}
+        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setCalendarMenuOpen(!calendarMenuOpen)
+              }}
+              className="p-2 bg-background/90 backdrop-blur-sm rounded-lg hover:bg-background transition-colors"
+              aria-label="Add to calendar"
+            >
+              <Calendar className="w-4 h-4" />
+            </button>
+
+            {/* Calendar menu dropdown */}
+            {calendarMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 bg-background border border-border rounded-lg shadow-lg py-1 min-w-[210px] z-10">
+                <button
+                  onClick={handleAddToGoogleCalendar}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+                >
+                  <GoogleCalendarIcon className="w-4 h-4" />
+                  Add to Google Calendar
+                </button>
+                <button
+                  onClick={handleDownloadIcs}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+                >
+                  <AppleIcon className="w-4 h-4" />
+                  Add to Apple Calendar
+                </button>
+                <button
+                  onClick={handleDownloadIcs}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left border-t border-border text-muted-foreground"
+                >
+                  <Download className="w-4 h-4" />
+                  Download for other apps
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Content - Nike style */}

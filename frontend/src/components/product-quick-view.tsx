@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, ShoppingCart, Loader2, Check } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { useCart } from "@/lib/cart"
+import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 
 interface Product {
@@ -40,7 +40,8 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
-  const { addToCart } = useCart()
+  const [isFadingOut, setIsFadingOut] = useState(false)
+  const { addToBag } = useBag()
 
   // Generate multiple placeholder images for carousel
   const productImages = [
@@ -49,14 +50,25 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     `${product.image_url}&seed=2`,
   ]
 
-  const handleAddToCart = async () => {
+  const handleAddToBag = async () => {
     setIsAdding(true)
     try {
-      await addToCart(product.id, quantity)
+      await addToBag(product.id, quantity)
       setJustAdded(true)
-      setTimeout(() => setJustAdded(false), 2000)
+      // Start fade out after showing success
+      setTimeout(() => {
+        setIsFadingOut(true)
+        // Close modal after fade animation completes
+        setTimeout(() => {
+          onOpenChange(false)
+          // Reset states after modal closes
+          setJustAdded(false)
+          setQuantity(1)
+          setIsFadingOut(false)
+        }, 300)
+      }, 600)
     } catch (error) {
-      console.error('Failed to add to cart:', error)
+      console.error('Failed to add to bag:', error)
     } finally {
       setIsAdding(false)
     }
@@ -81,7 +93,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-y-auto transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
         <DialogHeader>
           <DialogTitle className="sr-only">{product.name}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -246,12 +258,12 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                 </div>
               )}
 
-              {/* Add to Cart Button */}
+              {/* Add to Bag Button */}
               {product.stock_quantity > 0 ? (
                 <Button
                   className="w-full"
                   size="lg"
-                  onClick={handleAddToCart}
+                  onClick={handleAddToBag}
                   disabled={isAdding}
                 >
                   {isAdding ? (
@@ -262,12 +274,12 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                   ) : justAdded ? (
                     <>
                       <Check className="mr-2 h-4 w-4" />
-                      Added to Cart!
+                      Added to Bag!
                     </>
                   ) : (
                     <>
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      Add to Cart
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      Add to Bag
                     </>
                   )}
                 </Button>

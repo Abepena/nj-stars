@@ -99,6 +99,22 @@ export function MobileNav() {
               </Link>
             )
           })}
+
+          {/* Theme Toggle */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex items-center justify-between w-full py-2 text-lg font-medium hover:text-primary transition-colors"
+          >
+            <span>{mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+            {mounted && (
+              theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )
+            )}
+          </button>
+
           <div className="pt-4 border-t border-border">
             <Link href="/portal/login" onClick={() => setOpen(false)}>
               <Button
@@ -108,23 +124,6 @@ export function MobileNav() {
                 Sign In
               </Button>
             </Link>
-          </div>
-
-          {/* Theme Toggle */}
-          <div className="pt-4 border-t border-border">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex items-center justify-between w-full py-2 text-lg font-medium hover:text-primary transition-colors"
-            >
-              <span>{mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-              {mounted && (
-                theme === "dark" ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )
-              )}
-            </button>
           </div>
         </nav>
       </SheetContent>

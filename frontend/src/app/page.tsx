@@ -9,7 +9,7 @@ import { SectionHeader } from "@/components/section-header";
 import { fetchHomePage } from "@/lib/wagtail-client";
 
 // Force dynamic rendering to avoid static generation issues
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   // Fetch CMS content for the homepage
@@ -29,7 +29,18 @@ export default async function Home() {
       <FadeInSection direction="up" delay={0}>
         <CoachesSection />
       </FadeInSection>
-
+      
+      {/* The Locker Room - Featured Merch Section */}
+      {homePage?.show_merch_section && (
+        <FadeInSection direction="up" delay={100}>
+          <section className="py-16 md:py-24 bg-muted/30">
+            <div className="container mx-auto px-4">
+              <FeaturedMerch limit={homePage?.merch_limit || 6} showSeeMore />
+            </div>
+          </section>
+        </FadeInSection>
+      )}
+      
       {/* The Huddle - News Feed */}
       {homePage?.show_huddle_section && (
         <FadeInSection direction="up" delay={100}>
@@ -39,22 +50,7 @@ export default async function Home() {
                 title="The Huddle"
                 subtitle="Latest news, updates, and highlights from NJ Stars"
               />
-              <NewsFeed limit={homePage?.huddle_limit || 3} showSeeMore />
-            </div>
-          </section>
-        </FadeInSection>
-      )}
-
-      {/* The Locker Room - Featured Merch Section */}
-      {homePage?.show_merch_section && (
-        <FadeInSection direction="up" delay={100}>
-          <section className="py-16 md:py-24 bg-muted/30">
-            <div className="container mx-auto px-4">
-              <SectionHeader
-                title="The Locker Room"
-                subtitle="Rep NJ Stars with official team gear"
-              />
-              <FeaturedMerch limit={homePage?.merch_limit || 3} showSeeMore />
+              <NewsFeed limit={homePage?.huddle_limit || 4} showSeeMore />
             </div>
           </section>
         </FadeInSection>
