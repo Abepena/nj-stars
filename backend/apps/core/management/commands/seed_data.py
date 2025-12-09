@@ -271,7 +271,7 @@ class Command(BaseCommand):
                 'image_url': 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 120,
-                'featured': False,
+                'featured': True,
                 'best_selling': False,
                 'on_sale': True,
             },
@@ -342,7 +342,7 @@ class Command(BaseCommand):
                 'image_url': 'https://images.unsplash.com/photo-1494199505258-5f95387f933c?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 30,
-                'featured': False,
+                'featured': True,
                 'best_selling': True,
                 'on_sale': False,
             },
@@ -371,7 +371,7 @@ class Command(BaseCommand):
                 'image_url': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80',
                 'is_active': True,
                 'stock_quantity': 35,
-                'featured': True,
+                'featured': False,
                 'best_selling': False,
                 'on_sale': True,
             },
@@ -418,8 +418,9 @@ class Command(BaseCommand):
     def create_coaches(self):
         self.stdout.write('Creating coaches...')
 
+        placeholder_photo = 'https://placehold.co/320x320?text=Coach'
+
         # Real coach data from NJ Stars Elite
-        # photo_url left empty - frontend will show placeholder avatar icon
         coaches = [
             {
                 'name': 'Trajan Chapman',
@@ -428,7 +429,7 @@ class Command(BaseCommand):
                 'role': 'head_coach',
                 'title': 'Head Coach & Trainer',
                 'bio': 'Trajan "Tray" Chapman is the head coach and lead trainer for NJ Stars Elite. With years of experience in player development and competitive coaching, Tray brings an intense focus on fundamentals, basketball IQ, and mental toughness to every session.',
-                'photo_url': '',
+                'photo_url': placeholder_photo,
                 'instagram_handle': 'traygotbounce',
                 'specialties': 'player development, ball handling, shooting mechanics, defensive fundamentals',
                 'is_active': True,
@@ -441,7 +442,7 @@ class Command(BaseCommand):
                 'role': 'skills_coach',
                 'title': 'Skills Clinic Coach',
                 'bio': 'Coach Cee specializes in skills development clinics and individual training. His approach focuses on building confidence through repetition and breaking down complex moves into learnable steps.',
-                'photo_url': '',
+                'photo_url': placeholder_photo,
                 'instagram_handle': 'coach.cee',
                 'specialties': 'skills clinics, individual training, footwork, finishing',
                 'is_active': True,
@@ -454,7 +455,7 @@ class Command(BaseCommand):
                 'role': 'founder',
                 'title': 'Founder & Coach',
                 'bio': 'Kenneth "Coach K" Andrade is the founder of NJ Stars Elite AAU Basketball. His vision to create an elite youth basketball program in New Jersey has grown into a thriving organization that develops both athletes and young people.',
-                'photo_url': '',
+                'photo_url': placeholder_photo,
                 'instagram_handle': 'kenny_164',
                 'specialties': 'program development, team strategy, leadership, community building',
                 'is_active': True,
