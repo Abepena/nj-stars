@@ -29,9 +29,15 @@ SECURE_HSTS_PRELOAD = True
 # Trust Railway's proxy
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='https://*.railway.app,https://*.njstarselite.com',
+    default='https://*.railway.app,https://*.njstarselite.com,https://*.vercel.app',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
+# CORS: Allow Vercel preview deployments (pattern match)
+# This supplements CORS_ALLOWED_ORIGINS from base.py
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",  # All Vercel preview URLs
+]
 
 # Email configuration (add when ready)
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
