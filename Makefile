@@ -66,7 +66,8 @@ logs-postgres:
 
 # Database commands
 seed:
-	$(DOCKER_COMPOSE) exec backend python seed_data.py
+	$(DOCKER_COMPOSE) exec backend python manage.py seed_data
+	$(DOCKER_COMPOSE) exec backend python manage.py seed_wagtail
 
 db-shell:
 	$(DOCKER_COMPOSE) exec postgres psql -U njstars -d njstars

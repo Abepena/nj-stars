@@ -197,15 +197,17 @@ For complete Docker documentation, see **[DOCKER.md](./DOCKER.md)**
 
 6. **Seed database with mock data (optional but recommended):**
    ```bash
-   python seed_data.py
+   python manage.py seed_data       # Coaches, products, events, subscriptions, Instagram cache
+   python manage.py seed_wagtail    # Home page, blog index/posts, team page
    ```
 
    This will populate the database with:
-   - 5 sample users (admin, parents, players)
-   - 5 blog posts
-   - 9 products (merch items)
-   - 8 events (open gyms, tryouts, games)
-   - 3 sample orders
+   - Homepage + newsletter/hero settings (Wagtail)
+   - The Huddle blog section with sample posts (Wagtail)
+   - Team page with sample player profiles (Wagtail)
+   - Coaches (for the home page coaches carousel)
+   - Featured merch/products (for the Locker Room section)
+   - Events, subscriptions, and Instagram mock data
 
    **Test Accounts:**
    - Admin: `admin@njstars.com` / `admin123`
