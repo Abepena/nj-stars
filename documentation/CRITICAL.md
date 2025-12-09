@@ -3,8 +3,8 @@
 > **Last Updated:** December 9, 2025
 
 ## mobile nav
- - [ ] underline text for navigation links not their container
- - [ ] match sign in button styling from the site header
+ - [x] underline text for navigation links not their container *(Fixed Dec 9 - wrapped text in span)*
+ - [x] match sign in button styling from the site header *(Fixed Dec 9 - changed to ghost variant)*
 
 ---
 
@@ -26,12 +26,12 @@
 | Product detail route 404 | **FIXED** | `/shop/[slug]` page created Dec 9 |
 
 ### Remaining Shop Issues:
-- [ ] Critical - Product variants (size/color selection) should be done as a mockup for now and made functional after researching printify API  + stripe checkout implementation instructions
+- [x] **DONE** - Product variants (size/color selection) mockup added to `/shop/[slug]` detail page. Size and color selectors with visual feedback. Requires selection before add-to-cart. Will be connected to Printify API later.
 - [ ] *Note:* Some products will be POD from printify, some will be shipped from local inventory that NJ stars already has suppliers for. The shop page should be adaptable to create records for local inventory (shipping from njstars or hand delivery from coach) and create invoices / receipts for parents if shopify doesn't already do that.
-- [ ] Products dont need to have their actual stock on the quick view / detail page, rather they should say "Limited drop" or "Almost gone!" for items / designs beign sold for a limited time or have limited qty left and similar tags commonly used on e-commerce sites. I like the little cube Icon and styling of that section but we should make edits.
+- [x] **DONE** - Stock messaging updated. Detail page now shows "Almost Gone!" and "Limited Drop" without exact quantities. Marketing-friendly urgency messaging.
 - [ ] A countdown to live for the merch store should be created to create hype for the players / parents images from the pro photo shoots should be used to generate interest
-- [ ] The Featured, Sale, Best Seller Categories on the product images dont have any fucntionalilty. I'd like those badge components to be filter the products when clicked and be included in the category badges in the sidebar filters. they should always share the same toggle state as the associated category button in the sidebar
-- [ ] The Category Badges on the product cards should filter the page when clicked similar to the sidebar buttons, they should share the same toggle state as the sidebar
+- [x] **DONE** - Tag badges (Featured, Sale, Best Seller) on product cards are now clickable and filter products. They share toggle state with sidebar - clicking a badge activates the sidebar filter and shows a ring indicator on all matching badges.
+- [x] **DONE** - Category badges on product cards filter the page when clicked. Same toggle state as sidebar buttons with visual ring indicator when active.
 ---
 
 ## Other Critical Items

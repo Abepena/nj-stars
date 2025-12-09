@@ -1,26 +1,33 @@
-import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function ProductCardSkeleton() {
   return (
-    <Card className="overflow-hidden flex flex-col h-auto md:h-[540px]">
-      {/* Image skeleton - 80% of card */}
-      <Skeleton className="w-full aspect-[4/3] md:h-[432px] md:aspect-auto" />
+    <div className="flex flex-col">
+      {/* Image skeleton - matches Nike-style cards */}
+      <Skeleton className="w-full aspect-square rounded-lg" />
 
-      {/* Content skeleton - 20% of card */}
-      <div className="flex flex-col flex-1 p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-6 w-16" />
+      {/* Content skeleton */}
+      <div className="flex flex-col pt-3 space-y-2">
+        {/* Color swatches */}
+        <div className="flex gap-1.5">
+          <Skeleton className="w-4 h-4 rounded-full" />
+          <Skeleton className="w-4 h-4 rounded-full" />
+          <Skeleton className="w-4 h-4 rounded-full" />
         </div>
 
-        <div className="flex items-center justify-between mt-auto">
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-4 w-16" />
-        </div>
+        {/* Tag */}
+        <Skeleton className="h-4 w-16" />
 
-        <Skeleton className="h-10 w-full" />
+        {/* Product name */}
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+
+        {/* Category */}
+        <Skeleton className="h-3 w-16" />
+
+        {/* Price */}
+        <Skeleton className="h-4 w-12 mt-1" />
       </div>
-    </Card>
+    </div>
   )
 }

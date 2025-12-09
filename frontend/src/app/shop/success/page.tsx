@@ -1,26 +1,31 @@
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LayoutShell } from "@/components/layout-shell"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ConfettiCelebration } from "@/components/confetti-celebration"
 
 function SuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams?.get("session_id")
 
   return (
+    <>
+      {/* Confetti celebration */}
+      <ConfettiCelebration />
+
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <Card className="max-w-2xl mx-auto">
+          <Card className="max-w-2xl mx-auto overflow-hidden">
             <CardHeader className="text-center">
-              {/* Success Icon */}
-              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+              {/* Animated Success Icon */}
+              <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-success/20 flex items-center justify-center animate-success-pulse">
                 <svg
-                  className="w-10 h-10 text-success"
+                  className="w-12 h-12 text-success"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -28,8 +33,13 @@ function SuccessContent() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M5 13l4 4L19 7"
+                    className="animate-[draw-check_0.5s_ease-out_0.3s_forwards]"
+                    style={{
+                      strokeDasharray: 24,
+                      strokeDashoffset: 24,
+                    }}
                   />
                 </svg>
               </div>
@@ -68,17 +78,38 @@ function SuccessContent() {
           </Card>
         </div>
       </section>
+    </>
+  )
+}
+
+function SuccessPageSkeleton() {
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-center">
+            <Skeleton className="mx-auto mb-4 w-16 h-16 rounded-full" />
+            <Skeleton className="h-8 w-48 mx-auto mb-2" />
+            <Skeleton className="h-5 w-64 mx-auto" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-20 w-full rounded-lg" />
+            <div className="flex flex-col gap-3 pt-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
   )
 }
 
 export default function SuccessPage() {
   return (
     <LayoutShell>
-      <Suspense fallback={
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <LoadingSpinner size="lg" text="Loading..." />
-        </div>
-      }>
+      <Suspense fallback={<SuccessPageSkeleton />}>
         <SuccessContent />
       </Suspense>
     </LayoutShell>

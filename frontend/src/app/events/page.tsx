@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/page-header";
 import { LayoutShell } from "@/components/layout-shell";
 import { ErrorMessage } from "@/components/error-message";
-import { LoadingSpinner } from "@/components/loading-spinner";
 import { EventCardSkeleton } from "@/components/skeletons/event-card-skeleton";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { format } from "date-fns";

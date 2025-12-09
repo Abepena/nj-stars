@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { CoachCard } from "@/components/coach-card"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { CoachCardSkeleton } from "@/components/skeletons/coach-card-skeleton"
 import type { Coach } from "@/lib/api-client"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -33,10 +33,19 @@ export function CoachesSection() {
 
   if (isLoading) {
     return (
-      <section className="py-12">
+      <section className="py-12 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="flex justify-center">
-            <LoadingSpinner />
+          {/* Section Header Skeleton */}
+          <div className="mb-8 text-center">
+            <div className="h-9 w-64 bg-muted rounded mx-auto mb-2 animate-pulse" />
+            <div className="h-5 w-96 max-w-full bg-muted rounded mx-auto animate-pulse" />
+          </div>
+
+          {/* Coach Grid Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[1, 2, 3].map((i) => (
+              <CoachCardSkeleton key={i} />
+            ))}
           </div>
         </div>
       </section>

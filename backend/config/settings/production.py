@@ -8,9 +8,15 @@ DEBUG = False
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='njstarselite.com,www.njstarselite.com',
+    default='njstarselite.com,www.njstarselite.com,api.njstarselite.com',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
+# CORS: Allow Vercel preview deployments (pattern match)
+# This supplements CORS_ALLOWED_ORIGINS from base.py
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",  # All Vercel preview URLs
+]
 
 # Security settings for production
 SECURE_SSL_REDIRECT = True

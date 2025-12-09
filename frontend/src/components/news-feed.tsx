@@ -6,7 +6,6 @@ import Link from "next/link"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
-import { LoadingSpinner } from "@/components/loading-spinner"
 import { NewsCardSkeleton } from "@/components/skeletons/news-card-skeleton"
 import { format } from "date-fns"
 

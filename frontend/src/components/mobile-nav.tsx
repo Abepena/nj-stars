@@ -87,18 +87,21 @@ export function MobileNav() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className={`text-lg font-medium hover:text-primary transition-colors py-2 ${
-                  isActive ? "border-b-2 border-primary" : ""
-                }`}
+                className="text-lg font-medium hover:text-primary transition-colors py-2"
               >
-                {link.label}
+                <span className={isActive ? "border-b-2 border-primary pb-0.5" : ""}>
+                  {link.label}
+                </span>
               </Link>
             )
           })}
           <div className="pt-4 border-t border-border">
             <Link href="/portal/login" onClick={() => setOpen(false)}>
-              <Button className="bg-gradient-to-br from-foreground/40 to-primary text-background font-semibold w-full hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
-                Portal Login
+              <Button
+                variant="ghost"
+                className="w-full text-sm font-medium text-primary hover:bg-gradient-to-br hover:from-foreground/40 hover:to-primary hover:text-background hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out"
+              >
+                Sign In
               </Button>
             </Link>
           </div>

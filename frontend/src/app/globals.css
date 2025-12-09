@@ -11,7 +11,7 @@
 
     --text-primary: 26.7 16.4% 89.2%;   /* #e8e3df - main text */
     --text-secondary: 38.8 6.8% 65%;    /* dimmed text - WCAG AA compliant */
-    --text-tertiary: 38.8 6.8% 55%;     /* more dimmed text */
+    --text-tertiary: 38.8 6.8% 60%;     /* more dimmed text - bumped from 55% for WCAG AA contrast */
 
     --primary: 331.7 73.9% 53.3%;        /* hot pink - main brand color */
     --primary-foreground: 26.7 16.4% 89.2%;
@@ -54,43 +54,43 @@
   }
 
   .light {
-    /* Light mode - inverted backgrounds and text */
-    --bg-primary: 0 0% 100%;              /* Pure white background */
-    --bg-secondary: 0 0% 98%;             /* Off-white for cards */
-    --bg-tertiary: 0 0% 96%;              /* Light gray for elevated surfaces */
+    /* Light mode - Nike-inspired warm cream tones with strong contrast */
+    --bg-primary: 40 33% 98%;             /* Warm off-white (#faf9f7) */
+    --bg-secondary: 40 20% 96%;           /* Slightly warmer for cards */
+    --bg-tertiary: 40 15% 93%;            /* Warm light gray for surfaces */
 
-    --text-primary: 20 13% 9%;            /* Dark brown for main text */
-    --text-secondary: 38.8 6.8% 35%;      /* Medium gray for dimmed text */
-    --text-tertiary: 38.8 6.8% 45%;       /* Lighter gray for more dimmed text */
+    --text-primary: 0 0% 7%;              /* Near black for maximum contrast */
+    --text-secondary: 0 0% 30%;           /* Dark gray for secondary text */
+    --text-tertiary: 0 0% 45%;            /* Medium gray for tertiary text */
 
-    /* Brand colors stay vibrant in light mode */
-    --primary: 331.7 73.9% 53.3%;         /* hot pink */
+    /* Brand colors - darker/more saturated for light mode readability */
+    --primary: 331.7 80% 45%;             /* Deeper hot pink for light bg */
     --primary-foreground: 0 0% 100%;      /* white text on pink */
 
-    --secondary: 188.7 94.5% 42.7%;       /* vibrant teal */
+    --secondary: 188.7 100% 32%;          /* Deeper teal for light bg */
     --secondary-foreground: 0 0% 100%;    /* white text on teal */
 
-    --accent: 353.4 55% 48.8%;            /* muted jersey red */
+    --accent: 353.4 70% 42%;              /* Deeper red for light bg */
     --accent-foreground: 0 0% 100%;       /* white text on red */
 
-    --destructive: 353.4 55% 48.8%;
+    --destructive: 353.4 70% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    --info: 214.2 28.3% 49.8%;
+    --info: 214.2 50% 40%;                /* Deeper blue */
     --info-foreground: 0 0% 100%;
 
-    --success: 154.8 38% 48%;
+    --success: 154.8 60% 35%;             /* Deeper green */
     --success-foreground: 0 0% 100%;
 
-    --warning: 33.3 59.8% 58%;
-    --warning-foreground: 20 13% 9%;      /* dark text on warning */
+    --warning: 33.3 90% 45%;              /* Deeper orange/amber */
+    --warning-foreground: 0 0% 7%;        /* dark text on warning */
 
-    --tertiary: 37.7 92.1% 50.2%;         /* amber highlight */
-    --tertiary-foreground: 20 13% 9%;     /* dark text on amber */
+    --tertiary: 37.7 100% 42%;            /* Deeper amber */
+    --tertiary-foreground: 0 0% 7%;       /* dark text on amber */
 
-    --border: 0 0% 90%;                   /* light gray borders */
-    --input: 0 0% 90%;                    /* light gray input borders */
-    --ring: 331.7 73.9% 53.3%;            /* primary (hot pink) for focus */
+    --border: 40 10% 85%;                 /* Warm gray borders */
+    --input: 40 10% 85%;                  /* Warm gray input borders */
+    --ring: 331.7 80% 45%;                /* primary for focus */
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
@@ -110,7 +110,7 @@
     --bg-tertiary: 20 7.1% 16.5%;
     --text-primary: 26.7 16.4% 89.2%;
     --text-secondary: 38.8 6.8% 65%;
-    --text-tertiary: 38.8 6.8% 55%;
+    --text-tertiary: 38.8 6.8% 60%;
     --primary: 331.7 73.9% 53.3%;
     --primary-foreground: 26.7 16.4% 89.2%;
     --secondary: 188.7 94.5% 42.7%;
@@ -150,4 +150,68 @@
   body {
     @apply bg-bg-primary text-text-primary;
   }
+}
+
+/* Confetti celebration animations */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(25vh) rotate(180deg) scale(0.9);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50vh) rotate(360deg) scale(0.8);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translateY(75vh) rotate(540deg) scale(0.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg) scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes burst {
+  0% {
+    transform: rotate(var(--rotation, 0deg)) translateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--rotation, 0deg)) translateX(150px) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes success-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(var(--success) / 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 20px hsl(var(--success) / 0);
+  }
+}
+
+@keyframes draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall ease-out forwards;
+}
+
+.animate-burst {
+  animation: burst 0.8s ease-out forwards;
+}
+
+.animate-success-pulse {
+  animation: success-pulse 2s ease-in-out;
 }

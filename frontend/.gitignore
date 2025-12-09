@@ -32,3 +32,6 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+# Vercel environment files (contain secrets)
+.env.vercel.preview
+.env.vercel.production
