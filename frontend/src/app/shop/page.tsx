@@ -12,6 +12,8 @@ import { FilterSidebar, type FilterCategory, type FilterTag, type FilterColor, t
 import { Button } from "@/components/ui/button"
 import { getCategoryColor } from "@/lib/category-colors"
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
 interface Product {
   id: number
   name: string
@@ -220,7 +222,7 @@ export default function ShopPage() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch('http://localhost:8000/api/payments/products/')
+        const response = await fetch(`${API_BASE}/api/payments/products/`)
 
         if (!response.ok) {
           throw new Error(`Failed to fetch products: ${response.statusText}`)

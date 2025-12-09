@@ -8,7 +8,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='njstarselite.com,www.njstarselite.com,api.njstarselite.com',
+    default='njstarselite.com,www.njstarselite.com,api.njstarselite.com,.vercel.app',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
