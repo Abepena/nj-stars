@@ -2,9 +2,11 @@
 Seed Wagtail CMS with sample content.
 
 This command creates:
-- HomePage as the site root
 - BlogIndexPage with sample blog posts
 - TeamPage with sample player profiles
+
+Note: HomePage is NOT created - the frontend uses hardcoded defaults.
+The CMS is only needed for blog posts and team roster.
 
 Usage:
     python manage.py seed_wagtail
@@ -18,7 +20,6 @@ from datetime import timedelta
 from wagtail.models import Page, Site
 
 from apps.cms.models import (
-    HomePage,
     BlogIndexPage,
     BlogPage,
     TeamPage,
@@ -39,28 +40,21 @@ class Command(BaseCommand):
         if not admin_user:
             self.stdout.write(self.style.WARNING("No superuser found. Blog posts will have no author."))
 
-        # Get the root page
+        # Get the root page (Wagtail's default root)
         root = Page.objects.get(depth=1)
 
-        # Delete existing welcome page and any old content (returns refreshed root)
-        root = self._cleanup_existing_pages(root)
+        # Clean up any existing CMS pages we created
+        self._cleanup_existing_pages(root)
 
-        # Create HomePage
-        homepage = self._create_homepage(root)
+        # Create BlogIndexPage and sample posts directly under root
+        self._create_blog_section(root, admin_user)
 
-        # Update site to use our HomePage as root
-        self._update_site(homepage)
-
-        # Create BlogIndexPage and sample posts
-        self._create_blog_section(homepage, admin_user)
-
-        # Create TeamPage with players
-        self._create_team_section(homepage)
+        # Create TeamPage with players directly under root
+        self._create_team_section(root)
 
         self.stdout.write(self.style.SUCCESS("✅ Wagtail CMS seeded successfully!"))
         self.stdout.write("")
         self.stdout.write("Pages created:")
-        self.stdout.write("  - HomePage (root)")
         self.stdout.write("  - BlogIndexPage ('The Huddle')")
         self.stdout.write("  - 4 sample BlogPages")
         self.stdout.write("  - TeamPage ('Our Team')")
@@ -68,88 +62,24 @@ class Command(BaseCommand):
         self.stdout.write("")
         self.stdout.write("Test the API:")
         self.stdout.write("  curl http://localhost:8000/api/v2/pages/")
-        self.stdout.write("  curl 'http://localhost:8000/api/v2/pages/?type=cms.HomePage&fields=*'")
+        self.stdout.write("  curl 'http://localhost:8000/api/v2/pages/?type=cms.BlogPage&fields=*'")
 
     def _cleanup_existing_pages(self, root):
-        """Remove default Wagtail welcome page and any existing CMS pages."""
-        # Delete all children of root (welcome page, any old pages)
-        for page in root.get_children():
-            self.stdout.write(f"  Deleting: {page.title}")
-            # Use specific=True to get the actual page instance
-            specific_page = page.specific
-            # Unpublish first if published
-            if specific_page.live:
-                specific_page.unpublish()
-                self.stdout.write(f"Unpublished: \"{page.title}\" pk={page.pk}")
-            # Delete the page
-            page.delete()
-            self.stdout.write(f"Page deleted: \"{page.title}\" id={page.id}")
+        """Remove existing CMS pages (BlogIndexPage, TeamPage, HomePage) to allow re-seeding."""
+        from apps.cms.models import BlogIndexPage, TeamPage, HomePage
+
+        # Delete specific page types we manage
+        for page_type in [BlogIndexPage, TeamPage, HomePage]:
+            for page in page_type.objects.all():
+                self.stdout.write(f"  Deleting: {page.title}")
+                if page.live:
+                    page.unpublish()
+                page.delete()
 
         # Fix tree consistency after deletions
-        from wagtail.models import Page
         Page.fix_tree()
 
-        # Refresh the root from database to get updated tree state
-        return Page.objects.get(depth=1)
-
-    def _create_homepage(self, root):
-        """Create the main HomePage."""
-        self.stdout.write("Creating HomePage...")
-
-        homepage = HomePage(
-            title="NJ Stars Elite Basketball",
-            slug="home",
-            hero_heading="Elite Training.",
-            hero_tagline="Built for Rising Stars.",
-            hero_subheading="Focused training and real competition for players serious about their game.",
-            cta_label="Register for Tryouts",
-            cta_url="",  # Left blank - will link to events page
-            show_huddle_section=True,
-            huddle_limit=4,
-            show_merch_section=True,
-            merch_limit=6,
-            show_newsletter_signup=True,
-            newsletter_heading="Stay in the Game",
-            newsletter_subheading="Get the latest news, event updates, and exclusive content delivered to your inbox.",
-            body=[
-                {
-                    "type": "rich_text",
-                    "value": "<p>Welcome to NJ Stars Elite, Bergen County's premier AAU basketball program. We develop young athletes through elite training, competitive play, and character development.</p>",
-                },
-                {
-                    "type": "highlight",
-                    "value": {
-                        "title": "Why Choose NJ Stars?",
-                        "text": "Professional coaching, state-of-the-art facilities, and a proven track record of developing college-ready players.",
-                    },
-                },
-            ],
-        )
-        root.add_child(instance=homepage)
-        homepage.save_revision().publish()
-        self.stdout.write(self.style.SUCCESS(f"  ✓ Created: {homepage.title}"))
-        return homepage
-
-    def _update_site(self, homepage):
-        """Update or create the Site to use our HomePage as root."""
-        site = Site.objects.first()
-        if site:
-            site.root_page = homepage
-            site.site_name = "NJ Stars Elite"
-            site.save()
-            self.stdout.write(f"  Updated site root to: {homepage.title}")
-        else:
-            # Create a new Site if none exists
-            Site.objects.create(
-                hostname="localhost",
-                port=8000,
-                root_page=homepage,
-                is_default_site=True,
-                site_name="NJ Stars Elite",
-            )
-            self.stdout.write(f"  Created site with root: {homepage.title}")
-
-    def _create_blog_section(self, homepage, admin_user):
+    def _create_blog_section(self, root, admin_user):
         """Create BlogIndexPage and sample blog posts."""
         self.stdout.write("Creating Blog section...")
 
@@ -159,7 +89,7 @@ class Command(BaseCommand):
             slug="news",
             intro="<p>The latest news, updates, and stories from NJ Stars Elite Basketball. Stay connected with our team!</p>",
         )
-        homepage.add_child(instance=blog_index)
+        root.add_child(instance=blog_index)
         blog_index.save_revision().publish()
         self.stdout.write(self.style.SUCCESS(f"  ✓ Created: {blog_index.title}"))
 
@@ -282,7 +212,7 @@ class Command(BaseCommand):
             post.save_revision().publish()
             self.stdout.write(self.style.SUCCESS(f"  ✓ Created: {post.title}"))
 
-    def _create_team_section(self, homepage):
+    def _create_team_section(self, root):
         """Create TeamPage with sample player profiles."""
         self.stdout.write("Creating Team section...")
 
@@ -292,7 +222,7 @@ class Command(BaseCommand):
             slug="team",
             intro="<p>Meet the talented athletes of NJ Stars Elite. Our players represent the best of Bergen County basketball.</p>",
         )
-        homepage.add_child(instance=team_page)
+        root.add_child(instance=team_page)
         team_page.save_revision().publish()
         self.stdout.write(self.style.SUCCESS(f"  ✓ Created: {team_page.title}"))
 

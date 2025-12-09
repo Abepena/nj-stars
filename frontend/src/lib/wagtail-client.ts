@@ -9,7 +9,6 @@
 
 import type {
   WagtailListResponse,
-  HomePage,
   BlogIndexPage,
   BlogPage,
   TeamPage,
@@ -44,24 +43,6 @@ async function wagtailFetch<T>(
   }
 
   return response.json()
-}
-
-/**
- * Fetch the HomePage content
- *
- * Returns the first (and only) HomePage from Wagtail.
- * Includes hero content, newsletter settings, and body blocks.
- */
-export async function fetchHomePage(): Promise<HomePage | null> {
-  try {
-    const data = await wagtailFetch<WagtailListResponse<HomePage>>(
-      '/pages/?type=cms.HomePage&fields=*'
-    )
-    return data.items[0] || null
-  } catch (error) {
-    console.error('Error fetching HomePage:', error)
-    return null
-  }
 }
 
 /**
