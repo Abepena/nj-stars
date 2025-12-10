@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -14,7 +13,6 @@ import {
   AlertCircle,
   CheckCircle,
   ChevronRight,
-  Settings,
   History,
   Wallet,
   ToggleLeft
@@ -62,7 +60,7 @@ interface BillingData {
   saved_cards: SavedCard[]
 }
 
-interface UserProfile {
+interface ProfileData {
   auto_pay_enabled?: boolean
 }
 
@@ -97,14 +95,12 @@ export default function BillingPage() {
           fetch(`${API_BASE}/api/portal/profile/`, { headers }),
         ])
 
-        const [dues, cards, profile]: [any, any, UserProfile] = await Promise.all([
-          duesRes.ok ? duesRes.json() : { results: [] },
-          cardsRes.ok ? cardsRes.json() : { results: [] },
-          profileRes.ok ? profileRes.json() : {},
-        ])
+        const dues = duesRes.ok ? await duesRes.json() : { results: [] }
+        const cards = cardsRes.ok ? await cardsRes.json() : { results: [] }
+        const profile: ProfileData = profileRes.ok ? await profileRes.json() : {}
 
-        const duesAccounts = dues.results || dues
-        const savedCards = cards.results || cards
+        const duesAccounts: DuesAccount[] = dues.results || dues || []
+        const savedCards: SavedCard[] = cards.results || cards || []
 
         // Calculate total balance
         const totalBalance = duesAccounts.reduce(
