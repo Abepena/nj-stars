@@ -10,6 +10,58 @@ import type { Coach } from "@/lib/api-client"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
+// Fallback coaches data if API fails
+const FALLBACK_COACHES: Coach[] = [
+  {
+    id: 1,
+    name: "Kenneth Andrade",
+    display_name: "Coach K",
+    slug: "kenneth-andrade",
+    role: "founder",
+    title: "Founder & Coach",
+    bio: "Kenneth \"Coach K\" Andrade is the founder of NJ Stars Elite AAU Basketball. His vision to create an elite youth basketball program in New Jersey has grown into a thriving organization that develops both athletes and young people.",
+    photo_url: "",
+    instagram_handle: "kenny_164",
+    instagram_url: "https://instagram.com/kenny_164",
+    specialties: "program development, team strategy, leadership, community building",
+    specialties_list: ["program development", "team strategy", "leadership", "community building"],
+    is_active: true,
+    order: 0
+  },
+  {
+    id: 2,
+    name: "Trajan Chapman",
+    display_name: "Tray",
+    slug: "trajan-chapman",
+    role: "head_coach",
+    title: "Head Coach & Trainer",
+    bio: "Trajan \"Tray\" Chapman is the head coach and lead trainer for NJ Stars Elite. With years of experience in player development and competitive coaching, Tray brings an intense focus on fundamentals, basketball IQ, and mental toughness to every session.",
+    photo_url: "",
+    instagram_handle: "traygotbounce",
+    instagram_url: "https://instagram.com/traygotbounce",
+    specialties: "player development, shooting mechanics, physical conditioning, offensive strategy",
+    specialties_list: ["player development", "shooting mechanics", "physical conditioning", "offensive strategy"],
+    is_active: true,
+    order: 1
+  },
+  {
+    id: 3,
+    name: "Chris Morales",
+    display_name: "Coach Cee",
+    slug: "chris-morales",
+    role: "skills_coach",
+    title: "Skills Clinic Coach",
+    bio: "Coach Cee specializes in skills development clinics and individual training. His approach focuses on building confidence through repetition and breaking down complex moves into learnable steps.",
+    photo_url: "",
+    instagram_handle: "coach.cee",
+    instagram_url: "https://instagram.com/coach.cee",
+    specialties: "skills clinics, individual training, footwork, ball handling",
+    specialties_list: ["skills clinics", "individual training", "footwork", "ball handling"],
+    is_active: true,
+    order: 2
+  }
+]
+
 export function CoachesSection() {
   const [coaches, setCoaches] = useState<Coach[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
@@ -27,9 +79,14 @@ export function CoachesSection() {
           throw new Error("Failed to fetch coaches")
         }
         const data = await response.json()
-        setCoaches(data.results || [])
+        const fetchedCoaches = data.results || []
+        // Use fallback if API returns empty
+        setCoaches(fetchedCoaches.length > 0 ? fetchedCoaches : FALLBACK_COACHES)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load coaches")
+        // Use fallback coaches on error instead of showing error message
+        console.warn("Failed to fetch coaches, using fallback data:", err)
+        setCoaches(FALLBACK_COACHES)
+        setError(null) // Don't show error UI, we have fallback
       } finally {
         setIsLoading(false)
       }

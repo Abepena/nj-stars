@@ -5,7 +5,6 @@ import { NewsletterSignup } from "@/components/newsletter-signup";
 import { FeaturedMerch } from "@/components/featured-merch";
 import { CoachesSection } from "@/components/coaches-section";
 import { FadeInSection } from "@/components/fade-in-section";
-import { SectionHeader } from "@/components/section-header";
 
 export default function Home() {
   return (
@@ -19,24 +18,12 @@ export default function Home() {
 
       {/* The Locker Room - Featured Merch Section */}
       <FadeInSection direction="up" delay={100}>
-        <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <FeaturedMerch limit={6} showSeeMore />
-          </div>
-        </section>
+        <FeaturedMerch limit={6} showSeeMore wrapInSection />
       </FadeInSection>
 
       {/* The Huddle - News Feed */}
       <FadeInSection direction="up" delay={100}>
-        <section className="py-16 md:py-24 bg-background">
-          <div className="container mx-auto px-4">
-            <SectionHeader
-              title="The Huddle"
-              subtitle="Latest news, updates, and highlights from NJ Stars"
-            />
-            <NewsFeed limit={4} showSeeMore />
-          </div>
-        </section>
+        <NewsFeed limit={4} showSeeMore wrapInSection />
       </FadeInSection>
 
       {/* Newsletter Signup */}

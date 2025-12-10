@@ -36,6 +36,7 @@ interface WagtailBlogPost {
 interface NewsFeedProps {
   limit?: number
   showSeeMore?: boolean
+  wrapInSection?: boolean
 }
 
 interface FeedItem {
@@ -66,7 +67,7 @@ const CATEGORY_CONFIG: Record<BlogCategory | 'instagram', { label: string; class
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
+export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: NewsFeedProps) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -150,13 +151,9 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
     fetchFeed()
   }, [limit])
 
-  // Show error if there's an error
+  // Hide section entirely on error (as requested)
   if (error) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <ErrorMessage error={error} />
-      </div>
-    )
+    return null
   }
 
   // Show skeleton while loading
@@ -170,8 +167,9 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
     )
   }
 
-  // Show "coming soon" message if no data
+  // Show "coming soon" message if no data - but also hide if wrapInSection
   if (feedItems.length === 0) {
+    if (wrapInSection) return null // Hide entire section when no items
     return (
       <div className="text-center py-16">
         <div className="mx-auto w-24 h-24 mb-6 rounded-full bg-accent/10 flex items-center justify-center">
@@ -197,7 +195,7 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
     )
   }
 
-  return (
+  const content = (
     <div className="space-y-8">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {feedItems.map((item) => (
@@ -215,6 +213,24 @@ export function NewsFeed({ limit, showSeeMore = false }: NewsFeedProps) {
       )}
     </div>
   )
+
+  if (wrapInSection) {
+    return (
+      <section className="py-16 md:py-24 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="font-bold tracking-tight text-3xl md:text-4xl">The Huddle</h2>
+            <p className="text-muted-foreground mt-2 md:mt-4 text-lg md:text-xl">
+              Latest news, updates, and highlights from NJ Stars
+            </p>
+          </div>
+          {content}
+        </div>
+      </section>
+    )
+  }
+
+  return content
 }
 
 // Clean Nike-style feed card

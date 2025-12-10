@@ -44,13 +44,15 @@ interface FeaturedMerchProps {
   showSeeMore?: boolean
   title?: string
   subtitle?: string
+  wrapInSection?: boolean
 }
 
 export function FeaturedMerch({
   limit = 6,
   showSeeMore = false,
   title = "The Locker Room",
-  subtitle = "Rep NJ Stars with official team gear"
+  subtitle = "Rep NJ Stars with official team gear",
+  wrapInSection = false
 }: FeaturedMerchProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,13 +87,9 @@ export function FeaturedMerch({
     fetchProducts()
   }, [limit])
 
-  // Show error if there's an error
+  // Hide section entirely on error (as requested)
   if (error) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <ErrorMessage error={error} />
-      </div>
-    )
+    return null
   }
 
   // Show skeleton while loading
@@ -119,8 +117,9 @@ export function FeaturedMerch({
     )
   }
 
-  // Show "coming soon" message if no data
+  // Show "coming soon" message if no data - but also hide if wrapInSection
   if (products.length === 0) {
+    if (wrapInSection) return null // Hide entire section when no products
     return (
       <div className="text-center py-16">
         <div className="mx-auto w-24 h-24 mb-6 rounded-full bg-accent/10 flex items-center justify-center">
@@ -146,7 +145,7 @@ export function FeaturedMerch({
     )
   }
 
-  return (
+  const content = (
     <>
       <div className="space-y-8">
         {/* Mobile/Tablet: Header above grid */}
@@ -203,6 +202,18 @@ export function FeaturedMerch({
       )}
     </>
   )
+
+  if (wrapInSection) {
+    return (
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          {content}
+        </div>
+      </section>
+    )
+  }
+
+  return content
 }
 
 interface ProductCardProps {
