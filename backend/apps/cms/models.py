@@ -48,11 +48,11 @@ class HomePage(Page):
 
 	# Huddle (News Feed) section
 	show_huddle_section = models.BooleanField(default=True, help_text="Show The Huddle news feed section")
-	huddle_limit = models.IntegerField(default=3, help_text="Number of posts to show (1-12)")
+	huddle_limit = models.IntegerField(default=4, help_text="Number of posts to show (1-12)")
 
 	# Merch section
 	show_merch_section = models.BooleanField(default=True, help_text="Show featured merch section")
-	merch_limit = models.IntegerField(default=3, help_text="Number of products to show (1-12)")
+	merch_limit = models.IntegerField(default=6, help_text="Number of products to show (1-12)")
 
 	# Body content
 	body = StreamField(

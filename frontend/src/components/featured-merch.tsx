@@ -47,7 +47,7 @@ interface FeaturedMerchProps {
 }
 
 export function FeaturedMerch({
-  limit = 3,
+  limit = 6,
   showSeeMore = false,
   title = "The Locker Room",
   subtitle = "Rep NJ Stars with official team gear"
