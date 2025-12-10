@@ -13,33 +13,33 @@
     --text-secondary: 38.8 6.8% 65%;    /* dimmed text - WCAG AA compliant */
     --text-tertiary: 38.8 6.8% 60%;     /* more dimmed text - bumped from 55% for WCAG AA contrast */
 
-    --primary: 331.7 73.9% 53.3%;        /* hot pink - main brand color */
+    --primary: 331.7 78% 58%;            /* hot pink - main brand color (brighter) */
     --primary-foreground: 26.7 16.4% 89.2%;
 
-    --secondary: 188.7 94.5% 42.7%;     /* vibrant teal */
+    --secondary: 188.7 94.5% 48%;       /* vibrant teal (brighter) */
     --secondary-foreground: 26.7 16.4% 89.2%;
 
-    --accent: 353.4 55% 48.8%;         /* muted jersey red accent */
+    --accent: 353.4 65% 55%;            /* jersey red accent (brighter) */
     --accent-foreground: 26.7 16.4% 89.2%;
 
-    --destructive: 353.4 55% 48.8%;
+    --destructive: 353.4 65% 55%;
     --destructive-foreground: 26.7 16.4% 89.2%;
 
-    --info: 214.2 28.3% 49.8%;
+    --info: 214.2 45% 58%;              /* blue (brighter) */
     --info-foreground: 26.7 16.4% 89.2%;
 
-    --success: 154.8 38% 48%;
+    --success: 154.8 50% 52%;           /* green (brighter) */
     --success-foreground: 26.7 16.4% 89.2%;
 
-    --warning: 33.3 59.8% 58%;
+    --warning: 33.3 75% 60%;            /* amber (brighter) */
     --warning-foreground: 26.7 16.4% 89.2%;
 
-    --tertiary: 37.7 92.1% 50.2%;       /* amber highlight */
+    --tertiary: 37.7 92.1% 55%;         /* amber highlight (brighter) */
     --tertiary-foreground: 26.7 16.4% 89.2%;
 
     --border: 27.3 8% 26.9%;
     --input: 27.3 8% 26.9%;
-    --ring: 331.7 73.9% 53.3%;          /* primary (hot pink) for focus */
+    --ring: 331.7 78% 58%;               /* primary (hot pink) for focus */
     --radius: 0.5rem;
 
     /* Aliases for backward compatibility */
@@ -111,25 +111,25 @@
     --text-primary: 26.7 16.4% 89.2%;
     --text-secondary: 38.8 6.8% 65%;
     --text-tertiary: 38.8 6.8% 60%;
-    --primary: 331.7 73.9% 53.3%;
+    --primary: 331.7 78% 58%;
     --primary-foreground: 26.7 16.4% 89.2%;
-    --secondary: 188.7 94.5% 42.7%;
+    --secondary: 188.7 94.5% 48%;
     --secondary-foreground: 26.7 16.4% 89.2%;
-    --accent: 353.4 55% 48.8%;
+    --accent: 353.4 65% 55%;
     --accent-foreground: 26.7 16.4% 89.2%;
-    --destructive: 353.4 55% 48.8%;
+    --destructive: 353.4 65% 55%;
     --destructive-foreground: 26.7 16.4% 89.2%;
-    --info: 214.2 28.3% 49.8%;
+    --info: 214.2 45% 58%;
     --info-foreground: 26.7 16.4% 89.2%;
-    --success: 154.8 38% 48%;
+    --success: 154.8 50% 52%;
     --success-foreground: 26.7 16.4% 89.2%;
-    --warning: 33.3 59.8% 58%;
+    --warning: 33.3 75% 60%;
     --warning-foreground: 26.7 16.4% 89.2%;
-    --tertiary: 37.7 92.1% 50.2%;
+    --tertiary: 37.7 92.1% 55%;
     --tertiary-foreground: 26.7 16.4% 89.2%;
     --border: 27.3 8% 26.9%;
     --input: 27.3 8% 26.9%;
-    --ring: 331.7 73.9% 53.3%;
+    --ring: 331.7 78% 58%;
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
