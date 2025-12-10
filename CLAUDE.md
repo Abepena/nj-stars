@@ -1,141 +1,511 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **Purpose:** Provide Claude Code with comprehensive context for working with this codebase.
+> **Last Updated:** December 10, 2025
 
-## Project Overview
+---
 
-NJ Stars is a web platform for an AAU basketball team featuring a public website, e-commerce merch store, and protected member portal. The project is actively being rebuilt from FastAPI to Django + Wagtail CMS.
+## Ownership & Licensing
+
+**This platform and all associated technology is proprietary to Stryder Labs LLC.**
+
+- All source code, design systems, and architectural patterns are owned by Stryder Labs LLC
+- NJ Stars Elite AAU is the first tenant/client using this platform
+- The platform is designed to be licensed to other youth sports organizations as a SaaS product
+
+---
+
+## Project Vision
+
+**NJ Stars Elite AAU Basketball** is a full-stack web platform that serves as the **proof-of-concept MVP** for a **multi-tenant youth sports platform**. This implementation for NJ Stars will become the **first tenant** when the platform scales to serve other AAU teams, sports organizations, and youth athletic programs.
+
+**Key Architectural Principle:** All features should be designed with multi-tenancy in mind. Avoid hard-coding NJ Stars-specific logic—use configuration and tenant-scoped data models instead.
 
 **Domains:**
 - **Primary:** njstarselite.com
 - **Secondary:** njstarsbasketball.com (owned, can redirect)
 
-## Architecture
+---
 
-**Current State:** Django + Wagtail backend with Next.js frontend (fully integrated)
-- `/backend/` - Django 5.0 + Wagtail 7.2.1 (active)
-- `/backend_fastapi/` - Original FastAPI backend (archived reference)
-- `/frontend/` - Next.js 14 with App Router, TypeScript, Tailwind CSS, shadcn/ui
+## Tech Stack
 
-**Django Backend Structure:**
-- `apps/core/` - User model, Instagram integration
-- `apps/events/` - Event management
-- `apps/registrations/` - Event registration
-- `apps/payments/` - Stripe, products, orders, subscriptions
-- `apps/cms/` - Wagtail CMS pages (HomePage, BlogPage, TeamPage)
-- `config/settings/` - Split settings (base.py, development.py, production.py)
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Django 5.0 + Wagtail CMS 7.2.1 |
+| **Frontend** | Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui |
+| **Database** | PostgreSQL 14+ |
+| **Auth** | django-allauth + dj-rest-auth (backend), NextAuth.js v5 (frontend) |
+| **Payments** | Stripe (checkout, subscriptions, webhooks) |
+| **Deployment** | Railway (backend + DB), Vercel (frontend) |
+| **Containerization** | Docker + Docker Compose |
 
-**Frontend Structure:**
-- `src/app/` - Next.js App Router pages
-- `src/components/` - React components (shadcn/ui in `components/ui/`)
-- `src/lib/` - Utilities, API client, mock data
-- `src/hooks/` - Custom React hooks
+---
+
+## Directory Structure
+
+```
+nj-stars/
+├── backend/                    # Django + Wagtail API
+│   ├── apps/
+│   │   ├── core/              # Coaches, Instagram, Newsletter
+│   │   ├── events/            # Events + iCal sync
+│   │   ├── registrations/     # Event registration
+│   │   ├── payments/          # Stripe, Products, Orders, Bag, Subscriptions
+│   │   ├── portal/            # User profiles, Players, Dues, Waivers, Check-ins
+│   │   └── cms/               # Wagtail pages (Home, Blog, Team)
+│   ├── config/
+│   │   ├── settings/          # base.py, development.py, production.py
+│   │   └── urls.py            # Main URL router
+│   └── manage.py
+├── frontend/                   # Next.js application
+│   ├── src/
+│   │   ├── app/               # App Router pages
+│   │   │   ├── (public)/      # Homepage, shop, events, news
+│   │   │   ├── portal/        # Protected member portal
+│   │   │   └── shop/          # E-commerce pages
+│   │   ├── components/        # React components
+│   │   │   ├── ui/            # shadcn/ui components
+│   │   │   └── skeletons/     # Loading states
+│   │   ├── lib/               # Utilities
+│   │   │   ├── api-client.ts  # Django REST API client
+│   │   │   ├── wagtail-client.ts  # Wagtail CMS client
+│   │   │   └── bag.tsx        # Shopping bag context
+│   │   └── types/             # TypeScript definitions
+│   └── public/                # Static assets
+├── documentation/             # Project docs, meeting notes, audits
+├── docker-compose.yml         # Development containers
+├── docker-compose.prod.yml    # Production containers
+└── Makefile                   # Docker shortcuts
+```
+
+---
 
 ## Development Commands
 
 ### Docker (Recommended)
+
 ```bash
-make build          # Build all containers
-make up             # Start all services
-make down           # Stop all services
-make logs           # View logs
-make seed           # Seed database with test data
-make test           # Run all tests
-make test-backend   # Backend tests with coverage
-make test-frontend  # Frontend tests
-make shell-backend  # Access backend container
-make db-shell       # PostgreSQL shell
+# Core commands
+make build              # Build all containers
+make up                 # Start all services (detached)
+make down               # Stop all services
+make restart            # Restart all services
+make logs               # View logs from all services
+make status             # Show container status
+
+# Database
+make seed               # Seed DB with test data (runs seed_data + seed_wagtail)
+make db-shell           # Open PostgreSQL shell
+make db-reset           # Reset database (WARNING: deletes all data)
+
+# Testing
+make test               # Run all tests (backend + frontend)
+make test-backend       # Backend tests with coverage
+make test-frontend      # Frontend tests
+
+# Shell access
+make shell-backend      # Bash shell in backend container
+make shell-frontend     # Shell in frontend container
+
+# Individual service management
+make restart-backend    # Restart just the backend
+make restart-frontend   # Restart just the frontend
+make logs-backend       # View only backend logs
+make logs-frontend      # View only frontend logs
+
+# Production
+make prod-build         # Build production images
+make prod-up            # Start production services
+make prod-down          # Stop production services
 ```
 
-### Local Development
+### Local Development (Without Docker)
 
-**Backend (Django):**
+**Backend:**
 ```bash
 cd backend
-source .venv/bin/activate
-python manage.py runserver              # Run server at localhost:8000
-python manage.py makemigrations         # Create migrations
-python manage.py migrate                # Apply migrations
-python manage.py createsuperuser        # Create admin user
-pytest                                  # Run tests
-pytest --cov=apps                       # Tests with coverage
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_data           # Seed test data
+python manage.py seed_wagtail        # Seed CMS content
+python manage.py runserver           # http://localhost:8000
 ```
 
 **Frontend:**
 ```bash
 cd frontend
-npm run dev                             # Dev server at localhost:3000
-npm run build                           # Production build
-npm run lint                            # ESLint
-npm test                                # Jest tests
-npm run test:watch                      # Watch mode
-npm run test:coverage                   # Coverage report
+npm install
+npm run dev                          # http://localhost:3000
+npm run build                        # Production build
+npm run lint                         # ESLint check
+npm test                             # Jest tests
 ```
 
 ### Stripe Webhook Testing
 ```bash
-stripe listen --forward-to localhost:8000/api/v1/webhooks/stripe
+# Install Stripe CLI, then:
+stripe listen --forward-to localhost:8000/api/payments/webhook/stripe/
 ```
 
-## Key API Endpoints
+---
 
-**Django REST Framework:**
-- `GET /api/events/` - Events (filterable by event_type)
-- `GET /api/events/{slug}/` - Single event
-- `GET /api/payments/products/` - Products (filterable by category, featured)
-- `GET /api/payments/products/{slug}/` - Single product
-- `GET /api/payments/subscription-plans/` - Subscription plans
-- `POST /api/payments/create-checkout-session/` - Stripe checkout
-- `GET /api/instagram/` - Instagram posts (cached)
+## API Reference
 
-**Wagtail CMS API:**
-- `GET /api/v2/pages/` - All pages
-- `GET /api/v2/pages/?type=cms.HomePage&fields=*` - Homepage with all fields
-- `GET /api/v2/pages/?type=cms.BlogPage&fields=date,intro,featured_image,category` - Blog posts
-- `GET /api/v2/pages/?type=cms.TeamPage&fields=*` - Team roster with players
+### Django REST Framework Endpoints
 
-**Admin Panels:**
-- Wagtail CMS admin: `/cms-admin/`
-- Django admin: `/django-admin/`
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/events/` | List events (filter: `?event_type=tryout`) |
+| `GET` | `/api/events/{slug}/` | Single event details |
+| `GET` | `/api/coaches/` | List all coaches |
+| `GET` | `/api/instagram/` | Cached Instagram posts |
+| `POST` | `/api/newsletter/subscribe/` | Newsletter signup |
+| `GET` | `/api/payments/products/` | List products (filter: `?category=jersey&featured=true`) |
+| `GET` | `/api/payments/products/{slug}/` | Single product |
+| `GET` | `/api/payments/subscription-plans/` | Subscription tiers |
+| `GET` | `/api/payments/bag/` | Get user's shopping bag |
+| `POST` | `/api/payments/bag/items/` | Add item to bag |
+| `POST` | `/api/payments/checkout/bag/` | Create Stripe checkout for bag |
+| `POST` | `/api/payments/webhook/stripe/` | Stripe webhook handler |
+| `GET` | `/api/portal/profile/` | User profile |
+| `GET` | `/api/portal/players/` | User's linked players |
+| `GET` | `/api/portal/dashboard/` | Parent dashboard data |
+| `POST` | `/api/portal/waiver/sign/` | Sign waiver |
+
+### Wagtail CMS API (v2)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v2/pages/` | All CMS pages |
+| `GET /api/v2/pages/?type=cms.HomePage&fields=*` | Homepage content |
+| `GET /api/v2/pages/?type=cms.BlogPage&fields=date,intro,featured_image,category&order=-date` | Blog posts |
+| `GET /api/v2/pages/?type=cms.TeamPage&fields=*` | Team roster |
+
+### Authentication (dj-rest-auth)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/login/` | Token login |
+| `POST` | `/api/auth/logout/` | Logout |
+| `POST` | `/api/auth/registration/` | Register new user |
+| `POST` | `/api/auth/password/reset/` | Request password reset |
+| `POST` | `/api/auth/password/reset/confirm/` | Confirm password reset |
+| `GET` | `/api/auth/user/` | Current user details |
+
+### Admin Panels
+
+- **Wagtail CMS:** `/cms-admin/` - Content management (pages, images, documents)
+- **Django Admin:** `/django-admin/` - Data management (users, products, orders)
+
+---
+
+## Database Models
+
+### Core App (`apps/core/`)
+- **Coach** - Coaching staff profiles (name, role, bio, instagram, specialties)
+- **InstagramPost** - Cached Instagram posts for news feed
+- **NewsletterSubscriber** - Email subscriptions with preferences
+
+### Events App (`apps/events/`)
+- **Event** - Events with registration, payments, iCal sync
+- **CalendarSource** - External iCal feeds for auto-sync
+
+### Payments App (`apps/payments/`)
+- **Product** - Merch with multiple images, inventory tracking
+- **ProductImage** - Product gallery images
+- **Order** / **OrderItem** - Purchase records
+- **Bag** / **BagItem** - Shopping cart (supports guests via session)
+- **SubscriptionPlan** / **Subscription** - Recurring memberships
+- **Payment** - Generic payment tracking
+
+### Portal App (`apps/portal/`)
+- **UserProfile** - Extended user data (role, phone, address, waiver status)
+- **Player** - Player profiles (DOB, jersey, position, medical info)
+- **GuardianRelationship** - Links guardians to players
+- **DuesAccount** / **DuesTransaction** - Balance tracking
+- **SavedPaymentMethod** - Stripe saved cards
+- **PromoCredit** - Promotional credits
+- **EventCheckIn** - Event attendance tracking
+
+### CMS App (`apps/cms/`)
+- **HomePage** - Hero section, CTA, section toggles
+- **BlogIndexPage** / **BlogPage** - News/blog with categories
+- **TeamPage** / **PlayerProfile** - Team roster
+
+---
+
+## Frontend Architecture
+
+### Key Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Homepage (Hero, Coaches, Featured Merch, News Feed, Newsletter) |
+| `/shop` | Product grid with filters (category, tags, search, sort) |
+| `/shop/[slug]` | Product detail with gallery and variants |
+| `/shop/success` | Stripe checkout success |
+| `/events` | Events listing with filters |
+| `/news` | Combined blog + Instagram feed |
+| `/portal/login` | Authentication |
+| `/portal/register` | User registration |
+| `/portal/dashboard` | Parent dashboard |
+| `/portal/children` | Child/player management |
+| `/portal/billing` | Payment methods, order history |
+
+### Key Components
+
+- **LayoutShell** - Page wrapper with header/footer
+- **Hero** - Homepage hero section
+- **CoachesSection** - Coach carousel with fallback data
+- **FeaturedMerch** - Product grid (hides on API error)
+- **NewsFeed** - Unified blog + Instagram feed (hides on API error)
+- **BagDrawer** - Shopping cart sidebar
+- **ProductQuickView** - Modal for quick product preview
+- **EventRegistrationModal** - Event signup flow
+
+### State Management
+
+- **Shopping Bag:** React Context (`lib/bag.tsx`) with `useBag()` hook
+- **Auth:** NextAuth.js session with `useSession()` hook
+- **Theme:** `next-themes` with dark mode default
+
+### Data Fetching Patterns
+
+- **Server Components:** Wagtail CMS content (blog, team pages)
+- **Client Components:** Products, events, news feed (with loading skeletons)
+- **API Client:** `lib/api-client.ts` for Django REST endpoints
+- **Wagtail Client:** `lib/wagtail-client.ts` for CMS content
+
+---
+
+## Design System
+
+### Color Palette (CSS Variables in globals.css)
+
+| Token | Purpose | HSL Value |
+|-------|---------|-----------|
+| `--primary` | Primary CTAs, links | Hot Pink (331.7 73.9% 53.3%) |
+| `--secondary` | Secondary actions | Teal (188.7 94.5% 42.7%) |
+| `--accent` | Destructive, alerts | Jersey Red (353.4 55% 48.8%) |
+| `--tertiary` | Highlights, badges | Amber (37.7 92.1% 50.2%) |
+
+### Design Principles
+
+- **Dark Mode Default** - Premium feel, reduces eye strain
+- **Mobile First** - 60%+ traffic expected from mobile
+- **Skeleton Loaders** - Loading states over spinners
+- **Nike-style Cards** - Image-centric, minimal text, no buttons on cards
+- **Graceful Degradation** - Fallback data when APIs fail, hide empty sections
+
+### Responsive Breakpoints
+
+- **Mobile:** < 768px (2-column grids, touch-first)
+- **Tablet:** md 768px (3-column)
+- **Desktop:** lg 1024px (4-column)
+- **Wide:** xl 1280px (full layouts)
+
+---
 
 ## Environment Variables
 
-Backend requires: `DATABASE_URL`, `SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `FRONTEND_URL`
+### Backend (.env)
 
-Frontend requires: `NEXT_PUBLIC_API_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/njstars
 
-See `.env.example` files in each directory.
+# Security
+SECRET_KEY=<generate-with-openssl-rand-hex-32>
+DJANGO_SETTINGS_MODULE=config.settings.development
 
-## Current Migration Status
+# Frontend URL (for CORS)
+FRONTEND_URL=http://localhost:3000
 
-The Django + Wagtail rebuild is ~90% complete. See `documentation/REBUILD_PROGRESS.md` for detailed phase status. Key completed work:
-- Django project scaffolding with Wagtail 7.2.1
-- Split settings configuration (base, development, production)
-- Django models (Events, Payments, Registrations, Core, CMS)
-- DRF API endpoints for events, products, subscriptions, Instagram
-- Wagtail CMS API for HomePage, BlogPage, TeamPage
-- OAuth setup (Google, Facebook, Apple via django-allauth)
-- Stripe checkout integration with webhook handlers
-- Frontend Wagtail client (`lib/wagtail-client.ts`) with SSR support
-- News feed component merging blog posts with Instagram
-- Featured merch component with product tags
-- Placeholder logo SVG for cards without images (`logo square thick muted.svg`)
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Instagram (optional - mock data available)
+INSTAGRAM_ACCESS_TOKEN=...
+INSTAGRAM_BUSINESS_ACCOUNT_ID=...
+```
+
+### Frontend (.env.local)
+
+```bash
+# API
+NEXT_PUBLIC_API_URL=http://localhost:8000
+INTERNAL_API_URL=http://backend:8000  # Docker internal
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<generate-with-openssl-rand-hex-32>
+
+# OAuth (optional)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+---
 
 ## Testing
 
-Backend uses pytest-django. Frontend uses Jest with React Testing Library.
+### Backend (pytest)
 
 ```bash
-# Backend single test
+# Run all tests
+pytest
+
+# With coverage
+pytest --cov=apps --cov-report=html
+
+# Single test file
 pytest apps/events/tests/test_views.py -v
 
-# Frontend single test
+# Single test
+pytest apps/events/tests/test_views.py::TestEventViewSet::test_list -v
+```
+
+### Frontend (Jest)
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+
+# Single file
 npm test -- --testPathPattern="ComponentName"
 ```
 
-## Services
+---
 
-- **Frontend:** localhost:3000 (Next.js)
-- **Backend:** localhost:8000 (Django/Wagtail)
-- **Database:** localhost:5432 (PostgreSQL)
-- **Nginx:** localhost:80 (production profile only)
+## Current Status & Priorities
+
+### Completed Features (90%)
+- Full e-commerce (products, bag, Stripe checkout, orders)
+- Event management with registration and payments
+- Wagtail CMS integration (homepage, blog, team pages)
+- News feed merging blog posts + Instagram
+- Coach profiles with fallback data
+- Member portal with player management
+- Authentication with OAuth (Google, Facebook, Apple)
+- Calendar sync (iCal export, Google Calendar links)
+- Shopping bag with guest support
+
+### In Progress / Critical
+1. **Instagram Graph API** - Replace mock data with live feed
+2. **Custom Products/Invoices** - Coach-created payment links
+3. **Private Lessons Booking** - `/privates` endpoint
+4. **Tryout Registration** - Modal form with waivers
+
+### Revenue Model
+- **Platform Fee (Events/Merch):** 20%
+- **Coach Services Fee:** 5%
+
+---
+
+## Common Tasks
+
+### Adding a New API Endpoint
+
+1. Create/update model in `apps/<app>/models.py`
+2. Run migrations: `python manage.py makemigrations && python manage.py migrate`
+3. Create serializer in `apps/<app>/serializers.py`
+4. Create viewset in `apps/<app>/views.py`
+5. Register route in `apps/<app>/urls.py`
+6. Add types to `frontend/src/types/` if needed
+7. Update API client in `frontend/src/lib/api-client.ts`
+
+### Adding a New Page
+
+1. Create route in `frontend/src/app/<route>/page.tsx`
+2. Add layout if needed: `frontend/src/app/<route>/layout.tsx`
+3. Create components in `frontend/src/components/`
+4. Use existing UI components from `components/ui/`
+5. Add loading skeleton for async data
+
+### Adding a Wagtail Page Type
+
+1. Create model in `apps/cms/models.py` extending `Page`
+2. Define panels and api_fields
+3. Run migrations
+4. Register in Wagtail admin
+5. Add type to `frontend/src/types/wagtail.ts`
+6. Update `frontend/src/lib/wagtail-client.ts`
+
+### Seeding Data
+
+```bash
+# Via Docker
+make seed
+
+# Manually
+python manage.py seed_data      # Products, events, users
+python manage.py seed_wagtail   # CMS pages, blog posts
+```
+
+### Debug Container Issues
+
+```bash
+# Check container health
+docker ps
+make status
+
+# View logs
+make logs-backend
+make logs-frontend
+
+# Restart unhealthy container
+make restart-backend
+
+# Shell into container
+make shell-backend
+```
+
+---
+
+## Key Files Reference
+
+| File | Purpose |
+|------|---------|
+| `backend/config/settings/base.py` | Django settings (488 lines) |
+| `backend/apps/payments/models.py` | Payment models (592 lines) |
+| `backend/apps/portal/models.py` | Portal models (523 lines) |
+| `backend/apps/cms/models.py` | Wagtail CMS pages (288 lines) |
+| `frontend/src/lib/api-client.ts` | Django API client |
+| `frontend/src/lib/wagtail-client.ts` | CMS client |
+| `frontend/src/lib/bag.tsx` | Shopping bag context |
+| `frontend/src/app/globals.css` | Theme variables & animations |
+| `documentation/MVP/NEXT_STEPS.md` | Roadmap & priorities |
+| `documentation/CRITICAL.md` | Known issues & fixes |
+
+---
+
+## Multi-Tenant Considerations
+
+When building features, keep these principles in mind for future multi-tenancy:
+
+1. **Tenant-Scoped Models:** Add `tenant` FK to models that will be tenant-specific (products, events, users, etc.)
+2. **Configurable Branding:** Keep colors, logos, and text in CMS/database, not hardcoded
+3. **Domain Routing:** Design URL structure to support `{tenant}.platform.com` or `platform.com/{tenant}`
+4. **Shared vs Tenant Data:** Some data (categories, subscription types) may be shared; others (products, events) are tenant-specific
+5. **Admin Permissions:** Plan for tenant admins vs platform super-admins
+
+---
+
+## Getting Help
+
+- **Docker Issues:** Check `documentation/DOCKER.md`
+- **Testing:** Check `documentation/TESTING.md`
+- **Deployment:** Check `documentation/DEPLOYMENT_GUIDE.md`
+- **Architecture:** Check `documentation/ARCHITECTURE.md`
+- **Meeting Notes:** Check `documentation/MEETING NOTES/`
