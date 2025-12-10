@@ -75,37 +75,37 @@ const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string; bgCl
   camp: { label: 'Camp', className: 'text-tertiary', bgClassName: 'bg-tertiary' },
 }
 
-// Category filter colors
+// Category filter colors - matches category-colors.ts
 const getEventTypeColor = (type: string, isActive: boolean) => {
   const colors: Record<string, { active: string; inactive: string }> = {
     open_gym: {
-      active: "bg-success/15 text-success border border-success/30",
-      inactive: "bg-success/5 text-success/60 border border-success/10 hover:bg-success/10",
+      active: "bg-success/25 text-success border border-success/60",
+      inactive: "bg-success/8 text-success/80 border border-success/25 hover:bg-success/12",
     },
     tryout: {
-      active: "bg-info/15 text-info border border-info/30",
-      inactive: "bg-info/5 text-info/60 border border-info/10 hover:bg-info/10",
+      active: "bg-info/25 text-info border border-info/60",
+      inactive: "bg-info/8 text-info/80 border border-info/25 hover:bg-info/12",
     },
     game: {
-      active: "bg-accent/15 text-accent border border-accent/30",
-      inactive: "bg-accent/5 text-accent/60 border border-accent/10 hover:bg-accent/10",
+      active: "bg-accent/25 text-accent border border-accent/60",
+      inactive: "bg-accent/8 text-accent/80 border border-accent/25 hover:bg-accent/12",
     },
     practice: {
-      active: "bg-warning/15 text-warning border border-warning/30",
-      inactive: "bg-warning/5 text-warning/60 border border-warning/10 hover:bg-warning/10",
+      active: "bg-warning/25 text-warning border border-warning/60",
+      inactive: "bg-warning/8 text-warning/80 border border-warning/25 hover:bg-warning/12",
     },
     tournament: {
-      active: "bg-secondary/15 text-secondary border border-secondary/30",
-      inactive: "bg-secondary/5 text-secondary/60 border border-secondary/10 hover:bg-secondary/10",
+      active: "bg-secondary/25 text-secondary border border-secondary/60",
+      inactive: "bg-secondary/8 text-secondary/80 border border-secondary/25 hover:bg-secondary/12",
     },
     camp: {
-      active: "bg-tertiary/15 text-tertiary border border-tertiary/30",
-      inactive: "bg-tertiary/5 text-tertiary/60 border border-tertiary/10 hover:bg-tertiary/10",
+      active: "bg-tertiary/25 text-tertiary border border-tertiary/60",
+      inactive: "bg-tertiary/8 text-tertiary/80 border border-tertiary/25 hover:bg-tertiary/12",
     },
   }
   const colorSet = colors[type] || {
-    active: "bg-muted text-muted-foreground border border-border",
-    inactive: "bg-muted/30 text-muted-foreground/50 border border-border/30 hover:bg-muted/50",
+    active: "bg-muted text-foreground border border-border",
+    inactive: "bg-muted/30 text-muted-foreground border border-border/50 hover:bg-muted/50",
   }
   return isActive ? colorSet.active : colorSet.inactive
 }

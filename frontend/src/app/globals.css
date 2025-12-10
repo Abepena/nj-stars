@@ -13,33 +13,33 @@
     --text-secondary: 38.8 6.8% 65%;    /* dimmed text - WCAG AA compliant */
     --text-tertiary: 38.8 6.8% 60%;     /* more dimmed text - bumped from 55% for WCAG AA contrast */
 
-    --primary: 331.7 73.9% 53.3%;        /* hot pink - main brand color */
+    --primary: 331.7 78% 58%;            /* hot pink - main brand color (brighter) */
     --primary-foreground: 26.7 16.4% 89.2%;
 
-    --secondary: 188.7 94.5% 42.7%;     /* vibrant teal */
+    --secondary: 188.7 94.5% 48%;       /* vibrant teal (brighter) */
     --secondary-foreground: 26.7 16.4% 89.2%;
 
-    --accent: 353.4 55% 48.8%;         /* muted jersey red accent */
+    --accent: 353.4 65% 55%;            /* jersey red accent (brighter) */
     --accent-foreground: 26.7 16.4% 89.2%;
 
-    --destructive: 353.4 55% 48.8%;
+    --destructive: 353.4 65% 55%;
     --destructive-foreground: 26.7 16.4% 89.2%;
 
-    --info: 214.2 28.3% 49.8%;
+    --info: 214.2 45% 58%;              /* blue (brighter) */
     --info-foreground: 26.7 16.4% 89.2%;
 
-    --success: 154.8 38% 48%;
+    --success: 154.8 50% 52%;           /* green (brighter) */
     --success-foreground: 26.7 16.4% 89.2%;
 
-    --warning: 33.3 59.8% 58%;
+    --warning: 33.3 75% 60%;            /* amber (brighter) */
     --warning-foreground: 26.7 16.4% 89.2%;
 
-    --tertiary: 37.7 92.1% 50.2%;       /* amber highlight */
+    --tertiary: 37.7 92.1% 55%;         /* amber highlight (brighter) */
     --tertiary-foreground: 26.7 16.4% 89.2%;
 
     --border: 27.3 8% 26.9%;
     --input: 27.3 8% 26.9%;
-    --ring: 331.7 73.9% 53.3%;          /* primary (hot pink) for focus */
+    --ring: 331.7 78% 58%;               /* primary (hot pink) for focus */
     --radius: 0.5rem;
 
     /* Aliases for backward compatibility */
@@ -54,43 +54,43 @@
   }
 
   .light {
-    /* Light mode - Nike-inspired warm cream tones with strong contrast */
-    --bg-primary: 40 33% 98%;             /* Warm off-white (#faf9f7) */
-    --bg-secondary: 40 20% 96%;           /* Slightly warmer for cards */
-    --bg-tertiary: 40 15% 93%;            /* Warm light gray for surfaces */
+    /* Light mode - Muted warm stone/paper tones, easy on the eyes */
+    --bg-primary: 40 15% 92%;             /* Muted warm gray (#eae8e4) */
+    --bg-secondary: 40 12% 95%;           /* Slightly lighter for cards */
+    --bg-tertiary: 40 10% 88%;            /* Warmer gray for surfaces */
 
-    --text-primary: 0 0% 7%;              /* Near black for maximum contrast */
-    --text-secondary: 0 0% 30%;           /* Dark gray for secondary text */
-    --text-tertiary: 0 0% 45%;            /* Medium gray for tertiary text */
+    --text-primary: 20 10% 15%;           /* Warm dark brown-black */
+    --text-secondary: 20 8% 35%;          /* Warm dark gray for secondary */
+    --text-tertiary: 20 6% 50%;           /* Medium warm gray for tertiary */
 
-    /* Brand colors - darker/more saturated for light mode readability */
-    --primary: 331.7 80% 45%;             /* Deeper hot pink for light bg */
+    /* Brand colors - adjusted for muted background */
+    --primary: 331.7 70% 42%;             /* Deeper hot pink for muted bg */
     --primary-foreground: 0 0% 100%;      /* white text on pink */
 
-    --secondary: 188.7 100% 32%;          /* Deeper teal for light bg */
+    --secondary: 188.7 85% 30%;           /* Deeper teal for muted bg */
     --secondary-foreground: 0 0% 100%;    /* white text on teal */
 
-    --accent: 353.4 70% 42%;              /* Deeper red for light bg */
+    --accent: 353.4 60% 40%;              /* Deeper red for muted bg */
     --accent-foreground: 0 0% 100%;       /* white text on red */
 
-    --destructive: 353.4 70% 42%;
+    --destructive: 353.4 60% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --info: 214.2 50% 40%;                /* Deeper blue */
+    --info: 214.2 45% 38%;                /* Deeper blue */
     --info-foreground: 0 0% 100%;
 
-    --success: 154.8 60% 35%;             /* Deeper green */
+    --success: 154.8 50% 32%;             /* Deeper green */
     --success-foreground: 0 0% 100%;
 
-    --warning: 33.3 90% 45%;              /* Deeper orange/amber */
-    --warning-foreground: 0 0% 7%;        /* dark text on warning */
+    --warning: 33.3 80% 42%;              /* Deeper orange/amber */
+    --warning-foreground: 20 10% 15%;     /* dark text on warning */
 
-    --tertiary: 37.7 100% 42%;            /* Deeper amber */
-    --tertiary-foreground: 0 0% 7%;       /* dark text on amber */
+    --tertiary: 37.7 90% 40%;             /* Deeper amber */
+    --tertiary-foreground: 20 10% 15%;    /* dark text on amber */
 
-    --border: 40 10% 85%;                 /* Warm gray borders */
-    --input: 40 10% 85%;                  /* Warm gray input borders */
-    --ring: 331.7 80% 45%;                /* primary for focus */
+    --border: 40 8% 80%;                  /* Warm gray borders */
+    --input: 40 8% 80%;                   /* Warm gray input borders */
+    --ring: 331.7 70% 42%;                /* primary for focus */
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
@@ -111,25 +111,25 @@
     --text-primary: 26.7 16.4% 89.2%;
     --text-secondary: 38.8 6.8% 65%;
     --text-tertiary: 38.8 6.8% 60%;
-    --primary: 331.7 73.9% 53.3%;
+    --primary: 331.7 78% 58%;
     --primary-foreground: 26.7 16.4% 89.2%;
-    --secondary: 188.7 94.5% 42.7%;
+    --secondary: 188.7 94.5% 48%;
     --secondary-foreground: 26.7 16.4% 89.2%;
-    --accent: 353.4 55% 48.8%;
+    --accent: 353.4 65% 55%;
     --accent-foreground: 26.7 16.4% 89.2%;
-    --destructive: 353.4 55% 48.8%;
+    --destructive: 353.4 65% 55%;
     --destructive-foreground: 26.7 16.4% 89.2%;
-    --info: 214.2 28.3% 49.8%;
+    --info: 214.2 45% 58%;
     --info-foreground: 26.7 16.4% 89.2%;
-    --success: 154.8 38% 48%;
+    --success: 154.8 50% 52%;
     --success-foreground: 26.7 16.4% 89.2%;
-    --warning: 33.3 59.8% 58%;
+    --warning: 33.3 75% 60%;
     --warning-foreground: 26.7 16.4% 89.2%;
-    --tertiary: 37.7 92.1% 50.2%;
+    --tertiary: 37.7 92.1% 55%;
     --tertiary-foreground: 26.7 16.4% 89.2%;
     --border: 27.3 8% 26.9%;
     --input: 27.3 8% 26.9%;
-    --ring: 331.7 73.9% 53.3%;
+    --ring: 331.7 78% 58%;
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
