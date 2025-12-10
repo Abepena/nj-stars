@@ -6,56 +6,56 @@
 export const CATEGORY_COLORS: Record<string, { active: string; inactive: string }> = {
   // Product categories
   jersey: {
-    active: "bg-accent/25 text-accent border border-accent/60",
-    inactive: "bg-accent/8 text-accent/80 border border-accent/25 hover:bg-accent/12",
+    active: "bg-accent/30 text-accent font-medium border border-accent/70",
+    inactive: "bg-accent/8 text-accent/70 border border-accent/25 hover:bg-accent/12",
   },
   apparel: {
-    active: "bg-secondary/25 text-secondary border border-secondary/60",
-    inactive: "bg-secondary/8 text-secondary/80 border border-secondary/25 hover:bg-secondary/12",
+    active: "bg-secondary/30 text-secondary font-medium border border-secondary/70",
+    inactive: "bg-secondary/8 text-secondary/70 border border-secondary/25 hover:bg-secondary/12",
   },
   accessories: {
-    active: "bg-tertiary/25 text-tertiary border border-tertiary/60",
-    inactive: "bg-tertiary/8 text-tertiary/80 border border-tertiary/25 hover:bg-tertiary/12",
+    active: "bg-tertiary/30 text-tertiary font-medium border border-tertiary/70",
+    inactive: "bg-tertiary/8 text-tertiary/70 border border-tertiary/25 hover:bg-tertiary/12",
   },
   equipment: {
-    active: "bg-info/25 text-info border border-info/60",
-    inactive: "bg-info/8 text-info/80 border border-info/25 hover:bg-info/12",
+    active: "bg-info/30 text-info font-medium border border-info/70",
+    inactive: "bg-info/8 text-info/70 border border-info/25 hover:bg-info/12",
   },
 
   // Event types
   tryout: {
-    active: "bg-accent/25 text-accent border border-accent/60",
-    inactive: "bg-accent/8 text-accent/80 border border-accent/25 hover:bg-accent/12",
+    active: "bg-accent/30 text-accent font-medium border border-accent/70",
+    inactive: "bg-accent/8 text-accent/70 border border-accent/25 hover:bg-accent/12",
   },
   camp: {
-    active: "bg-secondary/25 text-secondary border border-secondary/60",
-    inactive: "bg-secondary/8 text-secondary/80 border border-secondary/25 hover:bg-secondary/12",
+    active: "bg-secondary/30 text-secondary font-medium border border-secondary/70",
+    inactive: "bg-secondary/8 text-secondary/70 border border-secondary/25 hover:bg-secondary/12",
   },
   tournament: {
-    active: "bg-tertiary/25 text-tertiary border border-tertiary/60",
-    inactive: "bg-tertiary/8 text-tertiary/80 border border-tertiary/25 hover:bg-tertiary/12",
+    active: "bg-tertiary/30 text-tertiary font-medium border border-tertiary/70",
+    inactive: "bg-tertiary/8 text-tertiary/70 border border-tertiary/25 hover:bg-tertiary/12",
   },
   practice: {
-    active: "bg-info/25 text-info border border-info/60",
-    inactive: "bg-info/8 text-info/80 border border-info/25 hover:bg-info/12",
+    active: "bg-info/30 text-info font-medium border border-info/70",
+    inactive: "bg-info/8 text-info/70 border border-info/25 hover:bg-info/12",
   },
   game: {
-    active: "bg-success/25 text-success border border-success/60",
-    inactive: "bg-success/8 text-success/80 border border-success/25 hover:bg-success/12",
+    active: "bg-success/30 text-success font-medium border border-success/70",
+    inactive: "bg-success/8 text-success/70 border border-success/25 hover:bg-success/12",
   },
   open_gym: {
-    active: "bg-warning/25 text-warning border border-warning/60",
-    inactive: "bg-warning/8 text-warning/80 border border-warning/25 hover:bg-warning/12",
+    active: "bg-warning/30 text-warning font-medium border border-warning/70",
+    inactive: "bg-warning/8 text-warning/70 border border-warning/25 hover:bg-warning/12",
   },
 
   // News/content types
   blog: {
-    active: "bg-primary/25 text-primary border border-primary/60",
-    inactive: "bg-primary/8 text-primary/80 border border-primary/25 hover:bg-primary/12",
+    active: "bg-primary/30 text-primary font-medium border border-primary/70",
+    inactive: "bg-primary/8 text-primary/70 border border-primary/25 hover:bg-primary/12",
   },
   instagram: {
-    active: "bg-accent/25 text-accent border border-accent/60",
-    inactive: "bg-accent/8 text-accent/80 border border-accent/25 hover:bg-accent/12",
+    active: "bg-accent/30 text-accent font-medium border border-accent/70",
+    inactive: "bg-accent/8 text-accent/70 border border-accent/25 hover:bg-accent/12",
   },
 }
 
