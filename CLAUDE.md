@@ -139,3 +139,39 @@ npm test -- --testPathPattern="ComponentName"
 - **Backend:** localhost:8000 (Django/Wagtail)
 - **Database:** localhost:5432 (PostgreSQL)
 - **Nginx:** localhost:80 (production profile only)
+
+## Git Workflow
+
+This project uses a **feature branch workflow**. See `documentation/GIT_WORKFLOW.md` for full details.
+
+### Branch Structure
+- `main` - Production-ready code (deploys to Railway/Vercel production)
+- `dev` - Integration branch for testing features together
+- `feature/*` - New features (e.g., `feature/calendar-sync`)
+- `fix/*` - Bug fixes (e.g., `fix/typescript-billing-error`)
+
+### Quick Reference
+```bash
+# Start new feature (ALWAYS branch from dev)
+git checkout dev && git pull origin dev
+git checkout -b feature/my-feature
+
+# Work on feature, commit often
+git add . && git commit -m "Add feature component"
+
+# Push feature branch
+git push -u origin feature/my-feature
+
+# When done: merge to dev first, test, then merge dev to main
+git checkout dev && git merge feature/my-feature
+git push origin dev
+# After testing on dev:
+git checkout main && git merge dev
+git push origin main
+```
+
+### Rules
+1. **Never commit directly to `main`** - Always go through `dev` first
+2. **Create feature branches for any non-trivial work** - Even small features
+3. **Keep feature branches short-lived** - Merge within 1-3 days ideally
+4. **Delete feature branches after merging** - Keep repo clean
