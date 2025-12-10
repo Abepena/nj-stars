@@ -34,7 +34,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
     in_stock = serializers.ReadOnlyField()
     primary_image_url = serializers.SerializerMethodField()
-    images = ProductImageSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
+
+    def get_images(self, obj):
+        """Serialize images with request context for absolute URLs"""
+        request = self.context.get('request')
+        serializer = ProductImageSerializer(
+            obj.images.all(),
+            many=True,
+            context={'request': request}
+        )
+        return serializer.data
 
     def get_primary_image_url(self, obj):
         """Get the primary image URL with absolute URL for uploaded files"""
@@ -115,6 +125,8 @@ class CartItemSerializer(serializers.ModelSerializer):
             'product',
             'product_id',
             'quantity',
+            'selected_size',
+            'selected_color',
             'total_price',
             'is_available',
             'added_at',
@@ -163,6 +175,8 @@ class AddToCartSerializer(serializers.Serializer):
 
     product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(default=1, min_value=1)
+    selected_size = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    selected_color = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def validate_product_id(self, value):
         """Ensure product exists, is active, and in stock"""

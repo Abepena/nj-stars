@@ -1,6 +1,36 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django import forms
+from django.db import models
 from .models import SubscriptionPlan, Subscription, Payment, Product, ProductImage, Order, OrderItem, Cart, CartItem
+
+
+class MultipleFileInput(forms.ClearableFileInput):
+    """Custom widget that allows multiple file selection"""
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    """Custom field that handles multiple file uploads"""
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = [single_file_clean(data, initial)]
+        return result
+
+
+class BulkImageUploadForm(forms.Form):
+    """Form for uploading multiple images at once"""
+    images = MultipleFileField(
+        required=False,
+        help_text="Select multiple images to upload (hold Ctrl/Cmd to select multiple)"
+    )
 
 
 @admin.register(SubscriptionPlan)
@@ -54,8 +84,22 @@ class ProductImageInline(admin.TabularInline):
     image_preview.short_description = "Preview"
 
 
+class ProductAdminForm(forms.ModelForm):
+    """Custom form with bulk image upload field"""
+    bulk_images = MultipleFileField(
+        required=False,
+        label="Upload Multiple Images",
+        help_text="Select multiple images at once (hold Ctrl/Cmd). They will be added to the carousel."
+    )
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    form = ProductAdminForm
     list_display = ['name', 'price', 'category', 'stock_quantity', 'is_active', 'featured', 'image_count']
     list_filter = ['category', 'is_active', 'featured', 'best_selling', 'on_sale']
     search_fields = ['name', 'description']
@@ -75,6 +119,10 @@ class ProductAdmin(admin.ModelAdmin):
         }),
         ('Inventory', {
             'fields': ('manage_inventory', 'stock_quantity')
+        }),
+        ('Bulk Image Upload', {
+            'fields': ('bulk_images',),
+            'description': 'Upload multiple images at once. For individual image settings (primary, alt text, order), use the Images section below.'
         }),
         ('Stripe Integration', {
             'fields': ('stripe_price_id', 'stripe_product_id'),
@@ -99,6 +147,27 @@ class ProductAdmin(admin.ModelAdmin):
         count = obj.images.count()
         return count if count > 0 else '-'
     image_count.short_description = "Images"
+
+    def save_model(self, request, obj, form, change):
+        """Save the product first, then handle bulk image uploads"""
+        super().save_model(request, obj, form, change)
+
+        # Handle bulk image uploads
+        bulk_images = request.FILES.getlist('bulk_images')
+        if bulk_images:
+            # Get the current max sort order
+            max_order = obj.images.aggregate(
+                max_order=models.Max('sort_order')
+            )['max_order'] or -1
+
+            for i, image_file in enumerate(bulk_images):
+                ProductImage.objects.create(
+                    product=obj,
+                    image=image_file,
+                    alt_text=f"{obj.name} - Image {max_order + i + 2}",
+                    sort_order=max_order + i + 1,
+                    is_primary=(max_order == -1 and i == 0)  # First image is primary if no images exist
+                )
 
 
 class OrderItemInline(admin.TabularInline):
