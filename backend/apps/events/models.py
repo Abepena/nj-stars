@@ -16,6 +16,56 @@ class EventType(models.TextChoices):
     GAME = 'game', 'Game'
 
 
+class CalendarSource(models.Model):
+    """External calendar source for syncing events (iCal/ICS feeds)"""
+
+    name = models.CharField(
+        max_length=100,
+        help_text="Display name for this calendar (e.g., 'Master Schedule')"
+    )
+    ical_url = models.URLField(
+        max_length=500,
+        help_text="iCal/ICS feed URL (e.g., Google Calendar public iCal URL)"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Enable/disable syncing from this calendar"
+    )
+    default_event_type = models.CharField(
+        max_length=20,
+        choices=EventType.choices,
+        default=EventType.PRACTICE,
+        help_text="Default event type for imported events"
+    )
+    auto_publish = models.BooleanField(
+        default=False,
+        help_text="Automatically make synced events public"
+    )
+    last_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last successful sync time"
+    )
+    last_sync_count = models.IntegerField(
+        default=0,
+        help_text="Number of events from last sync"
+    )
+    sync_error = models.TextField(
+        blank=True,
+        help_text="Last sync error message (if any)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Calendar Source"
+        verbose_name_plural = "Calendar Sources"
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"{self.name} ({status})"
+
+
 class Event(models.Model):
     """Event model with enhanced registration features"""
 
@@ -62,6 +112,26 @@ class Event(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         related_name='created_events'
+    )
+
+    # Calendar sync fields
+    external_uid = models.CharField(
+        max_length=255,
+        blank=True,
+        db_index=True,
+        help_text="Unique ID from external calendar (iCal UID)"
+    )
+    calendar_source = models.ForeignKey(
+        CalendarSource,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='events',
+        help_text="Source calendar this event was synced from"
+    )
+    is_locally_modified = models.BooleanField(
+        default=False,
+        help_text="If true, sync will not overwrite local changes"
     )
 
     class Meta:
