@@ -62,6 +62,10 @@ interface BillingData {
   saved_cards: SavedCard[]
 }
 
+interface UserProfile {
+  auto_pay_enabled?: boolean
+}
+
 // ==================== Main Component ====================
 
 export default function BillingPage() {
@@ -93,7 +97,7 @@ export default function BillingPage() {
           fetch(`${API_BASE}/api/portal/profile/`, { headers }),
         ])
 
-        const [dues, cards, profile] = await Promise.all([
+        const [dues, cards, profile]: [any, any, UserProfile] = await Promise.all([
           duesRes.ok ? duesRes.json() : { results: [] },
           cardsRes.ok ? cardsRes.json() : { results: [] },
           profileRes.ok ? profileRes.json() : {},
