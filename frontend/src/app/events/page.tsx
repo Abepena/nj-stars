@@ -42,6 +42,7 @@ import {
   getICalendarSubscriptionUrl,
 } from "@/lib/calendar-utils"
 import { cn } from "@/lib/utils"
+import { EventRegistrationModal } from "@/components/event-registration-modal"
 
 interface Event {
   id: number
@@ -79,32 +80,32 @@ const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string; bgCl
 const getEventTypeColor = (type: string, isActive: boolean) => {
   const colors: Record<string, { active: string; inactive: string }> = {
     open_gym: {
-      active: "bg-success/25 text-success border border-success/60",
-      inactive: "bg-success/8 text-success/80 border border-success/25 hover:bg-success/12",
+      active: "bg-success/30 text-success font-medium border border-success/70",
+      inactive: "bg-success/8 text-success/70 border border-success/25 hover:bg-success/12",
     },
     tryout: {
-      active: "bg-info/25 text-info border border-info/60",
-      inactive: "bg-info/8 text-info/80 border border-info/25 hover:bg-info/12",
+      active: "bg-info/30 text-info font-medium border border-info/70",
+      inactive: "bg-info/8 text-info/70 border border-info/25 hover:bg-info/12",
     },
     game: {
-      active: "bg-accent/25 text-accent border border-accent/60",
-      inactive: "bg-accent/8 text-accent/80 border border-accent/25 hover:bg-accent/12",
+      active: "bg-accent/30 text-accent font-medium border border-accent/70",
+      inactive: "bg-accent/8 text-accent/70 border border-accent/25 hover:bg-accent/12",
     },
     practice: {
-      active: "bg-warning/25 text-warning border border-warning/60",
-      inactive: "bg-warning/8 text-warning/80 border border-warning/25 hover:bg-warning/12",
+      active: "bg-warning/30 text-warning font-medium border border-warning/70",
+      inactive: "bg-warning/8 text-warning/70 border border-warning/25 hover:bg-warning/12",
     },
     tournament: {
-      active: "bg-secondary/25 text-secondary border border-secondary/60",
-      inactive: "bg-secondary/8 text-secondary/80 border border-secondary/25 hover:bg-secondary/12",
+      active: "bg-secondary/30 text-secondary font-medium border border-secondary/70",
+      inactive: "bg-secondary/8 text-secondary/70 border border-secondary/25 hover:bg-secondary/12",
     },
     camp: {
-      active: "bg-tertiary/25 text-tertiary border border-tertiary/60",
-      inactive: "bg-tertiary/8 text-tertiary/80 border border-tertiary/25 hover:bg-tertiary/12",
+      active: "bg-tertiary/30 text-tertiary font-medium border border-tertiary/70",
+      inactive: "bg-tertiary/8 text-tertiary/70 border border-tertiary/25 hover:bg-tertiary/12",
     },
   }
   const colorSet = colors[type] || {
-    active: "bg-muted text-foreground border border-border",
+    active: "bg-muted text-foreground font-medium border border-border",
     inactive: "bg-muted/30 text-muted-foreground border border-border/50 hover:bg-muted/50",
   }
   return isActive ? colorSet.active : colorSet.inactive
@@ -187,6 +188,7 @@ export default function EventsPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [initialFilterSet, setInitialFilterSet] = useState(false)
+  const [selectedEventForRegistration, setSelectedEventForRegistration] = useState<Event | null>(null)
 
   // Set default filter to "My Events" for authenticated users
   useEffect(() => {
@@ -343,6 +345,30 @@ export default function EventsPage() {
 
   const hasActiveFilters = selectedTypes.length > 0 || searchQuery.length > 0 || timeFilter !== "upcoming" || sortBy !== "date_asc"
   const activeFilterCount = selectedTypes.length + (searchQuery ? 1 : 0) + (timeFilter !== "upcoming" ? 1 : 0) + (sortBy !== "date_asc" ? 1 : 0)
+
+  // Refresh my event IDs after registration
+  const refreshMyEventIds = async () => {
+    if (!session) return
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+      const response = await fetch(`${API_BASE}/api/events/registrations/my_event_ids/`, {
+        headers: {
+          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`,
+        },
+        credentials: 'include',
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setMyEventIds(data.event_ids || [])
+      }
+    } catch (err) {
+      console.error('Failed to refresh my event IDs:', err)
+    }
+  }
+
+  const handleRegisterClick = (event: Event) => {
+    setSelectedEventForRegistration(event)
+  }
 
   // Filter content for both mobile and desktop
   const FilterContent = ({ isMobile = false }: { isMobile?: boolean }) => (
@@ -672,6 +698,8 @@ export default function EventsPage() {
                   events={eventsForMonth}
                   currentMonth={currentMonth}
                   onMonthChange={setCurrentMonth}
+                  onRegisterClick={handleRegisterClick}
+                  myEventIds={myEventIds}
                 />
               ) : !error && filteredEvents.length === 0 ? (
                 <div className="text-center py-16">
@@ -702,7 +730,12 @@ export default function EventsPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {filteredEvents.map((event) => (
-                    <EventCard key={event.id} event={event} />
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      onRegisterClick={() => handleRegisterClick(event)}
+                      isRegistered={myEventIds.includes(event.id)}
+                    />
                   ))}
                 </div>
               )}
@@ -710,6 +743,18 @@ export default function EventsPage() {
           </div>
         </div>
       </section>
+
+      {/* Event Registration Modal */}
+      {selectedEventForRegistration && (
+        <EventRegistrationModal
+          event={selectedEventForRegistration}
+          open={!!selectedEventForRegistration}
+          onOpenChange={(open) => {
+            if (!open) setSelectedEventForRegistration(null)
+          }}
+          onSuccess={refreshMyEventIds}
+        />
+      )}
     </LayoutShell>
   )
 }
@@ -719,10 +764,14 @@ function CalendarView({
   events,
   currentMonth,
   onMonthChange,
+  onRegisterClick,
+  myEventIds = [],
 }: {
   events: Event[]
   currentMonth: Date
   onMonthChange: (date: Date) => void
+  onRegisterClick: (event: Event) => void
+  myEventIds?: number[]
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showSyncMenu, setShowSyncMenu] = useState(false)
@@ -1002,11 +1051,20 @@ function CalendarView({
                             )}>
                               {event.requires_payment ? `$${event.price}` : 'FREE'}
                             </p>
-                            {event.is_registration_open && (
+                            {myEventIds.includes(event.id) ? (
+                              <span className="flex items-center justify-end gap-1 text-xs font-medium text-success mt-1">
+                                <Check className="w-3 h-3" />
+                                Registered
+                              </span>
+                            ) : event.is_registration_open && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-auto py-1 px-2 text-xs text-primary hover:text-primary-foreground hover:bg-primary mt-1"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onRegisterClick(event)
+                                }}
                               >
                                 Register →
                               </Button>
@@ -1039,7 +1097,15 @@ function CalendarView({
 }
 
 // Event Card Component
-function EventCard({ event }: { event: Event }) {
+function EventCard({
+  event,
+  onRegisterClick,
+  isRegistered,
+}: {
+  event: Event
+  onRegisterClick: () => void
+  isRegistered?: boolean
+}) {
   const [calendarMenuOpen, setCalendarMenuOpen] = useState(false)
   const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || { label: event.event_type, className: 'text-muted-foreground' }
   const formattedDate = format(new Date(event.start_datetime), "EEE, MMM dd")
@@ -1157,8 +1223,21 @@ function EventCard({ event }: { event: Event }) {
           <span className={`text-xs font-medium ${typeConfig.className}`}>
             {typeConfig.label}
           </span>
-          {event.is_registration_open && (
-            <Button variant="ghost" size="sm" className="h-auto py-1 px-2 text-xs text-primary hover:text-primary-foreground hover:bg-primary">
+          {isRegistered ? (
+            <span className="flex items-center gap-1 text-xs font-medium text-success">
+              <Check className="w-3 h-3" />
+              Registered
+            </span>
+          ) : event.is_registration_open && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-auto py-1 px-2 text-xs text-primary hover:text-primary-foreground hover:bg-primary"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRegisterClick()
+              }}
+            >
               Register →
             </Button>
           )}

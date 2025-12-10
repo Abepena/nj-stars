@@ -114,3 +114,50 @@ class InstagramPost(models.Model):
 
     def __str__(self):
         return f"Instagram Post {self.instagram_id}"
+
+
+class NewsletterSubscriber(models.Model):
+    """Newsletter subscription management"""
+
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('unsubscribed', 'Unsubscribed'),
+        ('bounced', 'Bounced'),
+    ]
+
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+
+    # Subscription preferences
+    subscribe_events = models.BooleanField(default=True, help_text="Receive event announcements")
+    subscribe_news = models.BooleanField(default=True, help_text="Receive team news and updates")
+    subscribe_promotions = models.BooleanField(default=True, help_text="Receive merch promotions")
+
+    # Tracking
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+    source = models.CharField(
+        max_length=50,
+        default='website',
+        help_text="Where the subscription came from (website, checkout, portal)"
+    )
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-subscribed_at']
+        verbose_name = 'Newsletter Subscriber'
+        verbose_name_plural = 'Newsletter Subscribers'
+
+    def __str__(self):
+        return f"{self.email} ({self.status})"
+
+    def unsubscribe(self):
+        """Mark subscriber as unsubscribed"""
+        from django.utils import timezone
+        self.status = 'unsubscribed'
+        self.unsubscribed_at = timezone.now()
+        self.save()

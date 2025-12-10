@@ -219,6 +219,10 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
                             </h4>
                             <p className="text-xs text-muted-foreground capitalize">
                               {item.product.category}
+                              {(item.selected_size || item.selected_color) && ' • '}
+                              {item.selected_color && item.selected_color}
+                              {item.selected_color && item.selected_size && ' / '}
+                              {item.selected_size && `Size ${item.selected_size}`}
                             </p>
                           </div>
                           <Button

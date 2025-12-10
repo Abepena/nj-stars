@@ -11,6 +11,90 @@ This document outlines the steps needed to take the NJ Stars platform from devel
 
 ---
 
+## 📸 Instagram Graph API Setup Guide
+
+**Prerequisites:** Access to NJ Stars Instagram account credentials
+
+### Quick Reference
+
+| Step | Action | URL/Command |
+|------|--------|-------------|
+| 1 | Convert Instagram to Business/Creator | Instagram App → Settings → Account → Switch to Professional |
+| 2 | Create/link Facebook Page | [facebook.com/pages/create](https://facebook.com/pages/create) |
+| 3 | Login to Meta for Developers | [developers.facebook.com](https://developers.facebook.com) |
+| 4 | Create App → Business type | My Apps → Create App |
+| 5 | Add Instagram Graph API product | App Dashboard → Add Product |
+| 6 | Get Business Account ID | Graph API Explorer or Instagram settings |
+| 7 | Generate User Access Token | Graph API Explorer with `instagram_basic`, `pages_read_engagement` |
+| 8 | Extend token to 60 days | See token exchange command below |
+| 9 | Add credentials to `.env` | `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID` |
+| 10 | Run sync command | `docker exec njstars-backend python manage.py sync_instagram` |
+
+### Detailed Steps
+
+#### Step 1-2: Instagram Business Account Setup
+1. Log into Instagram as NJ Stars
+2. Go to **Settings → Account → Switch to Professional Account**
+3. Choose **Business** (recommended for organizations)
+4. Connect to a Facebook Page (create one if needed at [facebook.com/pages/create](https://facebook.com/pages/create))
+
+#### Step 3-5: Create Meta Developer App
+1. Go to [developers.facebook.com](https://developers.facebook.com)
+2. Log in with the Facebook account connected to the NJ Stars Page
+3. **My Apps → Create App → Business type**
+4. Add the **Instagram Graph API** product from the dashboard
+
+#### Step 6-7: Get Credentials
+1. Use the [Graph API Explorer](https://developers.facebook.com/tools/explorer/)
+2. Select your app and generate a User Access Token
+3. Required permissions: `instagram_basic`, `pages_read_engagement`
+4. Get your Instagram Business Account ID:
+   ```
+   GET /me/accounts?fields=instagram_business_account
+   ```
+
+#### Step 8: Extend Token (Important!)
+Short-lived tokens expire in 1 hour. Exchange for a 60-day token:
+```bash
+curl -X GET "https://graph.facebook.com/v18.0/oauth/access_token?\
+grant_type=fb_exchange_token&\
+client_id={app-id}&\
+client_secret={app-secret}&\
+fb_exchange_token={short-lived-token}"
+```
+
+#### Step 9: Environment Variables
+```bash
+# backend/.env
+INSTAGRAM_ACCESS_TOKEN=your-long-lived-token-here
+INSTAGRAM_BUSINESS_ACCOUNT_ID=17841400000000000
+META_APP_ID=your-app-id
+META_APP_SECRET=your-app-secret
+```
+
+#### Step 10: Sync Posts
+```bash
+# Fetch latest posts from Instagram
+docker exec njstars-backend python manage.py sync_instagram
+
+# Optional: limit number of posts
+docker exec njstars-backend python manage.py sync_instagram --limit 10
+```
+
+### Token Refresh (Every 60 Days)
+Long-lived tokens need refreshing before expiration:
+```bash
+curl -X GET "https://graph.facebook.com/v18.0/oauth/access_token?\
+grant_type=fb_exchange_token&\
+client_id={app-id}&\
+client_secret={app-secret}&\
+fb_exchange_token={current-long-lived-token}"
+```
+
+> **Tip:** Set a calendar reminder for 55 days to refresh the token before it expires.
+
+---
+
 ## 🔥 IMMEDIATE PRIORITIES (Dec 9, 2025)
 
 ### Revenue Sharing Agreement

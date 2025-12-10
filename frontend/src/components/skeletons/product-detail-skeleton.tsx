@@ -67,7 +67,7 @@ export function ProductDetailSkeleton() {
             </div>
           </div>
 
-          {/* Quantity & Add to Cart */}
+          {/* Quantity & Add to Bag */}
           <div className="space-y-4">
             {/* Quantity Selector */}
             <div className="flex items-center gap-4">
@@ -75,7 +75,7 @@ export function ProductDetailSkeleton() {
               <Skeleton className="h-10 w-32 rounded-lg" />
             </div>
 
-            {/* Add to Cart Button */}
+            {/* Add to Bag Button */}
             <Skeleton className="h-12 w-full rounded-md" />
           </div>
 

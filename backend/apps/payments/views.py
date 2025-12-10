@@ -11,14 +11,14 @@ from django.db import transaction
 import stripe
 import uuid
 
-from .models import Product, SubscriptionPlan, Payment, Cart, CartItem, Order
+from .models import Product, SubscriptionPlan, Payment, Bag, BagItem, Order
 from .serializers import (
     ProductSerializer,
     SubscriptionPlanSerializer,
-    CartSerializer,
-    CartItemSerializer,
-    AddToCartSerializer,
-    UpdateCartItemSerializer,
+    BagSerializer,
+    BagItemSerializer,
+    AddToBagSerializer,
+    UpdateBagItemSerializer,
     OrderSerializer,
 )
 
@@ -142,6 +142,7 @@ def create_event_checkout(request):
     """Create Stripe checkout session for event registration"""
     try:
         from apps.events.models import Event
+        from apps.registrations.models import EventRegistration
 
         if not _stripe_key_configured():
             return Response(
@@ -150,6 +151,7 @@ def create_event_checkout(request):
             )
 
         event_slug = request.data.get('event_slug')
+        registration_id = request.data.get('registration_id')
         success_url = request.data.get('success_url')
         cancel_url = request.data.get('cancel_url')
 
@@ -161,6 +163,21 @@ def create_event_checkout(request):
                 {'error': 'Event not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        # If registration_id provided, verify it belongs to the user and event
+        if registration_id:
+            try:
+                registration = EventRegistration.objects.get(
+                    id=registration_id,
+                    user=request.user,
+                    event=event,
+                    payment_status='pending'
+                )
+            except EventRegistration.DoesNotExist:
+                return Response(
+                    {'error': 'Registration not found or already paid'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
         # Check if registration is open
         if not event.is_registration_open:
@@ -176,16 +193,26 @@ def create_event_checkout(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Build metadata
+        metadata = {
+            'event_id': str(event.id),
+            'user_id': str(request.user.id),
+            'type': 'event_registration',
+        }
+        if registration_id:
+            metadata['registration_id'] = str(registration_id)
+
         # Create Stripe checkout session
         # Note: payment_method_types is omitted to use Dashboard-configured methods
         checkout_session = stripe.checkout.Session.create(
+            customer_email=request.user.email,
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
                     'unit_amount': int(event.price * 100),  # Convert to cents
                     'product_data': {
                         'name': f"{event.title} - Registration",
-                        'description': event.description,
+                        'description': event.description or f"Registration for {event.title}",
                     },
                 },
                 'quantity': 1,
@@ -193,11 +220,8 @@ def create_event_checkout(request):
             mode='payment',
             success_url=success_url,
             cancel_url=cancel_url,
-            client_reference_id=f"event_{event.id}",
-            metadata={
-                'event_id': event.id,
-                'user_id': request.user.id,
-            }
+            client_reference_id=f"event_{event.id}_reg_{registration_id or 'new'}",
+            metadata=metadata
         )
 
         return Response({
@@ -246,177 +270,193 @@ def stripe_webhook(request):
             payment_method=session.get('payment_method_types', ['card'])[0],
         )
 
-        # Remove only the purchased items from cart (not entire cart)
+        # Remove only the purchased items from bag (not entire bag)
         item_ids_str = metadata.get('item_ids', '')
-        cart_id = metadata.get('cart_id')
+        bag_id = metadata.get('bag_id')
         session_key = metadata.get('session_key')
 
-        if item_ids_str and cart_id:
+        if item_ids_str and bag_id:
             # Parse item IDs and remove only those items
             item_ids = [int(id) for id in item_ids_str.split(',') if id]
             if item_ids:
-                CartItem.objects.filter(id__in=item_ids, cart_id=cart_id).delete()
+                BagItem.objects.filter(id__in=item_ids, bag_id=bag_id).delete()
 
                 # Update product stock quantities
                 # Note: In production, this should be done atomically
-                # but for now we'll update after cart items are removed
+                # but for now we'll update after bag items are removed
         elif user_id:
-            # Fallback: clear entire cart for authenticated user
-            Cart.objects.filter(user_id=user_id).delete()
+            # Fallback: clear entire bag for authenticated user
+            Bag.objects.filter(user_id=user_id).delete()
         elif session_key:
-            # Fallback: clear entire cart for guest
-            Cart.objects.filter(session_key=session_key).delete()
+            # Fallback: clear entire bag for guest
+            Bag.objects.filter(session_key=session_key).delete()
 
-        # TODO: Update event registration or order status based on metadata
+        # Handle event registration payments
+        if metadata.get('type') == 'event_registration':
+            registration_id = metadata.get('registration_id')
+            if registration_id:
+                from apps.registrations.models import EventRegistration
+                try:
+                    registration = EventRegistration.objects.get(id=registration_id)
+                    registration.payment_status = 'completed'
+                    registration.stripe_payment_intent_id = session.get('payment_intent', '')
+                    registration.amount_paid = session.get('amount_total', 0) / 100
+                    registration.save()
+                except EventRegistration.DoesNotExist:
+                    pass  # Log this in production
 
     return HttpResponse(status=200)
 
 
-def get_or_create_cart(request):
-    """Helper to get or create a cart for the current user/session"""
+def get_or_create_bag(request):
+    """Helper to get or create a bag for the current user/session"""
     if request.user.is_authenticated:
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        return cart
+        bag, created = Bag.objects.get_or_create(user=request.user)
+        return bag
     else:
         # For guest users, use session key from header or create new one
-        session_key = request.headers.get('X-Cart-Session')
+        session_key = request.headers.get('X-Bag-Session')
         if not session_key:
             session_key = str(uuid.uuid4())
 
-        cart, created = Cart.objects.get_or_create(session_key=session_key)
-        return cart
+        bag, created = Bag.objects.get_or_create(session_key=session_key)
+        return bag
 
 
-class CartAPIView(APIView):
+class BagAPIView(APIView):
     """
-    Shopping Cart API
+    Shopping Bag API
 
-    GET: Retrieve current cart with all items
-    POST: Add item to cart
-    DELETE: Clear entire cart
+    GET: Retrieve current bag with all items
+    POST: Add item to bag
+    DELETE: Clear entire bag
     """
     permission_classes = [AllowAny]
 
     def get(self, request):
-        """Get current cart"""
-        cart = get_or_create_cart(request)
-        serializer = CartSerializer(cart)
+        """Get current bag"""
+        bag = get_or_create_bag(request)
+        serializer = BagSerializer(bag)
         response_data = serializer.data
 
         # Include session key for guest users
         if not request.user.is_authenticated:
-            response_data['session_key'] = cart.session_key
+            response_data['session_key'] = bag.session_key
 
         return Response(response_data)
 
     def post(self, request):
-        """Add item to cart"""
-        serializer = AddToCartSerializer(data=request.data)
+        """Add item to bag"""
+        serializer = AddToBagSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        cart = get_or_create_cart(request)
+        bag = get_or_create_bag(request)
         product_id = serializer.validated_data['product_id']
         quantity = serializer.validated_data['quantity']
+        selected_size = serializer.validated_data.get('selected_size') or None
+        selected_color = serializer.validated_data.get('selected_color') or None
 
         product = Product.objects.get(pk=product_id)
 
-        # Check if item already in cart
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
+        # Check if item with same product AND variants already in bag
+        bag_item, created = BagItem.objects.get_or_create(
+            bag=bag,
             product=product,
+            selected_size=selected_size,
+            selected_color=selected_color,
             defaults={'quantity': quantity}
         )
 
         if not created:
-            # Update quantity if item exists
-            cart_item.quantity += quantity
-            cart_item.save()
+            # Update quantity if item with same variants exists
+            bag_item.quantity += quantity
+            bag_item.save()
 
-        # Return updated cart
-        cart_serializer = CartSerializer(cart)
-        response_data = cart_serializer.data
+        # Return updated bag
+        bag_serializer = BagSerializer(bag)
+        response_data = bag_serializer.data
         if not request.user.is_authenticated:
-            response_data['session_key'] = cart.session_key
+            response_data['session_key'] = bag.session_key
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
-        """Clear cart"""
-        cart = get_or_create_cart(request)
-        cart.clear()
+        """Clear bag"""
+        bag = get_or_create_bag(request)
+        bag.clear()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CartItemAPIView(APIView):
+class BagItemAPIView(APIView):
     """
-    Cart Item API
+    Bag Item API
 
     PATCH: Update item quantity
-    DELETE: Remove item from cart
+    DELETE: Remove item from bag
     """
     permission_classes = [AllowAny]
 
     def patch(self, request, item_id):
-        """Update cart item quantity"""
-        cart = get_or_create_cart(request)
+        """Update bag item quantity"""
+        bag = get_or_create_bag(request)
 
         try:
-            cart_item = cart.items.get(pk=item_id)
-        except CartItem.DoesNotExist:
+            bag_item = bag.items.get(pk=item_id)
+        except BagItem.DoesNotExist:
             return Response(
-                {'error': 'Item not found in cart'},
+                {'error': 'Item not found in bag'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = UpdateCartItemSerializer(data=request.data)
+        serializer = UpdateBagItemSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         quantity = serializer.validated_data['quantity']
 
         if quantity == 0:
-            cart_item.delete()
+            bag_item.delete()
         else:
             # Check stock if inventory managed
-            if cart_item.product.manage_inventory:
-                if quantity > cart_item.product.stock_quantity:
+            if bag_item.product.manage_inventory:
+                if quantity > bag_item.product.stock_quantity:
                     return Response(
-                        {'error': f'Only {cart_item.product.stock_quantity} items available'},
+                        {'error': f'Only {bag_item.product.stock_quantity} items available'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-            cart_item.quantity = quantity
-            cart_item.save()
+            bag_item.quantity = quantity
+            bag_item.save()
 
-        # Return updated cart
-        cart_serializer = CartSerializer(cart)
-        response_data = cart_serializer.data
+        # Return updated bag
+        bag_serializer = BagSerializer(bag)
+        response_data = bag_serializer.data
         if not request.user.is_authenticated:
-            response_data['session_key'] = cart.session_key
+            response_data['session_key'] = bag.session_key
 
         return Response(response_data)
 
     def delete(self, request, item_id):
-        """Remove item from cart"""
-        cart = get_or_create_cart(request)
+        """Remove item from bag"""
+        bag = get_or_create_bag(request)
 
         try:
-            cart_item = cart.items.get(pk=item_id)
-            cart_item.delete()
-        except CartItem.DoesNotExist:
+            bag_item = bag.items.get(pk=item_id)
+            bag_item.delete()
+        except BagItem.DoesNotExist:
             pass  # Item already removed, that's fine
 
-        # Return updated cart
-        cart_serializer = CartSerializer(cart)
-        response_data = cart_serializer.data
+        # Return updated bag
+        bag_serializer = BagSerializer(bag)
+        response_data = bag_serializer.data
         if not request.user.is_authenticated:
-            response_data['session_key'] = cart.session_key
+            response_data['session_key'] = bag.session_key
 
         return Response(response_data)
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def cart_checkout(request):
-    """Create Stripe checkout session for cart items (all or selected)"""
+def bag_checkout(request):
+    """Create Stripe checkout session for bag items (all or selected)"""
     try:
         if not _stripe_key_configured():
             return Response(
@@ -424,11 +464,11 @@ def cart_checkout(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        cart = get_or_create_cart(request)
+        bag = get_or_create_bag(request)
 
-        if cart.item_count == 0:
+        if bag.item_count == 0:
             return Response(
-                {'error': 'Cart is empty'},
+                {'error': 'Bag is empty'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -442,20 +482,20 @@ def cart_checkout(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Get cart items - filter by item_ids if provided
-        cart_items = cart.items.select_related('product').all()
+        # Get bag items - filter by item_ids if provided
+        bag_items = bag.items.select_related('product').all()
         if item_ids:
-            cart_items = cart_items.filter(id__in=item_ids)
-            if not cart_items.exists():
+            bag_items = bag_items.filter(id__in=item_ids)
+            if not bag_items.exists():
                 return Response(
                     {'error': 'No valid items selected for checkout'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Build line items from cart
+        # Build line items from bag
         line_items = []
         checkout_item_ids = []  # Track which items are being checked out
-        for item in cart_items:
+        for item in bag_items:
             if not item.is_available:
                 return Response(
                     {'error': f'{item.product.name} is no longer available'},
@@ -470,12 +510,22 @@ def cart_checkout(request):
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
+            # Build product name with variant info
+            product_name = item.product.name
+            variant_parts = []
+            if item.selected_size:
+                variant_parts.append(f"Size: {item.selected_size}")
+            if item.selected_color:
+                variant_parts.append(f"Color: {item.selected_color}")
+            if variant_parts:
+                product_name = f"{product_name} ({', '.join(variant_parts)})"
+
             line_items.append({
                 'price_data': {
                     'currency': 'usd',
                     'unit_amount': int(item.product.price * 100),
                     'product_data': {
-                        'name': item.product.name,
+                        'name': product_name,
                         'description': item.product.description[:500] if item.product.description else '',
                         'images': [item.product.image_url] if item.product.image_url else [],
                     },
@@ -496,9 +546,9 @@ def cart_checkout(request):
                 'allowed_countries': ['US'],
             },
             metadata={
-                'cart_id': cart.id,
+                'bag_id': bag.id,
                 'user_id': request.user.id if request.user.is_authenticated else None,
-                'session_key': cart.session_key if not request.user.is_authenticated else None,
+                'session_key': bag.session_key if not request.user.is_authenticated else None,
                 'item_ids': ','.join(map(str, checkout_item_ids)),  # Store checked-out item IDs
             }
         )
@@ -569,7 +619,7 @@ def get_checkout_session(request, session_id):
                 'name': session.customer_details.name,
             }
 
-        # Get purchased item IDs from metadata (for removing from cart)
+        # Get purchased item IDs from metadata (for removing from bag)
         purchased_item_ids = []
         if session.metadata and session.metadata.get('item_ids'):
             purchased_item_ids = [int(id) for id in session.metadata['item_ids'].split(',') if id]
@@ -584,7 +634,7 @@ def get_checkout_session(request, session_id):
             'shipping': shipping,
             'customer': customer,
             'created': session.created,
-            'purchased_item_ids': purchased_item_ids,  # Item IDs to remove from cart
+            'purchased_item_ids': purchased_item_ids,  # Item IDs to remove from bag
         })
 
     except stripe.error.InvalidRequestError:
@@ -601,8 +651,8 @@ def get_checkout_session(request, session_id):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def merge_cart(request):
-    """Merge guest cart into user cart on login"""
+def merge_bag(request):
+    """Merge guest bag into user bag on login"""
     session_key = request.data.get('session_key')
 
     if not session_key:
@@ -612,20 +662,20 @@ def merge_cart(request):
         )
 
     try:
-        guest_cart = Cart.objects.get(session_key=session_key)
-    except Cart.DoesNotExist:
-        # No guest cart to merge, just return user's cart
-        user_cart, _ = Cart.objects.get_or_create(user=request.user)
-        return Response(CartSerializer(user_cart).data)
+        guest_bag = Bag.objects.get(session_key=session_key)
+    except Bag.DoesNotExist:
+        # No guest bag to merge, just return user's bag
+        user_bag, _ = Bag.objects.get_or_create(user=request.user)
+        return Response(BagSerializer(user_bag).data)
 
-    # Get or create user cart
-    user_cart, _ = Cart.objects.get_or_create(user=request.user)
+    # Get or create user bag
+    user_bag, _ = Bag.objects.get_or_create(user=request.user)
 
-    # Merge guest cart into user cart
+    # Merge guest bag into user bag
     with transaction.atomic():
-        user_cart.merge_from_guest_cart(guest_cart)
+        user_bag.merge_from_guest_bag(guest_bag)
 
-    return Response(CartSerializer(user_cart).data)
+    return Response(BagSerializer(user_bag).data)
 
 
 @api_view(['GET'])

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check } from "lucide-react"
 import {
@@ -13,6 +13,46 @@ import {
 import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
+
+// Variant configuration by category
+interface ColorOption {
+  name: string
+  hex: string
+}
+
+interface VariantConfig {
+  sizes: string[]
+  colors: ColorOption[]
+}
+
+const VARIANT_CONFIGS: Record<string, VariantConfig> = {
+  jersey: {
+    sizes: ["YS", "YM", "YL", "S", "M", "L", "XL", "2XL"],
+    colors: [
+      { name: "Black", hex: "#1a1a1a" },
+      { name: "White", hex: "#ffffff" },
+    ],
+  },
+  apparel: {
+    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
+    colors: [
+      { name: "Black", hex: "#1a1a1a" },
+      { name: "Navy", hex: "#1e3a5f" },
+      { name: "Gray", hex: "#6b7280" },
+    ],
+  },
+  accessories: {
+    sizes: ["One Size"],
+    colors: [
+      { name: "Black", hex: "#1a1a1a" },
+      { name: "Red", hex: "#dc2626" },
+    ],
+  },
+  equipment: {
+    sizes: ["Standard"],
+    colors: [],
+  },
+}
 
 interface ProductImage {
   id: number
@@ -51,7 +91,29 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const [isAdding, setIsAdding] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
   const [isFadingOut, setIsFadingOut] = useState(false)
+  const [selectedSize, setSelectedSize] = useState<string>("")
+  const [selectedColor, setSelectedColor] = useState<string>("")
   const { addToBag } = useBag()
+
+  // Get variant configuration for this product's category
+  const variantConfig = VARIANT_CONFIGS[product.category] || VARIANT_CONFIGS.equipment
+  const sizes = variantConfig.sizes
+  const colors = variantConfig.colors
+
+  // Check if variants are required and selected
+  const needsSize = sizes.length > 1
+  const needsColor = colors.length > 0
+  const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
+
+  // Reset selections when modal opens with a new product
+  useEffect(() => {
+    if (open) {
+      setSelectedSize("")
+      setSelectedColor("")
+      setQuantity(1)
+      setCurrentImageIndex(0)
+    }
+  }, [open, product.id])
 
   // Build image gallery from uploaded images, falling back to legacy image_url
   const productImages: { url: string; alt: string }[] = (() => {
@@ -70,7 +132,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const handleAddToBag = async () => {
     setIsAdding(true)
     try {
-      await addToBag(product.id, quantity)
+      await addToBag(product.id, quantity, selectedSize || undefined, selectedColor || undefined)
       setJustAdded(true)
       // Start fade out after showing success
       setTimeout(() => {
@@ -100,13 +162,6 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   }
 
   const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
-
-  // Handle ESC key
-  const handleEscapeKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onOpenChange(false)
-    }
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -247,6 +302,53 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
             )}
 
             <div className="flex flex-col gap-3 mt-auto pt-4">
+              {/* Size Selector */}
+              {product.stock_quantity > 0 && needsSize && (
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">Size</span>
+                  <div className="flex flex-wrap gap-2">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`min-w-[44px] min-h-[44px] px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
+                          selectedSize === size
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-input hover:bg-muted"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Color Selector */}
+              {product.stock_quantity > 0 && needsColor && (
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">
+                    Color{selectedColor && `: ${selectedColor}`}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`min-w-[44px] min-h-[44px] w-10 h-10 rounded-full border-2 transition-all ${
+                          selectedColor === color.name
+                            ? "ring-2 ring-primary ring-offset-2"
+                            : "hover:scale-110"
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                        aria-label={`Select ${color.name}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Quantity Selector */}
               {product.stock_quantity > 0 && (
                 <div className="flex items-center gap-3">
@@ -281,7 +383,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                   className="w-full"
                   size="lg"
                   onClick={handleAddToBag}
-                  disabled={isAdding}
+                  disabled={isAdding || !variantsSelected}
                 >
                   {isAdding ? (
                     <>
@@ -292,6 +394,11 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                     <>
                       <Check className="mr-2 h-4 w-4" />
                       Added to Bag!
+                    </>
+                  ) : !variantsSelected ? (
+                    <>
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      {!selectedSize && needsSize ? "Select Size" : "Select Color"}
                     </>
                   ) : (
                     <>

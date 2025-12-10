@@ -267,7 +267,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
           </div>
         )}
 
-        {/* Hover overlay with price and add to cart button */}
+        {/* Hover overlay with price and add to bag button */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
           {/* Price badge - bottom left */}
           <div className="absolute bottom-3 left-3">

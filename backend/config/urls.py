@@ -41,6 +41,7 @@ urlpatterns = [
     # API endpoints
     path("api/events/", include("apps.events.urls")),
     path("api/payments/", include("apps.payments.urls")),
+    path("api/portal/", include("apps.portal.urls")),
     path("api/", include("apps.core.urls")),
 
     # Wagtail pages - must be last

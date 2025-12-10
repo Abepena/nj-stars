@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 /**
  * Button component with multiple variants for different use cases.
  *
- * @variant default - Primary actions (Add to Cart, Submit, Save)
+ * @variant default - Primary actions (Add to Bag, Submit, Save)
  *                    Hot pink background with light text
  *
  * @variant destructive - Dangerous/irreversible actions (Delete, Remove, Cancel subscription)

@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'apps.registrations',
     'apps.payments',
     'apps.cms',
+    'apps.portal',
 ]
 
 MIDDLEWARE = [
@@ -191,9 +192,12 @@ STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 # PRINTIFY_API_KEY = config('PRINTIFY_API_KEY', default='')
 
 
-# Instagram Basic Display API
+# Instagram Graph API
+# See documentation/NEXT_STEPS.md for setup guide
 INSTAGRAM_ACCESS_TOKEN = config('INSTAGRAM_ACCESS_TOKEN', default='')
-INSTAGRAM_USER_ID = config('INSTAGRAM_USER_ID', default='')
+INSTAGRAM_BUSINESS_ACCOUNT_ID = config('INSTAGRAM_BUSINESS_ACCOUNT_ID', default='')
+META_APP_ID = config('META_APP_ID', default='')
+META_APP_SECRET = config('META_APP_SECRET', default='')
 
 
 # django-allauth settings
