@@ -34,7 +34,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
     in_stock = serializers.ReadOnlyField()
     primary_image_url = serializers.SerializerMethodField()
-    images = ProductImageSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
+
+    def get_images(self, obj):
+        """Serialize images with request context for absolute URLs"""
+        request = self.context.get('request')
+        serializer = ProductImageSerializer(
+            obj.images.all(),
+            many=True,
+            context={'request': request}
+        )
+        return serializer.data
 
     def get_primary_image_url(self, obj):
         """Get the primary image URL with absolute URL for uploaded files"""
