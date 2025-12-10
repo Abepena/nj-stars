@@ -433,35 +433,36 @@ class OrderItem(models.Model):
         return self.product_price * self.quantity
 
 
-class Cart(models.Model):
-    """Shopping cart for users and guests
+class Bag(models.Model):
+    """Shopping bag for users and guests
 
-    Authenticated users: cart persisted in DB, linked to user
-    Guest users: cart tracked by session_key, can be merged on login
+    Authenticated users: bag persisted in DB, linked to user
+    Guest users: bag tracked by session_key, can be merged on login
     """
 
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='cart',
+        related_name='bag',
         null=True,
         blank=True,
-        help_text="Authenticated user's cart"
+        help_text="Authenticated user's bag"
     )
     session_key = models.CharField(
         max_length=40,
         null=True,
         blank=True,
         db_index=True,
-        help_text="Session key for guest carts"
+        help_text="Session key for guest bags"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'payments_cart'  # Keep existing table name to avoid data migration
         constraints = [
-            # Ensure cart has either user OR session_key, not both empty
+            # Ensure bag has either user OR session_key, not both empty
             models.CheckConstraint(
                 check=models.Q(user__isnull=False) | models.Q(session_key__isnull=False),
                 name='cart_must_have_owner'
@@ -474,45 +475,52 @@ class Cart(models.Model):
 
     def __str__(self):
         if self.user:
-            return f"Cart for {self.user.email}"
-        return f"Guest Cart ({self.session_key[:8]}...)"
+            return f"Bag for {self.user.email}"
+        return f"Guest Bag ({self.session_key[:8]}...)"
 
     @property
     def item_count(self):
-        """Total number of items in cart"""
+        """Total number of items in bag"""
         return sum(item.quantity for item in self.items.all())
 
     @property
     def subtotal(self):
-        """Calculate cart subtotal"""
+        """Calculate bag subtotal"""
         return sum(item.total_price for item in self.items.all())
 
-    def merge_from_guest_cart(self, guest_cart):
-        """Merge items from a guest cart into this user cart
+    def merge_from_guest_bag(self, guest_bag):
+        """Merge items from a guest bag into this user bag
 
-        Called when a guest user logs in and has items in their cart.
-        Items are added to existing quantities or created if new.
+        Called when a guest user logs in and has items in their bag.
+        Items with same product+variants are merged (quantities added).
+        Items with different variants are created as separate items.
         """
-        for guest_item in guest_cart.items.all():
-            existing_item = self.items.filter(product=guest_item.product).first()
+        for guest_item in guest_bag.items.all():
+            existing_item = self.items.filter(
+                product=guest_item.product,
+                selected_size=guest_item.selected_size,
+                selected_color=guest_item.selected_color
+            ).first()
             if existing_item:
                 existing_item.quantity += guest_item.quantity
                 existing_item.save()
             else:
-                CartItem.objects.create(
-                    cart=self,
+                BagItem.objects.create(
+                    bag=self,
                     product=guest_item.product,
-                    quantity=guest_item.quantity
+                    quantity=guest_item.quantity,
+                    selected_size=guest_item.selected_size,
+                    selected_color=guest_item.selected_color
                 )
-        guest_cart.delete()
+        guest_bag.delete()
 
     def clear(self):
-        """Remove all items from cart"""
+        """Remove all items from bag"""
         self.items.all().delete()
 
     @classmethod
-    def cleanup_expired_guest_carts(cls, days=7):
-        """Remove guest carts that haven't been updated in X days"""
+    def cleanup_expired_guest_bags(cls, days=7):
+        """Remove guest bags that haven't been updated in X days"""
         cutoff = timezone.now() - timedelta(days=days)
         expired = cls.objects.filter(
             user__isnull=True,
@@ -523,32 +531,51 @@ class Cart(models.Model):
         return count
 
 
-class CartItem(models.Model):
-    """Individual items in a shopping cart"""
+class BagItem(models.Model):
+    """Individual items in a shopping bag"""
 
-    cart = models.ForeignKey(
-        Cart,
+    bag = models.ForeignKey(
+        Bag,
         on_delete=models.CASCADE,
         related_name='items'
     )
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
-        related_name='cart_items'
+        related_name='bag_items'
     )
     quantity = models.PositiveIntegerField(default=1)
+    selected_size = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Selected size variant (e.g., S, M, L, XL)"
+    )
+    selected_color = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Selected color variant (e.g., Black, Navy)"
+    )
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['cart', 'product']
+        db_table = 'payments_cartitem'  # Keep existing table name to avoid data migration
+        # Same product with different variants = different bag items
+        unique_together = ['bag', 'product', 'selected_size', 'selected_color']
         ordering = ['-added_at']
 
     def __str__(self):
-        return f"{self.quantity}x {self.product.name}"
+        parts = [f"{self.quantity}x {self.product.name}"]
+        if self.selected_size:
+            parts.append(f"Size: {self.selected_size}")
+        if self.selected_color:
+            parts.append(f"Color: {self.selected_color}")
+        return " - ".join(parts)
 
     @property
     def total_price(self):
-        """Calculate total price for this cart item"""
+        """Calculate total price for this bag item"""
         return self.product.price * self.quantity
 
     @property
@@ -559,6 +586,6 @@ class CartItem(models.Model):
         return self.product.in_stock
 
     def save(self, *args, **kwargs):
-        # Update cart's updated_at timestamp
+        # Update bag's updated_at timestamp
         super().save(*args, **kwargs)
-        Cart.objects.filter(pk=self.cart_id).update(updated_at=timezone.now())
+        Bag.objects.filter(pk=self.bag_id).update(updated_at=timezone.now())

@@ -29,6 +29,8 @@ export interface BagItem {
   id: number
   product: BagProduct
   quantity: number
+  selected_size?: string | null
+  selected_color?: string | null
   total_price: string
   is_available: boolean
   added_at: string
@@ -54,7 +56,7 @@ interface BagContextType {
   deselectAllItems: () => void
   getSelectedSubtotal: () => string
   getSelectedCount: () => number
-  addToBag: (productId: number, quantity?: number) => Promise<void>
+  addToBag: (productId: number, quantity?: number, selectedSize?: string, selectedColor?: string) => Promise<void>
   updateQuantity: (itemId: number, quantity: number) => Promise<void>
   removeItem: (itemId: number) => Promise<void>
   removeItems: (itemIds: number[]) => Promise<void>
@@ -105,7 +107,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
     }
     const sessionKey = getSessionKey()
     if (sessionKey) {
-      (headers as Record<string, string>)['X-Cart-Session'] = sessionKey
+      (headers as Record<string, string>)['X-Bag-Session'] = sessionKey
     }
     return headers
   }, [])
@@ -115,7 +117,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch(`${API_BASE_URL}/api/payments/cart/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payments/bag/`, {
         headers: getHeaders(),
       })
 
@@ -179,14 +181,19 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
       .reduce((sum, item) => sum + item.quantity, 0)
   }, [bag, selectedItems])
 
-  const addToBag = useCallback(async (productId: number, quantity = 1) => {
+  const addToBag = useCallback(async (productId: number, quantity = 1, selectedSize?: string, selectedColor?: string) => {
     try {
       setError(null)
 
-      const response = await fetch(`${API_BASE_URL}/api/payments/cart/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payments/bag/`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ product_id: productId, quantity }),
+        body: JSON.stringify({
+          product_id: productId,
+          quantity,
+          selected_size: selectedSize || null,
+          selected_color: selectedColor || null,
+        }),
       })
 
       if (!response.ok) {
@@ -217,7 +224,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null)
 
-      const response = await fetch(`${API_BASE_URL}/api/payments/cart/items/${itemId}/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payments/bag/items/${itemId}/`, {
         method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({ quantity }),
@@ -241,7 +248,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null)
 
-      const response = await fetch(`${API_BASE_URL}/api/payments/cart/items/${itemId}/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payments/bag/items/${itemId}/`, {
         method: 'DELETE',
         headers: getHeaders(),
       })
@@ -271,7 +278,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null)
       for (const itemId of itemIds) {
-        const response = await fetch(`${API_BASE_URL}/api/payments/cart/items/${itemId}/`, {
+        const response = await fetch(`${API_BASE_URL}/api/payments/bag/items/${itemId}/`, {
           method: 'DELETE',
           headers: getHeaders(),
         })
@@ -281,7 +288,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
         }
       }
       // Refresh bag to get updated state
-      const response = await fetch(`${API_BASE_URL}/api/payments/cart/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payments/bag/`, {
         headers: getHeaders(),
       })
       if (response.ok) {
@@ -305,7 +312,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null)
 
-      const response = await fetch(`${API_BASE_URL}/api/payments/cart/`, {
+      const response = await fetch(`${API_BASE_URL}/api/payments/bag/`, {
         method: 'DELETE',
         headers: getHeaders(),
       })
@@ -330,7 +337,7 @@ export function BagProvider({ children }: { children: React.ReactNode }) {
     // Use provided itemIds, or fall back to selected items
     const checkoutItemIds = itemIds || Array.from(selectedItems)
 
-    const response = await fetch(`${API_BASE_URL}/api/payments/checkout/cart/`, {
+    const response = await fetch(`${API_BASE_URL}/api/payments/checkout/bag/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({

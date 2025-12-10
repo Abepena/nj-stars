@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django import forms
 from django.db import models
-from .models import SubscriptionPlan, Subscription, Payment, Product, ProductImage, Order, OrderItem, Cart, CartItem
+from .models import SubscriptionPlan, Subscription, Payment, Product, ProductImage, Order, OrderItem, Bag, BagItem
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -186,19 +186,19 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline]
 
 
-class CartItemInline(admin.TabularInline):
-    model = CartItem
+class BagItemInline(admin.TabularInline):
+    model = BagItem
     extra = 0
     readonly_fields = ['total_price', 'added_at']
 
 
-@admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
+@admin.register(Bag)
+class BagAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'session_key_short', 'item_count', 'subtotal', 'updated_at']
     list_filter = ['updated_at']
     search_fields = ['user__email', 'session_key']
     readonly_fields = ['created_at', 'updated_at', 'item_count', 'subtotal']
-    inlines = [CartItemInline]
+    inlines = [BagItemInline]
 
     def session_key_short(self, obj):
         if obj.session_key:

@@ -6,10 +6,10 @@ from .views import (
     create_product_checkout,
     create_event_checkout,
     stripe_webhook,
-    CartAPIView,
-    CartItemAPIView,
-    cart_checkout,
-    merge_cart,
+    BagAPIView,
+    BagItemAPIView,
+    bag_checkout,
+    merge_bag,
     get_checkout_session,
     get_order,
 )
@@ -23,12 +23,12 @@ urlpatterns = [
     # Checkout endpoints
     path('checkout/product/', create_product_checkout, name='product-checkout'),
     path('checkout/event/', create_event_checkout, name='event-checkout'),
-    path('checkout/cart/', cart_checkout, name='cart-checkout'),
+    path('checkout/bag/', bag_checkout, name='bag-checkout'),
     path('checkout/session/<str:session_id>/', get_checkout_session, name='checkout-session'),
-    # Cart endpoints
-    path('cart/', CartAPIView.as_view(), name='cart'),
-    path('cart/items/<int:item_id>/', CartItemAPIView.as_view(), name='cart-item'),
-    path('cart/merge/', merge_cart, name='cart-merge'),
+    # Bag endpoints
+    path('bag/', BagAPIView.as_view(), name='bag'),
+    path('bag/items/<int:item_id>/', BagItemAPIView.as_view(), name='bag-item'),
+    path('bag/merge/', merge_bag, name='bag-merge'),
     # Webhooks
     path('webhook/stripe/', stripe_webhook, name='stripe-webhook'),
     # Order lookup

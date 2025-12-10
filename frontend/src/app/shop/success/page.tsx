@@ -103,7 +103,7 @@ function SuccessContent() {
           setSession(sessionData)
         } else {
           // Stripe session retrieval failed (common in test mode)
-          // We can still clear the cart using localStorage fallback
+          // We can still clear the bag using localStorage fallback
           if (DEBUG) console.log('Stripe session fetch failed, using localStorage fallback')
           if (!toastShown.current) {
             toastShown.current = true

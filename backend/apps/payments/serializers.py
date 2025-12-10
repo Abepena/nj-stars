@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, SubscriptionPlan, Cart, CartItem, Order, OrderItem
+from .models import Product, ProductImage, SubscriptionPlan, Bag, BagItem, Order, OrderItem
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -108,8 +108,8 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
-class CartItemSerializer(serializers.ModelSerializer):
-    """Serializer for cart items with nested product data"""
+class BagItemSerializer(serializers.ModelSerializer):
+    """Serializer for bag items with nested product data"""
 
     product = ProductSerializer(read_only=True)
     product_id = serializers.IntegerField(write_only=True)
@@ -119,7 +119,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     is_available = serializers.BooleanField(read_only=True)
 
     class Meta:
-        model = CartItem
+        model = BagItem
         fields = [
             'id',
             'product',
@@ -148,17 +148,17 @@ class CartItemSerializer(serializers.ModelSerializer):
         return value
 
 
-class CartSerializer(serializers.ModelSerializer):
-    """Serializer for shopping cart with nested items"""
+class BagSerializer(serializers.ModelSerializer):
+    """Serializer for shopping bag with nested items"""
 
-    items = CartItemSerializer(many=True, read_only=True)
+    items = BagItemSerializer(many=True, read_only=True)
     item_count = serializers.IntegerField(read_only=True)
     subtotal = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
     )
 
     class Meta:
-        model = Cart
+        model = Bag
         fields = [
             'id',
             'items',
@@ -170,8 +170,8 @@ class CartSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
-class AddToCartSerializer(serializers.Serializer):
-    """Serializer for adding items to cart"""
+class AddToBagSerializer(serializers.Serializer):
+    """Serializer for adding items to bag"""
 
     product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(default=1, min_value=1)
@@ -201,8 +201,8 @@ class AddToCartSerializer(serializers.Serializer):
         return data
 
 
-class UpdateCartItemSerializer(serializers.Serializer):
-    """Serializer for updating cart item quantity"""
+class UpdateBagItemSerializer(serializers.Serializer):
+    """Serializer for updating bag item quantity"""
 
     quantity = serializers.IntegerField(min_value=0)
 

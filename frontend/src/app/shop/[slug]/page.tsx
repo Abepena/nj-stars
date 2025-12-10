@@ -164,7 +164,7 @@ export default function ProductDetailPage() {
     if (!product) return
     setIsAdding(true)
     try {
-      await addToBag(product.id, quantity)
+      await addToBag(product.id, quantity, selectedSize || undefined, selectedColor || undefined)
       setJustAdded(true)
       setTimeout(() => setJustAdded(false), 2000)
     } catch (error) {
@@ -490,7 +490,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity & Add to Cart */}
+            {/* Quantity & Add to Bag */}
             {product.stock_quantity > 0 ? (
               <div className="space-y-4">
                 {/* Variant selection reminder */}
@@ -615,7 +615,7 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      {/* Mobile Sticky Add to Cart - like Nike's Add to Bag */}
+      {/* Mobile Sticky Add to Bag */}
       {product.stock_quantity > 0 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-50">
           <div className="flex items-center gap-3">
