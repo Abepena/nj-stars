@@ -142,6 +142,7 @@ def create_event_checkout(request):
     """Create Stripe checkout session for event registration"""
     try:
         from apps.events.models import Event
+        from apps.registrations.models import EventRegistration
 
         if not _stripe_key_configured():
             return Response(
@@ -150,6 +151,7 @@ def create_event_checkout(request):
             )
 
         event_slug = request.data.get('event_slug')
+        registration_id = request.data.get('registration_id')
         success_url = request.data.get('success_url')
         cancel_url = request.data.get('cancel_url')
 
@@ -161,6 +163,21 @@ def create_event_checkout(request):
                 {'error': 'Event not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        # If registration_id provided, verify it belongs to the user and event
+        if registration_id:
+            try:
+                registration = EventRegistration.objects.get(
+                    id=registration_id,
+                    user=request.user,
+                    event=event,
+                    payment_status='pending'
+                )
+            except EventRegistration.DoesNotExist:
+                return Response(
+                    {'error': 'Registration not found or already paid'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
         # Check if registration is open
         if not event.is_registration_open:
@@ -176,16 +193,26 @@ def create_event_checkout(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Build metadata
+        metadata = {
+            'event_id': str(event.id),
+            'user_id': str(request.user.id),
+            'type': 'event_registration',
+        }
+        if registration_id:
+            metadata['registration_id'] = str(registration_id)
+
         # Create Stripe checkout session
         # Note: payment_method_types is omitted to use Dashboard-configured methods
         checkout_session = stripe.checkout.Session.create(
+            customer_email=request.user.email,
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
                     'unit_amount': int(event.price * 100),  # Convert to cents
                     'product_data': {
                         'name': f"{event.title} - Registration",
-                        'description': event.description,
+                        'description': event.description or f"Registration for {event.title}",
                     },
                 },
                 'quantity': 1,
@@ -193,11 +220,8 @@ def create_event_checkout(request):
             mode='payment',
             success_url=success_url,
             cancel_url=cancel_url,
-            client_reference_id=f"event_{event.id}",
-            metadata={
-                'event_id': event.id,
-                'user_id': request.user.id,
-            }
+            client_reference_id=f"event_{event.id}_reg_{registration_id or 'new'}",
+            metadata=metadata
         )
 
         return Response({
@@ -267,7 +291,19 @@ def stripe_webhook(request):
             # Fallback: clear entire bag for guest
             Bag.objects.filter(session_key=session_key).delete()
 
-        # TODO: Update event registration or order status based on metadata
+        # Handle event registration payments
+        if metadata.get('type') == 'event_registration':
+            registration_id = metadata.get('registration_id')
+            if registration_id:
+                from apps.registrations.models import EventRegistration
+                try:
+                    registration = EventRegistration.objects.get(id=registration_id)
+                    registration.payment_status = 'completed'
+                    registration.stripe_payment_intent_id = session.get('payment_intent', '')
+                    registration.amount_paid = session.get('amount_total', 0) / 100
+                    registration.save()
+                except EventRegistration.DoesNotExist:
+                    pass  # Log this in production
 
     return HttpResponse(status=200)
 

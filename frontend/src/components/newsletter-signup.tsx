@@ -4,19 +4,24 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface NewsletterSignupProps {
   heading?: string;
   subheading?: string;
   show?: boolean;
+  source?: string;
 }
 
 export function NewsletterSignup({
   heading = "Stay in the Game",
   subheading = "Get the latest news, event updates, and exclusive content delivered to your inbox.",
   show = true,
+  source = "website",
 }: NewsletterSignupProps) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   if (!show) return null;
 
@@ -25,12 +30,28 @@ export function NewsletterSignup({
     if (!email) return;
 
     setStatus("loading");
+    setErrorMessage("");
 
-    // TODO: Implement actual newsletter signup API
-    // For now, simulate a successful signup
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setStatus("success");
-    setEmail("");
+    try {
+      const response = await fetch(`${API_BASE}/api/newsletter/subscribe/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, source }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.email?.[0] || data.error || "Subscription failed");
+      }
+
+      setStatus("success");
+      setEmail("");
+    } catch (err) {
+      setStatus("error");
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong");
+    }
   };
 
   return (
@@ -64,7 +85,7 @@ export function NewsletterSignup({
                 />
                 {status === "error" && (
                   <p id="newsletter-error" className="text-destructive text-sm mt-1">
-                    Please enter a valid email address
+                    {errorMessage || "Please enter a valid email address"}
                   </p>
                 )}
               </div>

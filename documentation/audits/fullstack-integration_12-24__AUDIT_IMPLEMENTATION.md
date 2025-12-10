@@ -21,11 +21,13 @@
 
 | Category | Count | Status |
 |----------|-------|--------|
-| Fully Connected | 14 | Working end-to-end |
-| Partial Integration | 4 | Needs completion |
-| Missing Integration | 6 | Backend or frontend needed |
+| Fully Connected | 18 | Working end-to-end |
+| Partial Integration | 2 | Needs completion |
+| Missing Integration | 4 | Backend or frontend needed |
 | UI Only | 11 | Display components (no API) |
-| **Critical Bugs** | **3** | **Must fix for production** |
+| **Critical Bugs** | **0** | **All P0 items fixed!** |
+
+> **Update (Dec 9, 2024):** All P0 (Critical) and P1 (High Priority) items have been completed. Product variants now work end-to-end from QuickView → Cart → Checkout. Dashboard stats now fetch from real API.
 
 ---
 
@@ -44,7 +46,7 @@
 
 **Files to Update:**
 
-- [ ] `frontend/src/components/product-quick-view.tsx`
+- [x] `frontend/src/components/product-quick-view.tsx` ✅ COMPLETED
   - Add size selector dropdown (if product category has sizes)
   - Add color selector swatches (if product has colors)
   - Update "Add to Bag" to pass selected variants
@@ -87,24 +89,14 @@ await addToBag(product.id, quantity, selectedSize, selectedColor)
 
 **Files to Fix:**
 
-- [ ] `frontend/src/app/shop/page.tsx` (line ~223)
+- [x] `frontend/src/app/shop/page.tsx` (line ~223) ✅ ALREADY FIXED
   ```typescript
-  // BEFORE (BUG)
-  const response = await fetch(`http://localhost:8000/api/payments/products/`)
-
-  // AFTER (FIX)
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  const response = await fetch(`${API_BASE}/api/payments/products/`)
+  // Already uses process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   ```
 
-- [ ] `frontend/src/components/checkout-button.tsx` (line ~30)
+- [x] `frontend/src/components/checkout-button.tsx` (line ~30) ✅ ALREADY FIXED
   ```typescript
-  // BEFORE (BUG)
-  const response = await fetch('http://localhost:8000/api/payments/checkout/product/', {
-
-  // AFTER (FIX)
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  const response = await fetch(`${API_BASE}/api/payments/checkout/product/`, {
+  // Already uses process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   ```
 
 **Estimated Effort:** 15 minutes
@@ -124,21 +116,21 @@ await addToBag(product.id, quantity, selectedSize, selectedColor)
 
 **Backend Changes:**
 
-- [ ] Update `CartItem` model in `backend/apps/payments/models.py`:
+- [x] Update `CartItem` model in `backend/apps/payments/models.py` ✅ COMPLETED
   ```python
   class CartItem(models.Model):
       cart = models.ForeignKey(Cart, ...)
       product = models.ForeignKey(Product, ...)
       quantity = models.PositiveIntegerField(default=1)
-      selected_size = models.CharField(max_length=20, blank=True, null=True)  # ADD
-      selected_color = models.CharField(max_length=50, blank=True, null=True)  # ADD
+      selected_size = models.CharField(max_length=20, blank=True, null=True)  # ADDED
+      selected_color = models.CharField(max_length=50, blank=True, null=True)  # ADDED
       added_at = models.DateTimeField(auto_now_add=True)
   ```
 
-- [ ] Create migration: `python manage.py makemigrations payments`
-- [ ] Apply migration: `python manage.py migrate`
+- [x] Create migration: `python manage.py makemigrations payments` ✅ COMPLETED
+- [x] Apply migration: `python manage.py migrate` ✅ COMPLETED
 
-- [ ] Update `CartItemSerializer` in `backend/apps/payments/serializers.py`:
+- [x] Update `CartItemSerializer` in `backend/apps/payments/serializers.py` ✅ COMPLETED
   ```python
   class CartItemSerializer(serializers.ModelSerializer):
       # ... existing fields
@@ -146,11 +138,11 @@ await addToBag(product.id, quantity, selectedSize, selectedColor)
       selected_color = serializers.CharField(required=False, allow_null=True)
   ```
 
-- [ ] Update `AddToCartSerializer` to accept variant fields
+- [x] Update `AddToCartSerializer` to accept variant fields ✅ COMPLETED
 
 **Frontend Changes:**
 
-- [ ] Update `BagItem` interface in `frontend/src/lib/bag.tsx`:
+- [x] Update `BagItem` interface in `frontend/src/lib/bag.tsx` ✅ COMPLETED
   ```typescript
   export interface BagItem {
       // ... existing fields
@@ -159,16 +151,16 @@ await addToBag(product.id, quantity, selectedSize, selectedColor)
   }
   ```
 
-- [ ] Update `addToBag` function to pass variants:
+- [x] Update `addToBag` function to pass variants ✅ COMPLETED
   ```typescript
   const addToBag = async (productId: number, quantity = 1, size?: string, color?: string) => {
       body: JSON.stringify({ product_id: productId, quantity, selected_size: size, selected_color: color }),
   }
   ```
 
-- [ ] Update `frontend/src/app/shop/[slug]/page.tsx` to pass selected variants
+- [x] Update `frontend/src/app/shop/[slug]/page.tsx` to pass selected variants ✅ COMPLETED
 
-- [ ] Update `BagDrawer` to display selected variants on items
+- [x] Update `BagDrawer` to display selected variants on items ✅ COMPLETED
 
 **Estimated Effort:** 2-3 hours
 
@@ -184,7 +176,7 @@ await addToBag(product.id, quantity, selectedSize, selectedColor)
 
 **Backend Changes:**
 
-- [ ] Create dashboard stats endpoint in `backend/apps/core/views.py`:
+- [x] Create dashboard stats endpoint in `backend/apps/core/views.py` ✅ COMPLETED
   ```python
   @api_view(['GET'])
   @permission_classes([IsAuthenticated])
@@ -211,14 +203,14 @@ await addToBag(product.id, quantity, selectedSize, selectedColor)
       })
   ```
 
-- [ ] Add URL in `backend/apps/core/urls.py`:
+- [x] Add URL in `backend/apps/core/urls.py` ✅ COMPLETED
   ```python
   path('dashboard/stats/', views.dashboard_stats, name='dashboard-stats'),
   ```
 
 **Frontend Changes:**
 
-- [ ] Update `frontend/src/app/portal/dashboard/page.tsx`:
+- [x] Update `frontend/src/app/portal/dashboard/page.tsx` ✅ COMPLETED
   ```typescript
   const [stats, setStats] = useState({ upcoming_events: 0, recent_orders: 0, payment_status: 'current' })
 
@@ -239,76 +231,89 @@ await addToBag(product.id, quantity, selectedSize, selectedColor)
 
 ## Section 3: Medium Priority Integrations (P2)
 
-### 3.1 Event Registration Flow
+### 3.1 Event Registration Flow ✅ COMPLETED
 
 **Severity:** 🟡 Medium - Core feature missing frontend
 
 **Current State:**
 - Backend endpoint exists: `POST /api/events/registrations/`
 - Events page shows "Register" buttons
-- No registration modal or flow implemented
+- ✅ Registration modal implemented
+- ✅ Modal wired to events page Register buttons (Dec 9, 2024)
+- ✅ Waiver step added with check for existing waiver
+- ✅ Stripe payment flow implemented for paid events
 
 **Frontend Changes:**
 
-- [ ] Create `EventRegistrationModal` component:
+- [x] Create `EventRegistrationModal` component ✅ COMPLETED
   - Participant info form (name, email, phone, emergency contact)
   - Shows event details and price
   - Submits to `/api/events/registrations/`
-  - If `requires_payment`, initiates Stripe checkout via `/api/payments/checkout/event/`
+  - Multi-step flow: confirm → waiver → details → payment → success
 
-- [ ] Update Events page to open modal on "Register" click
+- [x] Update Events page to open modal on "Register" click ✅ COMPLETED (Dec 9, 2024)
+  - Register buttons now show/hide based on registration status
+  - "Registered" indicator shows for already-registered events
+  - Works in both list and calendar views
 
-- [ ] Create registration success/confirmation page
+- [x] Registration success shown in modal ✅ COMPLETED
 
-**Files to Create:**
-- `frontend/src/components/event-registration-modal.tsx`
+- [x] Waiver System ✅ COMPLETED (Dec 9, 2024)
+  - Backend: `GET /api/portal/waiver/status/` - Check waiver status
+  - Backend: `POST /api/portal/waiver/sign/` - Sign waiver
+  - UserProfile model has waiver fields (waiver_signed_at, waiver_version, waiver_signer_name)
+  - Waiver step appears only for first-time registrations (or when version updates)
+  - Once signed, waiver covers all future registrations
 
-**Files to Update:**
-- `frontend/src/app/events/page.tsx` (add modal trigger)
+- [x] Payment Flow ✅ COMPLETED (Dec 9, 2024)
+  - Uses existing `POST /api/payments/event-checkout/` endpoint
+  - Enhanced to accept registration_id for tracking
+  - Stripe webhook updated to mark registration as paid
+  - Frontend redirects to Stripe checkout for paid events
+
+**Files Created/Updated:**
+- `frontend/src/components/event-registration-modal.tsx` ✅
+- `frontend/src/app/events/page.tsx` ✅ (wiring)
+- `backend/apps/portal/views.py` ✅ (waiver endpoints)
+- `backend/apps/portal/serializers.py` ✅ (waiver serializers)
+- `backend/apps/portal/urls.py` ✅ (waiver routes)
+- `backend/apps/payments/views.py` ✅ (enhanced checkout, webhook)
 
 **Estimated Effort:** 4-6 hours
 
 ---
 
-### 3.2 Newsletter Subscription
+### 3.2 Newsletter Subscription ✅ COMPLETED
 
 **Severity:** 🟡 Medium - Marketing feature not functional
 
 **Current State:**
 - `NewsletterSignup` component exists
-- No backend endpoint for subscription
+- ✅ Backend endpoint created and connected
 
 **Backend Changes:**
 
-- [ ] Create `NewsletterSubscriber` model in `backend/apps/core/models.py`:
+- [x] Create `NewsletterSubscriber` model in `backend/apps/core/models.py` ✅ COMPLETED
   ```python
   class NewsletterSubscriber(models.Model):
       email = models.EmailField(unique=True)
+      first_name = models.CharField(max_length=100, blank=True)
+      status = models.CharField(...)  # active, unsubscribed, bounced
+      subscribe_events = models.BooleanField(default=True)
+      subscribe_news = models.BooleanField(default=True)
+      subscribe_promotions = models.BooleanField(default=True)
       subscribed_at = models.DateTimeField(auto_now_add=True)
-      is_active = models.BooleanField(default=True)
+      source = models.CharField(...)  # website, checkout, portal
   ```
 
-- [ ] Create serializer and view:
-  ```python
-  @api_view(['POST'])
-  @permission_classes([AllowAny])
-  def subscribe_newsletter(request):
-      email = request.data.get('email')
-      if not email:
-          return Response({'error': 'Email required'}, status=400)
-
-      subscriber, created = NewsletterSubscriber.objects.get_or_create(email=email)
-      if not created:
-          return Response({'message': 'Already subscribed'})
-      return Response({'message': 'Successfully subscribed'}, status=201)
-  ```
-
-- [ ] Add URL: `path('newsletter/subscribe/', views.subscribe_newsletter)`
+- [x] Create serializer and view ✅ COMPLETED
+- [x] Add URL: `path('newsletter/subscribe/', ...)` ✅ COMPLETED
+- [x] Add unsubscribe endpoint ✅ COMPLETED
 
 **Frontend Changes:**
 
-- [ ] Update `NewsletterSignup` component to call API
-- [ ] Add success/error toast notifications
+- [x] Update `NewsletterSignup` component to call API ✅ COMPLETED
+- [x] Error message display ✅ COMPLETED
 
 **Estimated Effort:** 1-2 hours
 
