@@ -125,6 +125,8 @@ class CartItemSerializer(serializers.ModelSerializer):
             'product',
             'product_id',
             'quantity',
+            'selected_size',
+            'selected_color',
             'total_price',
             'is_available',
             'added_at',
@@ -173,6 +175,8 @@ class AddToCartSerializer(serializers.Serializer):
 
     product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(default=1, min_value=1)
+    selected_size = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    selected_color = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def validate_product_id(self, value):
         """Ensure product exists, is active, and in stock"""
