@@ -30,6 +30,20 @@ interface ProductColor {
   hex: string
 }
 
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
+}
+
 interface Product {
   id: number
   name: string
@@ -55,6 +69,7 @@ interface Product {
   best_selling?: boolean
   on_sale?: boolean
   // Variants (from Printify sync)
+  variants: ProductVariant[]
   available_colors: ProductColor[]
   available_sizes: string[]
 }

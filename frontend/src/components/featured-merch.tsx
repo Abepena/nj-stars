@@ -19,6 +19,25 @@ interface ProductImage {
   sort_order: number
 }
 
+interface ColorOption {
+  name: string
+  hex: string
+}
+
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
+}
+
 interface Product {
   id: number
   name: string
@@ -30,12 +49,18 @@ interface Product {
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  variants: ProductVariant[]
+  available_sizes: string[]
+  available_colors: ColorOption[]
   is_active: boolean
   featured: boolean
   best_selling: boolean
   on_sale: boolean
   stock_quantity: number
   in_stock: boolean
+  fulfillment_type?: 'pod' | 'local'
+  is_pod?: boolean
+  is_local?: boolean
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"

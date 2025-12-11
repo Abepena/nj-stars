@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check } from "lucide-react"
 import {
   Dialog,
@@ -12,7 +13,6 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
-import { getCategoryBadgeColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
 
 interface ColorOption {
@@ -51,21 +51,17 @@ interface Product {
   description: string
   price: string
   compare_at_price: string | null
-  // Fulfillment
   fulfillment_type?: FulfillmentType
   is_pod?: boolean
   is_local?: boolean
   shipping_estimate?: string
   fulfillment_display?: string
-  // Images
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
-  // Variants (from API)
   variants: ProductVariant[]
   available_sizes: string[]
   available_colors: ColorOption[]
-  // Stock & Status
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -84,7 +80,6 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
-  const [isFadingOut, setIsFadingOut] = useState(false)
   const [selectedSize, setSelectedSize] = useState<string>("")
   const [selectedColor, setSelectedColor] = useState<string>("")
   const { addToBag } = useBag()
@@ -101,10 +96,9 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   // POD products are always available even with stock_quantity = 0
   const isAvailable = product.is_pod || product.stock_quantity > 0
 
-  // Reset selections when modal opens with a new product, auto-select first variants
+  // Reset selections when modal opens, auto-select first variants
   useEffect(() => {
     if (open) {
-      // Auto-select first color and size if available
       setSelectedColor(colors.length > 0 ? colors[0].name : "")
       setSelectedSize(sizes.length > 0 ? sizes[0] : "")
       setQuantity(1)
@@ -112,7 +106,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     }
   }, [open, product.id, colors, sizes])
 
-  // Build image gallery from uploaded images, falling back to legacy image_url
+  // Build image gallery
   const productImages: { url: string; alt: string }[] = (() => {
     if (product.images && product.images.length > 0) {
       return product.images.map((img) => ({
@@ -131,18 +125,11 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     try {
       await addToBag(product.id, quantity, selectedSize || undefined, selectedColor || undefined)
       setJustAdded(true)
-      // Start fade out after showing success
       setTimeout(() => {
-        setIsFadingOut(true)
-        // Close modal after fade animation completes
-        setTimeout(() => {
-          onOpenChange(false)
-          // Reset states after modal closes
-          setJustAdded(false)
-          setQuantity(1)
-          setIsFadingOut(false)
-        }, 300)
-      }, 600)
+        onOpenChange(false)
+        setJustAdded(false)
+        setQuantity(1)
+      }, 800)
     } catch (error) {
       console.error('Failed to add to bag:', error)
     } finally {
@@ -158,178 +145,118 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
   }
 
-  const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-y-auto transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
-        <DialogHeader>
-          <DialogTitle className="sr-only">{product.name}</DialogTitle>
-          <DialogDescription className="sr-only">
-            Quick view of {product.name} - ${product.price}
-          </DialogDescription>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{product.name}</DialogTitle>
+          <DialogDescription>Quick view of {product.name}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Image Carousel */}
-          <div className="relative w-full aspect-square">
+        <div className="grid md:grid-cols-2">
+          {/* Image */}
+          <div className="relative aspect-square bg-muted">
             {productImages[currentImageIndex] ? (
               <>
                 <Image
                   src={productImages[currentImageIndex].url}
                   alt={productImages[currentImageIndex].alt}
                   fill
-                  className="object-cover rounded-lg"
+                  className="object-cover"
                   unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                 />
-                {/* Carousel Controls */}
                 {productImages.length > 1 && (
                   <>
                     <button
                       onClick={previousImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full transition-opacity"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
                       aria-label="Previous image"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full transition-opacity"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
                       aria-label="Next image"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
-                    {/* Image Indicators */}
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+                    {/* Dots */}
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                       {productImages.map((_, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
                           aria-label={`View image ${index + 1}`}
-                        >
-                          <span className={`w-3 h-3 rounded-full transition-colors ${
-                            index === currentImageIndex ? 'bg-background' : 'bg-background/50'
-                          }`} />
-                        </button>
+                        />
                       ))}
                     </div>
                   </>
                 )}
               </>
             ) : (
-              <div className="h-full w-full bg-muted flex items-center justify-center p-8 relative rounded-lg">
+              <div className="h-full w-full flex items-center justify-center p-8">
                 <Image
                   src="/brand/logos/logo square thick muted.svg"
                   alt={product.name}
-                  fill
-                  className="opacity-30 object-contain p-8"
+                  width={120}
+                  height={120}
+                  className="opacity-30"
                 />
               </div>
             )}
           </div>
 
-          {/* Product Details */}
-          <div className="flex flex-col space-y-4">
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h2 className="text-2xl font-bold flex-1">{product.name}</h2>
-                <span className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${getCategoryBadgeColor(product.category)}`}>
-                  {product.category}
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-3xl font-bold text-foreground">
-                  ${parseFloat(product.price).toFixed(2)}
-                </span>
-                {hasDiscount && (
-                  <span className="text-lg text-muted-foreground line-through">
-                    ${parseFloat(product.compare_at_price!).toFixed(2)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <p className="text-muted-foreground leading-relaxed">
-              {product.description}
+          {/* Details */}
+          <div className="p-6 flex flex-col">
+            {/* Title & Price */}
+            <h2 className="text-xl font-bold mb-1">{product.name}</h2>
+            <p className="text-2xl font-bold text-primary mb-6">
+              ${parseFloat(product.price).toFixed(2)}
             </p>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              {/* Stock Status */}
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    product.is_pod
-                      ? "bg-violet-500"
-                      : product.stock_quantity > 15
-                      ? "bg-success"
-                      : product.stock_quantity > 5
-                      ? "bg-warning"
-                      : product.stock_quantity > 0
-                      ? "bg-accent animate-pulse"
-                      : "bg-destructive"
-                  }`}
-                />
-                <span
-                  className={
-                    product.is_pod
-                      ? "text-violet-500 font-medium"
-                      : product.stock_quantity === 0
-                      ? "text-destructive font-semibold"
-                      : product.stock_quantity <= 5
-                      ? "text-accent font-semibold"
-                      : "text-foreground"
-                  }
-                >
-                  {product.is_pod
-                    ? "Made to Order"
-                    : product.stock_quantity > 15
-                    ? "In Stock"
-                    : product.stock_quantity > 5
-                    ? "⚡ Limited Drop"
-                    : product.stock_quantity > 0
-                    ? "🔥 Almost Gone!"
-                    : "Out of Stock"}
-                </span>
-              </div>
-
-              {/* Fulfillment / Shipping Info */}
-              {product.shipping_estimate && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <span>·</span>
-                  {product.is_pod ? (
-                    <span>Ships in {product.shipping_estimate}</span>
-                  ) : (
-                    <span className="text-emerald-500 font-medium">{product.shipping_estimate}</span>
-                  )}
+            {/* Variants */}
+            <div className="space-y-5 flex-1">
+              {/* Color Selector */}
+              {isAvailable && needsColor && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Color
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          selectedColor === color.name
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent"
+                            : "border-border hover:border-muted-foreground"
+                        }`}
+                        style={{ backgroundColor: color.hex || '#808080' }}
+                        title={color.name}
+                        aria-label={`Select ${color.name}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
 
-            {/* Urgency banners only for non-POD products with limited stock */}
-            {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-              <div className="bg-accent/10 border border-accent/30 rounded-md p-3 text-sm text-accent font-semibold">
-                🔥 Selling fast! Only a few left - grab yours now!
-              </div>
-            )}
-            {!product.is_pod && product.stock_quantity > 5 && product.stock_quantity <= 15 && (
-              <div className="bg-warning/10 border border-warning/30 rounded-md p-3 text-sm text-warning font-medium">
-                ⚡ Limited edition drop - don&apos;t miss out!
-              </div>
-            )}
-
-            <div className="flex flex-col gap-3 mt-auto pt-4">
               {/* Size Selector */}
               {isAvailable && needsSize && (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Size</span>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Size
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {sizes.map((size) => (
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`min-w-[44px] min-h-[44px] px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
+                        className={`min-w-[2.5rem] px-3 py-1.5 border rounded text-sm font-medium transition-colors ${
                           selectedSize === size
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-input hover:bg-muted"
@@ -342,104 +269,73 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                 </div>
               )}
 
-              {/* Color Selector */}
-              {isAvailable && needsColor && (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">
-                    Color{selectedColor && `: ${selectedColor}`}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color.name)}
-                        className={`min-w-[44px] min-h-[44px] w-10 h-10 rounded-full border-2 transition-all ${
-                          selectedColor === color.name
-                            ? "ring-2 ring-primary ring-offset-2"
-                            : "hover:scale-110"
-                        }`}
-                        style={{ backgroundColor: color.hex }}
-                        title={color.name}
-                        aria-label={`Select ${color.name}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity Selector */}
+              {/* Quantity */}
               {isAvailable && (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">Quantity:</span>
-                  <div className="flex items-center border rounded-md">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Quantity
+                  </label>
+                  <div className="inline-flex items-center border rounded">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-lg"
                       disabled={quantity <= 1}
-                      aria-label="Decrease quantity"
                     >
                       −
                     </button>
-                    <span className="px-4 min-h-[44px] flex items-center justify-center border-x min-w-[3rem] text-center">
+                    <span className="w-12 h-10 flex items-center justify-center border-x text-center font-medium">
                       {quantity}
                     </span>
                     <button
                       onClick={() => setQuantity(Math.min(product.is_pod ? 10 : product.stock_quantity, quantity + 1))}
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-lg"
                       disabled={quantity >= (product.is_pod ? 10 : product.stock_quantity)}
-                      aria-label="Increase quantity"
                     >
                       +
                     </button>
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Add to Bag Button */}
+            {/* Actions */}
+            <div className="mt-6 space-y-3">
               {isAvailable ? (
                 <Button
-                  className="w-full"
-                  size="lg"
+                  className="w-full h-12 text-base font-semibold"
                   onClick={handleAddToBag}
                   disabled={isAdding || !variantsSelected}
                 >
                   {isAdding ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Adding...
                     </>
                   ) : justAdded ? (
                     <>
-                      <Check className="mr-2 h-4 w-4" />
-                      Added to Bag!
-                    </>
-                  ) : !variantsSelected ? (
-                    <>
-                      <ShoppingBag className="mr-2 h-4 w-4" />
-                      {!selectedSize && needsSize ? "Select Size" : "Select Color"}
+                      <Check className="mr-2 h-5 w-5" />
+                      Added!
                     </>
                   ) : (
                     <>
-                      <ShoppingBag className="mr-2 h-4 w-4" />
-                      Add to Bag
+                      <ShoppingBag className="mr-2 h-5 w-5" />
+                      Add to Cart
                     </>
                   )}
                 </Button>
               ) : (
-                <Button disabled className="w-full text-accent" size="lg">
+                <Button disabled className="w-full h-12" size="lg">
                   Out of Stock
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  window.location.href = `/shop/${product.slug}`
-                }}
+              <Link
+                href={`/shop/${product.slug}`}
+                className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+                onClick={() => onOpenChange(false)}
               >
                 View Full Details
-              </Button>
+              </Link>
             </div>
           </div>
         </div>
