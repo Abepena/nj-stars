@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django import forms
 from django.db import models
-from .models import SubscriptionPlan, Subscription, Payment, Product, ProductImage, Order, OrderItem, Bag, BagItem
+from .models import SubscriptionPlan, Subscription, Payment, Product, ProductImage, ProductVariant, Order, OrderItem, Bag, BagItem
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -84,6 +84,23 @@ class ProductImageInline(admin.TabularInline):
     image_preview.short_description = "Preview"
 
 
+class ProductVariantInline(admin.TabularInline):
+    """Inline for managing product variants"""
+    model = ProductVariant
+    extra = 0
+    fields = ['title', 'size', 'color', 'color_hex', 'price', 'is_enabled', 'is_available', 'sort_order']
+    readonly_fields = ['printify_variant_id', 'last_synced_at']
+    ordering = ['sort_order', 'size', 'color']
+
+    def get_readonly_fields(self, request, obj=None):
+        """Make Printify fields read-only for POD products"""
+        readonly = list(self.readonly_fields)
+        if obj and obj.is_pod:
+            # For POD products, variant data comes from Printify - make more fields read-only
+            readonly.extend(['title', 'size', 'color', 'is_available'])
+        return readonly
+
+
 class ProductAdminForm(forms.ModelForm):
     """Custom form with bulk image upload field"""
     bulk_images = MultipleFileField(
@@ -100,12 +117,13 @@ class ProductAdminForm(forms.ModelForm):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     form = ProductAdminForm
-    list_display = ['name', 'price', 'category', 'fulfillment_badge', 'stock_display', 'is_active', 'featured', 'image_count']
-    list_filter = ['fulfillment_type', 'category', 'is_active', 'featured', 'best_selling', 'on_sale']
+    list_display = ['name', 'price', 'category', 'fulfillment_badge', 'variant_count', 'stock_display', 'is_active', 'featured', 'image_count']
+    list_filter = ['fulfillment_type', 'category', 'is_active', 'is_discontinued', 'featured', 'best_selling', 'on_sale']
     search_fields = ['name', 'description']
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ['created_at', 'updated_at']
-    inlines = [ProductImageInline]
+    inlines = [ProductImageInline, ProductVariantInline]
+    actions = ['sync_variants_from_printify']
 
     fieldsets = (
         (None, {
@@ -122,7 +140,8 @@ class ProductAdmin(admin.ModelAdmin):
             '''
         }),
         ('Categorization & Status', {
-            'fields': ('category', 'is_active', 'featured', 'best_selling', 'on_sale')
+            'fields': ('category', 'is_active', 'is_discontinued', 'featured', 'best_selling', 'on_sale'),
+            'description': '<strong>Discontinued:</strong> Marks product as sold out. For POD products, this overrides Printify availability.'
         }),
         ('Inventory', {
             'fields': ('manage_inventory', 'stock_quantity'),
@@ -165,8 +184,12 @@ class ProductAdmin(admin.ModelAdmin):
 
     def stock_display(self, obj):
         """Display stock status with visual indicator"""
-        if not obj.manage_inventory:
+        if obj.is_discontinued:
+            return format_html('<span style="color: #dc2626;">⛔ Discontinued</span>')
+        if obj.is_pod:
             return format_html('<span style="color: #7c3aed;">∞ POD</span>')
+        if not obj.manage_inventory:
+            return format_html('<span style="color: #059669;">∞ In Stock</span>')
         if obj.stock_quantity <= 0:
             return format_html('<span style="color: #dc2626;">Out of Stock</span>')
         if obj.stock_quantity <= 5:
@@ -179,6 +202,56 @@ class ProductAdmin(admin.ModelAdmin):
         count = obj.images.count()
         return count if count > 0 else '-'
     image_count.short_description = "Images"
+
+    def variant_count(self, obj):
+        """Display variant count with enabled/total breakdown"""
+        enabled = obj.variants.filter(is_enabled=True).count()
+        total = obj.variants.count()
+        if total == 0:
+            return '-'
+        if enabled == total:
+            return format_html('<span style="color: #059669;">{}</span>', total)
+        return format_html('<span>{}/{}</span>', enabled, total)
+    variant_count.short_description = "Variants"
+
+    @admin.action(description="Sync variants from Printify")
+    def sync_variants_from_printify(self, request, queryset):
+        """Admin action to sync variants from Printify for selected POD products"""
+        from .services import sync_product_variants
+
+        synced = 0
+        skipped = 0
+        errors = []
+
+        for product in queryset:
+            if not product.is_pod:
+                skipped += 1
+                continue
+            if not product.printify_product_id:
+                errors.append(f"{product.name}: No Printify product ID")
+                continue
+
+            stats = sync_product_variants(product)
+            if stats['errors']:
+                errors.extend([f"{product.name}: {e}" for e in stats['errors']])
+            else:
+                synced += 1
+
+        # Build result message
+        messages = []
+        if synced:
+            messages.append(f"Synced variants for {synced} product(s)")
+        if skipped:
+            messages.append(f"Skipped {skipped} non-POD product(s)")
+        if errors:
+            messages.append(f"Errors: {'; '.join(errors[:3])}")  # Show first 3 errors
+
+        if synced and not errors:
+            self.message_user(request, ". ".join(messages))
+        elif errors:
+            self.message_user(request, ". ".join(messages), level='warning')
+        else:
+            self.message_user(request, "No POD products with Printify IDs to sync", level='warning')
 
     def save_model(self, request, obj, form, change):
         """Save the product first, then handle bulk image uploads"""

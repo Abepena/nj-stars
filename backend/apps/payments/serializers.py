@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, SubscriptionPlan, Bag, BagItem, Order, OrderItem
+from .models import Product, ProductImage, ProductVariant, SubscriptionPlan, Bag, BagItem, Order, OrderItem
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -15,6 +15,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
             'alt_text',
             'is_primary',
             'sort_order',
+            'printify_variant_ids',
         ]
 
     def get_url(self, obj):
@@ -29,6 +30,31 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return obj.image_url or None
 
 
+class ProductVariantSerializer(serializers.ModelSerializer):
+    """Serializer for ProductVariant model"""
+
+    effective_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'id',
+            'printify_variant_id',
+            'title',
+            'size',
+            'color',
+            'color_hex',
+            'price',
+            'effective_price',
+            'is_enabled',
+            'is_available',
+            'sort_order',
+        ]
+        read_only_fields = ['id', 'printify_variant_id']
+
+
 class ProductSerializer(serializers.ModelSerializer):
     """Serializer for Product model with fulfillment type support"""
 
@@ -39,6 +65,42 @@ class ProductSerializer(serializers.ModelSerializer):
     fulfillment_display = serializers.ReadOnlyField()
     primary_image_url = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    # Variant data
+    variants = serializers.SerializerMethodField()
+    available_sizes = serializers.SerializerMethodField()
+    available_colors = serializers.SerializerMethodField()
+
+    def get_variants(self, obj):
+        """Serialize enabled and available variants"""
+        variants = obj.variants.filter(is_enabled=True, is_available=True)
+        return ProductVariantSerializer(variants, many=True).data
+
+    def get_available_sizes(self, obj):
+        """Get unique available sizes for this product"""
+        sizes = obj.variants.filter(
+            is_enabled=True, is_available=True
+        ).exclude(size='').values_list('size', flat=True).distinct()
+        # Preserve order from sort_order rather than alphabetical
+        ordered_sizes = obj.variants.filter(
+            is_enabled=True, is_available=True, size__in=sizes
+        ).order_by('sort_order').values_list('size', flat=True)
+        # Remove duplicates while preserving order
+        seen = set()
+        return [s for s in ordered_sizes if not (s in seen or seen.add(s))]
+
+    def get_available_colors(self, obj):
+        """Get unique available colors with hex codes"""
+        colors = obj.variants.filter(
+            is_enabled=True, is_available=True
+        ).exclude(color='').values('color', 'color_hex')
+        # Deduplicate by color name (keep first occurrence)
+        seen = set()
+        unique_colors = []
+        for c in colors:
+            if c['color'] not in seen:
+                seen.add(c['color'])
+                unique_colors.append({'name': c['color'], 'hex': c['color_hex']})
+        return unique_colors
 
     def get_images(self, obj):
         """Serialize images with request context for absolute URLs"""
@@ -85,6 +147,10 @@ class ProductSerializer(serializers.ModelSerializer):
             'image_url',
             'primary_image_url',
             'images',
+            # Variants
+            'variants',
+            'available_sizes',
+            'available_colors',
             # Status
             'is_active',
             'featured',

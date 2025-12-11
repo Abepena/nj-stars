@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 
 // Variant configuration by category
 interface ColorOption {
@@ -193,6 +194,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                   alt={productImages[currentImageIndex].alt}
                   fill
                   className="object-cover rounded-lg"
+                  unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                 />
                 {/* Carousel Controls */}
                 {productImages.length > 1 && (

@@ -978,20 +978,29 @@ def calculate_shipping(request):
 @permission_classes([AllowAny])
 def printify_webhook(request):
     """
-    Handle Printify webhook events for order tracking updates.
+    Handle Printify webhook events for orders and products.
 
-    Printify sends webhook events for various order lifecycle events:
+    Order Events:
     - order:created - Order received by Printify
     - order:sent-to-production - Order started production
     - order:shipment:created - Order shipped with tracking info
     - order:shipment:delivered - Order delivered
+    - order:canceled - Order was canceled
+
+    Product Events (Auto-Sync):
+    - product:publish:started - Product published, auto-create and sync
+    - product:deleted - Product deleted, mark as inactive
 
     Configure webhook in Printify Dashboard:
     Settings → Webhooks → Add endpoint
     URL: https://api.njstarselite.com/api/payments/webhook/printify/
+    Events: Select all order events + product:publish:started + product:deleted
     """
     import hashlib
     import hmac
+    from django.utils.text import slugify
+    from .services.printify_sync import sync_product_variants
+    from .services.printify_client import get_printify_client
 
     # Verify webhook signature (optional but recommended)
     webhook_secret = getattr(settings, 'PRINTIFY_WEBHOOK_SECRET', '')
@@ -1015,61 +1024,173 @@ def printify_webhook(request):
 
         logger.info(f"Printify webhook received: {event_type}")
 
-        # Find the order by Printify order ID
-        printify_order_id = resource.get('id', '')
-        if not printify_order_id:
-            logger.warning("Printify webhook missing order ID")
+        # ============================================================
+        # PRODUCT EVENTS - Auto-sync when products are published
+        # ============================================================
+        if event_type == 'product:publish:started':
+            return _handle_product_publish(resource)
+
+        elif event_type == 'product:deleted':
+            return _handle_product_deleted(resource)
+
+        # ============================================================
+        # ORDER EVENTS - Update order status and tracking
+        # ============================================================
+        elif event_type.startswith('order:'):
+            return _handle_order_event(event_type, resource)
+
+        else:
+            logger.info(f"Unhandled Printify webhook event: {event_type}")
             return HttpResponse(status=200)
 
-        try:
-            order = Order.objects.get(printify_order_id=printify_order_id)
-        except Order.DoesNotExist:
-            # Try finding by external_id (our order number)
-            external_id = resource.get('external_id', '')
-            if external_id:
-                try:
-                    order = Order.objects.get(order_number=external_id)
-                except Order.DoesNotExist:
-                    logger.warning(f"Order not found for Printify ID {printify_order_id}")
-                    return HttpResponse(status=200)
-            else:
-                logger.warning(f"Order not found for Printify ID {printify_order_id}")
-                return HttpResponse(status=200)
+    except Exception as e:
+        logger.error(f"Error processing Printify webhook: {e}", exc_info=True)
+        return HttpResponse(status=500)
 
-        # Handle different event types
-        if event_type == 'order:sent-to-production':
-            order.status = 'processing'
-            order.save()
-            logger.info(f"Order {order.order_number} moved to processing")
 
-        elif event_type == 'order:shipment:created':
-            # Extract shipment details
-            shipments = resource.get('shipments', [])
-            if shipments:
-                shipment = shipments[0]  # Get first shipment
-                tracking_number = shipment.get('tracking_number', '')
-                tracking_url = shipment.get('tracking_url', '')
-                carrier = shipment.get('carrier', '')
+def _handle_product_publish(resource: dict):
+    """
+    Handle product:publish:started webhook - auto-create product and sync variants.
 
-                order.tracking_number = tracking_number
-                order.tracking_url = tracking_url
-                order.status = 'shipped'
-                order.save()
+    When a product is published in Printify, this:
+    1. Creates a new Product record (or updates existing)
+    2. Syncs all variants, prices, and images from Printify
+    """
+    from django.utils.text import slugify
+    from .services.printify_sync import sync_product_variants
+    from .services.printify_client import get_printify_client
 
-                logger.info(f"Order {order.order_number} shipped via {carrier}: {tracking_number}")
+    printify_product_id = resource.get('id', '')
+    if not printify_product_id:
+        logger.warning("Product webhook missing product ID")
+        return HttpResponse(status=200)
 
-        elif event_type == 'order:shipment:delivered':
-            order.status = 'delivered'
-            order.save()
-            logger.info(f"Order {order.order_number} delivered")
+    logger.info(f"Auto-syncing published Printify product: {printify_product_id}")
 
-        elif event_type == 'order:canceled':
-            order.status = 'canceled'
-            order.save()
-            logger.info(f"Order {order.order_number} canceled in Printify")
+    try:
+        # Fetch full product data from Printify API
+        client = get_printify_client()
+        if not client.is_configured:
+            logger.error("Printify API not configured - cannot auto-sync product")
+            return HttpResponse(status=200)
+
+        printify_data = client.get_product(printify_product_id)
+
+        title = printify_data.get('title', f'Product {printify_product_id}')
+        description = printify_data.get('description', '')
+
+        # Generate unique slug
+        base_slug = slugify(title)
+        slug = base_slug
+        counter = 1
+        while Product.objects.filter(slug=slug).exclude(printify_product_id=printify_product_id).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+
+        # Get base price from first enabled variant (Printify prices are in cents)
+        variants = printify_data.get('variants', [])
+        base_price = 0
+        for v in variants:
+            if v.get('is_enabled') and v.get('price'):
+                base_price = v['price'] / 100
+                break
+
+        # Create or update the product
+        product, created = Product.objects.update_or_create(
+            printify_product_id=printify_product_id,
+            defaults={
+                'name': title,
+                'slug': slug,
+                'description': description,
+                'price': base_price,
+                'fulfillment_type': 'pod',
+                'is_active': True,
+                'category': 'apparel',  # Default category, can be changed in admin
+            }
+        )
+
+        action = "Created" if created else "Updated"
+        logger.info(f"{action} product '{product.name}' from Printify webhook")
+
+        # Sync variants, prices, and images
+        sync_stats = sync_product_variants(product)
+
+        logger.info(
+            f"Product sync complete for '{product.name}': "
+            f"variants({sync_stats['created']}+/{sync_stats['updated']}~), "
+            f"images({sync_stats.get('images_created', 0)}+)"
+        )
 
         return HttpResponse(status=200)
 
     except Exception as e:
-        logger.error(f"Error processing Printify webhook: {e}")
-        return HttpResponse(status=500)
+        logger.error(f"Error auto-syncing Printify product {printify_product_id}: {e}", exc_info=True)
+        return HttpResponse(status=200)  # Return 200 to avoid Printify retries
+
+
+def _handle_product_deleted(resource: dict):
+    """Handle product:deleted webhook - mark product as inactive."""
+    printify_product_id = resource.get('id', '')
+    if not printify_product_id:
+        return HttpResponse(status=200)
+
+    try:
+        product = Product.objects.get(printify_product_id=printify_product_id)
+        product.is_active = False
+        product.save()
+        logger.info(f"Deactivated product '{product.name}' (deleted in Printify)")
+    except Product.DoesNotExist:
+        logger.debug(f"Product not found for deleted Printify ID: {printify_product_id}")
+
+    return HttpResponse(status=200)
+
+
+def _handle_order_event(event_type: str, resource: dict):
+    """Handle order-related webhook events."""
+    printify_order_id = resource.get('id', '')
+    if not printify_order_id:
+        logger.warning("Order webhook missing order ID")
+        return HttpResponse(status=200)
+
+    try:
+        order = Order.objects.get(printify_order_id=printify_order_id)
+    except Order.DoesNotExist:
+        # Try finding by external_id (our order number)
+        external_id = resource.get('external_id', '')
+        if external_id:
+            try:
+                order = Order.objects.get(order_number=external_id)
+            except Order.DoesNotExist:
+                logger.warning(f"Order not found for Printify ID {printify_order_id}")
+                return HttpResponse(status=200)
+        else:
+            logger.warning(f"Order not found for Printify ID {printify_order_id}")
+            return HttpResponse(status=200)
+
+    # Handle different order event types
+    if event_type == 'order:sent-to-production':
+        order.status = 'processing'
+        order.save()
+        logger.info(f"Order {order.order_number} moved to processing")
+
+    elif event_type == 'order:shipment:created':
+        shipments = resource.get('shipments', [])
+        if shipments:
+            shipment = shipments[0]
+            order.tracking_number = shipment.get('tracking_number', '')
+            order.tracking_url = shipment.get('tracking_url', '')
+            order.status = 'shipped'
+            order.save()
+            logger.info(f"Order {order.order_number} shipped: {order.tracking_number}")
+
+    elif event_type == 'order:shipment:delivered':
+        order.status = 'delivered'
+        order.save()
+        logger.info(f"Order {order.order_number} delivered")
+
+    elif event_type == 'order:canceled':
+        order.status = 'canceled'
+        order.save()
+        logger.info(f"Order {order.order_number} canceled in Printify")
+
+    return HttpResponse(status=200)

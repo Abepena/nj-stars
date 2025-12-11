@@ -44,6 +44,26 @@ export interface ProductImage {
   alt_text: string
   is_primary: boolean
   sort_order: number
+  printify_variant_ids: number[]
+}
+
+export interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
+}
+
+export interface AvailableColor {
+  name: string
+  hex: string
 }
 
 export type FulfillmentType = 'pod' | 'local'
@@ -65,6 +85,10 @@ export interface Product {
   image_url?: string
   primary_image_url?: string | null
   images: ProductImage[]
+  // Variants
+  variants: ProductVariant[]
+  available_sizes: string[]
+  available_colors: AvailableColor[]
   // Stock & Status
   stock_quantity: number
   category: string

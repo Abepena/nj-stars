@@ -11,6 +11,7 @@ import { ProductQuickView } from "@/components/product-quick-view"
 import { FilterSidebar, type FilterCategory, type FilterTag, type FilterColor, type SortOption } from "@/components/filter-sidebar"
 import { Button } from "@/components/ui/button"
 import { getCategoryColor } from "@/lib/category-colors"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -23,6 +24,11 @@ interface ProductImage {
 }
 
 type FulfillmentType = 'pod' | 'local'
+
+interface ProductColor {
+  name: string
+  hex: string
+}
 
 interface Product {
   id: number
@@ -48,6 +54,9 @@ interface Product {
   featured: boolean
   best_selling?: boolean
   on_sale?: boolean
+  // Variants (from Printify sync)
+  available_colors: ProductColor[]
+  available_sizes: string[]
 }
 
 
@@ -62,27 +71,9 @@ interface ProductCardProps {
   selectedCategories: string[]
 }
 
-// Mock color variants - will come from API later
-const PRODUCT_COLORS: Record<string, { name: string; hex: string }[]> = {
-  jersey: [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "White", hex: "#ffffff" },
-  ],
-  apparel: [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "Navy", hex: "#1e3a5f" },
-    { name: "Gray", hex: "#6b7280" },
-  ],
-  accessories: [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "Red", hex: "#dc2626" },
-  ],
-  equipment: [],
-}
-
 function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTags, selectedCategories }: ProductCardProps) {
   const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
-  const colors = PRODUCT_COLORS[product.category] || []
+  const colors = product.available_colors || []
 
   // Handle badge click without triggering card click
   const handleBadgeClick = (e: React.MouseEvent, handler: () => void) => {
@@ -112,6 +103,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
             alt={product.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
+            unoptimized={shouldSkipImageOptimization(product.primary_image_url || product.image_url)}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center p-8 relative">
@@ -125,7 +117,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
         )}
 
         {/* Out of stock overlay */}
-        {product.stock_quantity === 0 && (
+        {!product.in_stock && (
           <div className="absolute inset-0 bg-background/70 flex items-center justify-center rounded-lg">
             <span className="text-sm font-medium text-muted-foreground">Sold Out</span>
           </div>
@@ -189,7 +181,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
               Sale
             </button>
           )}
-          {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+          {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
             <span className="text-xs text-accent font-medium">Almost Gone!</span>
           )}
         </div>

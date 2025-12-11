@@ -228,6 +228,10 @@ class Product(models.Model):
 
     # Status
     is_active = models.BooleanField(default=True)
+    is_discontinued = models.BooleanField(
+        default=False,
+        help_text="Mark product as discontinued/sold out (admin override for POD products)"
+    )
     featured = models.BooleanField(default=False, help_text="Show in featured products section")
     best_selling = models.BooleanField(default=False, help_text="Mark as bestseller")
     on_sale = models.BooleanField(default=False, help_text="Show 'On Sale' badge")
@@ -255,10 +259,26 @@ class Product(models.Model):
 
     @property
     def in_stock(self):
-        """Check if product is in stock"""
-        if not self.manage_inventory:
+        """
+        Check if product is in stock.
+
+        For POD products: Always in stock unless admin marks as discontinued.
+        For local products: Check stock_quantity if inventory is managed.
+        """
+        # Admin can discontinue any product
+        if self.is_discontinued:
+            return False
+
+        # POD products are always in stock (Printify handles availability per-variant)
+        if self.is_pod:
             return True
-        return self.stock_quantity > 0
+
+        # Local products with managed inventory check stock_quantity
+        if self.manage_inventory:
+            return self.stock_quantity > 0
+
+        # Default: in stock
+        return True
 
     @property
     def is_pod(self):
@@ -322,6 +342,19 @@ class ProductImage(models.Model):
         blank=True,
         help_text="Or paste an image URL (e.g., from Unsplash)"
     )
+    # Printify sync tracking - stores the original Printify image src
+    printify_src = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Original Printify mockup URL (set by sync, do not edit)"
+    )
+    # Printify variant IDs this image is associated with (for filtering by color)
+    printify_variant_ids = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of Printify variant IDs this image shows (set by sync)"
+    )
     alt_text = models.CharField(
         max_length=200,
         blank=True,
@@ -366,6 +399,91 @@ class ProductImage(models.Model):
                 product=self.product, is_primary=True
             ).exclude(pk=self.pk).update(is_primary=False)
         super().save(*args, **kwargs)
+
+
+class ProductVariant(models.Model):
+    """
+    Variants for a product - synced from Printify for POD products,
+    or manually configured for local products.
+    """
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='variants'
+    )
+
+    # Printify identifiers (null for local products)
+    printify_variant_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Printify variant ID - required for POD products"
+    )
+
+    # Display info
+    title = models.CharField(
+        max_length=255,
+        help_text="Human-readable variant name (e.g., 'Black / XL')"
+    )
+
+    # Variant options (parsed from Printify or manually entered)
+    size = models.CharField(max_length=50, blank=True, db_index=True)
+    color = models.CharField(max_length=50, blank=True, db_index=True)
+    color_hex = models.CharField(
+        max_length=7,
+        blank=True,
+        help_text="Hex color code for UI display (e.g., '#1a1a1a')"
+    )
+
+    # Pricing - variant-specific price if different from base
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Variant-specific price (leave blank to use product base price)"
+    )
+
+    # Availability
+    is_enabled = models.BooleanField(
+        default=True,
+        help_text="Whether this variant is available for purchase"
+    )
+    is_available = models.BooleanField(
+        default=True,
+        help_text="Stock availability (for POD, this comes from Printify)"
+    )
+
+    # Ordering
+    sort_order = models.PositiveIntegerField(default=0)
+
+    # Sync tracking
+    last_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last sync from Printify"
+    )
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'size', 'color']
+        unique_together = [['product', 'printify_variant_id']]
+        indexes = [
+            models.Index(fields=['product', 'is_enabled']),
+            models.Index(fields=['product', 'size']),
+            models.Index(fields=['product', 'color']),
+        ]
+
+    def __str__(self):
+        return f"{self.product.name} - {self.title}"
+
+    @property
+    def effective_price(self):
+        """Return variant price or fall back to product base price"""
+        return self.price if self.price is not None else self.product.price
 
 
 class Order(models.Model):

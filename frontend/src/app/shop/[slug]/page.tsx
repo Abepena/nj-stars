@@ -13,6 +13,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs"
 import { ProductDetailSkeleton } from "@/components/skeletons/product-detail-skeleton"
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 
 interface ProductImage {
   id: number
@@ -20,6 +21,26 @@ interface ProductImage {
   alt_text: string
   is_primary: boolean
   sort_order: number
+  printify_variant_ids: number[]
+}
+
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
+}
+
+interface AvailableColor {
+  name: string
+  hex: string
 }
 
 type FulfillmentType = 'pod' | 'local'
@@ -34,6 +55,11 @@ interface Product {
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  // Variants - from API
+  variants: ProductVariant[]
+  available_sizes: string[]
+  available_colors: AvailableColor[]
+  // Stock & Status
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -46,42 +72,6 @@ interface Product {
   is_local?: boolean
   shipping_estimate?: string
   fulfillment_display?: string
-}
-
-// Variant configuration - mockup data for now
-// TODO: This will be fetched from Printify API or local inventory
-interface VariantConfig {
-  sizes: string[]
-  colors: { name: string; hex: string; image?: string }[]
-}
-
-const VARIANT_CONFIGS: Record<string, VariantConfig> = {
-  jersey: {
-    sizes: ["YS", "YM", "YL", "S", "M", "L", "XL", "2XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "White", hex: "#ffffff" },
-    ],
-  },
-  apparel: {
-    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Navy", hex: "#1e3a5f" },
-      { name: "Gray", hex: "#6b7280" },
-    ],
-  },
-  accessories: {
-    sizes: ["One Size"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Red", hex: "#dc2626" },
-    ],
-  },
-  equipment: {
-    sizes: ["Standard"],
-    colors: [],
-  },
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -105,12 +95,13 @@ export default function ProductDetailPage() {
 
   const { addToBag } = useBag()
 
-  // Get variant config based on product category
-  const variantConfig = product ? VARIANT_CONFIGS[product.category] || VARIANT_CONFIGS.equipment : null
+  // Get available variants from API data
+  const availableSizes = product?.available_sizes || []
+  const availableColors = product?.available_colors || []
 
   // Check if variants are required and selected
-  const needsSize = variantConfig && variantConfig.sizes.length > 1
-  const needsColor = variantConfig && variantConfig.colors.length > 0
+  const needsSize = availableSizes.length > 0
+  const needsColor = availableColors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
 
   useEffect(() => {
@@ -257,6 +248,7 @@ export default function ProductDetailPage() {
                     fill
                     className="object-cover"
                     priority
+                    unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                   />
                   {/* Navigation Arrows */}
                   {productImages.length > 1 && (
@@ -314,7 +306,7 @@ export default function ProductDetailPage() {
                     }`}
                     aria-label={`View image ${index + 1}`}
                   >
-                    <Image src={img.url} alt={img.alt} fill className="object-cover" />
+                    <Image src={img.url} alt={img.alt} fill className="object-cover" unoptimized={shouldSkipImageOptimization(img.url)} />
                   </button>
                 ))}
               </div>
@@ -369,7 +361,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Variant Selection - Size */}
-            {variantConfig && variantConfig.sizes.length > 1 && (
+            {availableSizes.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wider">Size</h2>
@@ -378,7 +370,7 @@ export default function ProductDetailPage() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {variantConfig.sizes.map((size) => (
+                  {availableSizes.map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
@@ -401,7 +393,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Variant Selection - Color */}
-            {variantConfig && variantConfig.colors.length > 0 && (
+            {availableColors.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wider">
@@ -412,7 +404,7 @@ export default function ProductDetailPage() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {variantConfig.colors.map((color) => (
+                  {availableColors.map((color) => (
                     <button
                       key={color.name}
                       onClick={() => setSelectedColor(color.name)}
@@ -421,7 +413,7 @@ export default function ProductDetailPage() {
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
                           : "hover:scale-110"
                       }`}
-                      style={{ backgroundColor: color.hex }}
+                      style={{ backgroundColor: color.hex || '#808080' }}
                       aria-label={color.name}
                       aria-pressed={selectedColor === color.name}
                       title={color.name}

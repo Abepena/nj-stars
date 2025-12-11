@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
 import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleton"
 import { ProductQuickView } from "@/components/product-quick-view"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 import { useBag } from "@/lib/bag"
 
 interface ProductImage {
@@ -266,6 +267,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
             alt={product.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
+            unoptimized={shouldSkipImageOptimization(product.primary_image_url || product.image_url)}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center p-8 relative">

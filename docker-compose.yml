@@ -51,6 +51,10 @@ services:
       META_APP_ID: ${META_APP_ID:-}
       META_APP_SECRET: ${META_APP_SECRET:-}
       FRONTEND_URL: http://localhost:3000
+      # Printify POD Integration
+      PRINTIFY_API_KEY: ${PRINTIFY_API_KEY:-}
+      PRINTIFY_SHOP_ID: ${PRINTIFY_SHOP_ID:-}
+      PRINTIFY_WEBHOOK_SECRET: ${PRINTIFY_WEBHOOK_SECRET:-}
       # Email settings (MailHog for development)
       EMAIL_HOST: mailhog
       EMAIL_PORT: 1025
