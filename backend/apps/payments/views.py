@@ -11,7 +11,11 @@ from django.db import transaction
 import stripe
 import uuid
 
-from .models import Product, SubscriptionPlan, Payment, Bag, BagItem, Order
+from .models import Product, SubscriptionPlan, Payment, Bag, BagItem, Order, OrderItem
+from .services.printify_client import get_printify_client, PrintifyError
+import logging
+
+logger = logging.getLogger(__name__)
 from .serializers import (
     ProductSerializer,
     SubscriptionPlanSerializer,
@@ -259,7 +263,7 @@ def stripe_webhook(request):
         session = event['data']['object']
         metadata = session.get('metadata', {})
 
-        # Create or update payment record
+        # Create payment record
         user_id = metadata.get('user_id')
         Payment.objects.create(
             user_id=user_id if user_id else None,
@@ -270,20 +274,82 @@ def stripe_webhook(request):
             payment_method=session.get('payment_method_types', ['card'])[0],
         )
 
-        # Remove only the purchased items from bag (not entire bag)
+        # Get bag items being purchased
         item_ids_str = metadata.get('item_ids', '')
         bag_id = metadata.get('bag_id')
         session_key = metadata.get('session_key')
 
+        # Create Order record from bag checkout
         if item_ids_str and bag_id:
-            # Parse item IDs and remove only those items
             item_ids = [int(id) for id in item_ids_str.split(',') if id]
             if item_ids:
+                try:
+                    bag_items = BagItem.objects.filter(id__in=item_ids, bag_id=bag_id).select_related('product')
+                    if bag_items.exists() and user_id:
+                        # Get shipping details from Stripe session
+                        shipping = session.get('shipping_details', {})
+                        shipping_address = shipping.get('address', {}) if shipping else {}
+                        customer = session.get('customer_details', {})
+
+                        # Create Order
+                        with transaction.atomic():
+                            order = Order.objects.create(
+                                user_id=user_id,
+                                stripe_session_id=session.get('id', ''),
+                                stripe_payment_intent_id=session.get('payment_intent', ''),
+                                status='paid',
+                                subtotal=session.get('amount_subtotal', 0) / 100,
+                                shipping=session.get('total_details', {}).get('amount_shipping', 0) / 100,
+                                tax=session.get('total_details', {}).get('amount_tax', 0) / 100,
+                                total=session.get('amount_total', 0) / 100,
+                                shipping_name=shipping.get('name', '') if shipping else customer.get('name', ''),
+                                shipping_email=customer.get('email', ''),
+                                shipping_address_line1=shipping_address.get('line1', ''),
+                                shipping_address_line2=shipping_address.get('line2', '') or '',
+                                shipping_city=shipping_address.get('city', ''),
+                                shipping_state=shipping_address.get('state', ''),
+                                shipping_zip=shipping_address.get('postal_code', ''),
+                                shipping_country=shipping_address.get('country', 'US'),
+                            )
+
+                            # Create OrderItems from bag items
+                            pod_items = []
+                            for bag_item in bag_items:
+                                order_item = OrderItem.objects.create(
+                                    order=order,
+                                    product=bag_item.product,
+                                    product_name=bag_item.product.name,
+                                    product_price=bag_item.product.price,
+                                    selected_size=bag_item.selected_size or '',
+                                    selected_color=bag_item.selected_color or '',
+                                    quantity=bag_item.quantity,
+                                    fulfillment_type=bag_item.product.fulfillment_type,
+                                )
+
+                                # Track POD items for Printify submission
+                                if bag_item.product.is_pod:
+                                    pod_items.append(order_item)
+
+                                # Update stock for local products
+                                if bag_item.product.manage_inventory:
+                                    bag_item.product.stock_quantity = max(
+                                        0, bag_item.product.stock_quantity - bag_item.quantity
+                                    )
+                                    bag_item.product.save()
+
+                            # Submit POD items to Printify (if any)
+                            if pod_items:
+                                _submit_printify_order(order, pod_items)
+
+                            logger.info(f"Order {order.order_number} created with {len(bag_items)} items ({len(pod_items)} POD)")
+
+                except Exception as e:
+                    logger.error(f"Error creating order: {e}")
+                    # Don't fail the webhook - payment was still successful
+
+                # Remove purchased items from bag
                 BagItem.objects.filter(id__in=item_ids, bag_id=bag_id).delete()
 
-                # Update product stock quantities
-                # Note: In production, this should be done atomically
-                # but for now we'll update after bag items are removed
         elif user_id:
             # Fallback: clear entire bag for authenticated user
             Bag.objects.filter(user_id=user_id).delete()
@@ -306,6 +372,78 @@ def stripe_webhook(request):
                     pass  # Log this in production
 
     return HttpResponse(status=200)
+
+
+def _submit_printify_order(order: Order, pod_items: list):
+    """
+    Submit POD items to Printify API.
+
+    This creates an order in Printify that will be fulfilled and shipped
+    directly to the customer. The order goes to "On Hold" status initially.
+    """
+    printify = get_printify_client()
+    if not printify:
+        logger.warning(f"Printify not configured, skipping order submission for {order.order_number}")
+        return
+
+    try:
+        # Build line items for Printify
+        line_items = []
+        for item in pod_items:
+            product = item.product
+            if not product.printify_product_id or not product.printify_variant_id:
+                logger.warning(f"Product {product.name} missing Printify IDs, skipping")
+                continue
+
+            line_items.append({
+                'product_id': product.printify_product_id,
+                'variant_id': int(product.printify_variant_id),
+                'quantity': item.quantity,
+            })
+
+        if not line_items:
+            logger.warning(f"No valid POD items for Printify order {order.order_number}")
+            return
+
+        # Build shipping address for Printify
+        shipping_address = {
+            'first_name': order.shipping_name.split()[0] if order.shipping_name else '',
+            'last_name': ' '.join(order.shipping_name.split()[1:]) if order.shipping_name else '',
+            'email': order.shipping_email,
+            'address1': order.shipping_address_line1,
+            'address2': order.shipping_address_line2 or '',
+            'city': order.shipping_city,
+            'region': order.shipping_state,
+            'zip': order.shipping_zip,
+            'country': order.shipping_country,
+        }
+
+        # Create Printify order
+        printify_response = printify.create_order(
+            line_items=line_items,
+            shipping_address=shipping_address,
+            external_id=order.order_number,
+        )
+
+        # Save Printify order ID
+        order.printify_order_id = printify_response.get('id', '')
+        order.save()
+
+        # Update individual order items with Printify line item IDs
+        printify_line_items = printify_response.get('line_items', [])
+        for i, item in enumerate(pod_items):
+            if i < len(printify_line_items):
+                item.printify_line_item_id = printify_line_items[i].get('id', '')
+                item.save()
+
+        logger.info(f"Printify order created: {order.printify_order_id} for {order.order_number}")
+
+    except PrintifyError as e:
+        logger.error(f"Printify API error for {order.order_number}: {e}")
+        # Order was still paid successfully, just log the error
+        # Admin can manually submit to Printify if needed
+    except Exception as e:
+        logger.error(f"Unexpected error submitting to Printify for {order.order_number}: {e}")
 
 
 def get_or_create_bag(request):
@@ -679,6 +817,19 @@ def merge_bag(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_orders(request):
+    """
+    Get all orders for the authenticated user.
+
+    Returns a paginated list of orders with their items and tracking info.
+    """
+    orders = Order.objects.filter(user=request.user).prefetch_related('items', 'items__product')
+    serializer = OrderSerializer(orders, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
 @permission_classes([AllowAny])
 def get_order(request, order_number):
     """
@@ -701,3 +852,224 @@ def get_order(request, order_number):
             {'error': 'Order not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def calculate_shipping(request):
+    """
+    Calculate shipping costs for bag items.
+
+    Separates POD items (shipped via Printify) from local items (coach delivery).
+    Returns shipping breakdown showing each fulfillment type's cost.
+
+    Request body:
+    {
+        "item_ids": [1, 2, 3],  // Optional: specific bag items to calculate
+        "address": {            // Optional: for accurate Printify rates
+            "country": "US",
+            "state": "NJ",
+            "zip": "07030"
+        }
+    }
+    """
+    bag = get_or_create_bag(request)
+
+    if bag.item_count == 0:
+        return Response({
+            'pod_shipping': 0,
+            'local_shipping': 0,
+            'total_shipping': 0,
+            'breakdown': [],
+        })
+
+    item_ids = request.data.get('item_ids')
+    address = request.data.get('address', {})
+
+    # Get bag items
+    bag_items = bag.items.select_related('product').all()
+    if item_ids:
+        bag_items = bag_items.filter(id__in=item_ids)
+
+    # Separate by fulfillment type
+    pod_items = []
+    local_items = []
+
+    for item in bag_items:
+        if item.product.is_pod:
+            pod_items.append(item)
+        else:
+            local_items.append(item)
+
+    # Calculate shipping
+    pod_shipping = 0
+    local_shipping = 0
+    breakdown = []
+
+    # POD items - use Printify shipping rates or flat rate estimate
+    if pod_items:
+        # Try to get real Printify rates if address provided
+        printify = get_printify_client()
+        if printify and address.get('country'):
+            try:
+                # Build line items for Printify shipping calculation
+                line_items = []
+                for item in pod_items:
+                    if item.product.printify_product_id and item.product.printify_variant_id:
+                        line_items.append({
+                            'product_id': item.product.printify_product_id,
+                            'variant_id': int(item.product.printify_variant_id),
+                            'quantity': item.quantity,
+                        })
+
+                if line_items:
+                    shipping_result = printify.calculate_shipping(
+                        line_items=line_items,
+                        address={
+                            'country': address.get('country', 'US'),
+                            'region': address.get('state', ''),
+                            'zip': address.get('zip', ''),
+                        }
+                    )
+                    # Use standard shipping option
+                    if shipping_result.get('standard'):
+                        pod_shipping = float(shipping_result['standard']) / 100  # cents to dollars
+            except Exception as e:
+                logger.warning(f"Printify shipping calculation failed: {e}")
+                # Fall back to flat rate estimate
+
+        # Fallback: flat rate estimate for POD
+        if pod_shipping == 0:
+            # Typical Printify apparel: ~$4.50 first item, +$1.50 each additional
+            total_pod_quantity = sum(item.quantity for item in pod_items)
+            pod_shipping = 4.50 + max(0, total_pod_quantity - 1) * 1.50
+
+        breakdown.append({
+            'type': 'pod',
+            'label': 'Print on Demand Shipping',
+            'description': f'{len(pod_items)} item(s) via Printify',
+            'amount': round(pod_shipping, 2),
+        })
+
+    # Local items - free coach delivery
+    if local_items:
+        local_shipping = 0
+        breakdown.append({
+            'type': 'local',
+            'label': 'Coach Delivery',
+            'description': f'{len(local_items)} item(s) at next practice',
+            'amount': 0,
+        })
+
+    total_shipping = pod_shipping + local_shipping
+
+    return Response({
+        'pod_shipping': round(pod_shipping, 2),
+        'local_shipping': round(local_shipping, 2),
+        'total_shipping': round(total_shipping, 2),
+        'breakdown': breakdown,
+        'pod_item_count': len(pod_items),
+        'local_item_count': len(local_items),
+    })
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def printify_webhook(request):
+    """
+    Handle Printify webhook events for order tracking updates.
+
+    Printify sends webhook events for various order lifecycle events:
+    - order:created - Order received by Printify
+    - order:sent-to-production - Order started production
+    - order:shipment:created - Order shipped with tracking info
+    - order:shipment:delivered - Order delivered
+
+    Configure webhook in Printify Dashboard:
+    Settings → Webhooks → Add endpoint
+    URL: https://api.njstarselite.com/api/payments/webhook/printify/
+    """
+    import hashlib
+    import hmac
+
+    # Verify webhook signature (optional but recommended)
+    webhook_secret = getattr(settings, 'PRINTIFY_WEBHOOK_SECRET', '')
+    if webhook_secret:
+        signature = request.headers.get('X-Printify-Signature', '')
+        payload_bytes = request.body
+        expected_signature = hmac.new(
+            webhook_secret.encode('utf-8'),
+            payload_bytes,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature, expected_signature):
+            logger.warning("Printify webhook signature verification failed")
+            return HttpResponse(status=401)
+
+    try:
+        payload = request.data
+        event_type = payload.get('type', '')
+        resource = payload.get('resource', {})
+
+        logger.info(f"Printify webhook received: {event_type}")
+
+        # Find the order by Printify order ID
+        printify_order_id = resource.get('id', '')
+        if not printify_order_id:
+            logger.warning("Printify webhook missing order ID")
+            return HttpResponse(status=200)
+
+        try:
+            order = Order.objects.get(printify_order_id=printify_order_id)
+        except Order.DoesNotExist:
+            # Try finding by external_id (our order number)
+            external_id = resource.get('external_id', '')
+            if external_id:
+                try:
+                    order = Order.objects.get(order_number=external_id)
+                except Order.DoesNotExist:
+                    logger.warning(f"Order not found for Printify ID {printify_order_id}")
+                    return HttpResponse(status=200)
+            else:
+                logger.warning(f"Order not found for Printify ID {printify_order_id}")
+                return HttpResponse(status=200)
+
+        # Handle different event types
+        if event_type == 'order:sent-to-production':
+            order.status = 'processing'
+            order.save()
+            logger.info(f"Order {order.order_number} moved to processing")
+
+        elif event_type == 'order:shipment:created':
+            # Extract shipment details
+            shipments = resource.get('shipments', [])
+            if shipments:
+                shipment = shipments[0]  # Get first shipment
+                tracking_number = shipment.get('tracking_number', '')
+                tracking_url = shipment.get('tracking_url', '')
+                carrier = shipment.get('carrier', '')
+
+                order.tracking_number = tracking_number
+                order.tracking_url = tracking_url
+                order.status = 'shipped'
+                order.save()
+
+                logger.info(f"Order {order.order_number} shipped via {carrier}: {tracking_number}")
+
+        elif event_type == 'order:shipment:delivered':
+            order.status = 'delivered'
+            order.save()
+            logger.info(f"Order {order.order_number} delivered")
+
+        elif event_type == 'order:canceled':
+            order.status = 'canceled'
+            order.save()
+            logger.info(f"Order {order.order_number} canceled in Printify")
+
+        return HttpResponse(status=200)
+
+    except Exception as e:
+        logger.error(f"Error processing Printify webhook: {e}")
+        return HttpResponse(status=500)

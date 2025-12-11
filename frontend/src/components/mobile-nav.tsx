@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Menu, Sun, Moon } from "lucide-react"
+import { useSession, signOut } from "next-auth/react"
+import { Menu, Sun, Moon, LayoutDashboard, Users, CreditCard, Calendar, Settings, LogOut } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
+import { ThemeLogo } from "@/components/ui/theme-logo"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Sheet,
   SheetContent,
@@ -20,13 +22,22 @@ const navLinks = [
   { href: "/events", label: "Events" },
 ]
 
+// User menu items for authenticated users
+const userMenuItems = [
+  { href: "/portal/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/portal/children", label: "My Players", icon: Users },
+  { href: "/portal/billing", label: "Billing & Orders", icon: CreditCard },
+  { href: "#TODO-registrations", label: "My Registrations", icon: Calendar },
+  { href: "#TODO-settings", label: "Settings", icon: Settings },
+]
+
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [textLogo, setTextLogo] = useState("/brand/logos/Text Logo.svg")
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const { data: session, status } = useSession()
 
   // Only render this nav on small screens to avoid off-canvas overflow on desktop
   useEffect(() => {
@@ -37,25 +48,22 @@ export function MobileNav() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // Update logo based on theme (client-side only)
-  useEffect(() => {
-    const updateLogo = () => {
-      const isLight = document.documentElement.classList.contains("light")
-      setTextLogo(isLight ? "/brand/logos/Text Logo Light.svg" : "/brand/logos/Text Logo.svg")
-    }
-
-    updateLogo()
-
-    const observer = new MutationObserver(updateLogo)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    })
-
-    return () => observer.disconnect()
-  }, [])
-
   if (!isMobile) return null
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!session?.user?.name) return "U"
+    const names = session.user.name.split(" ")
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase()
+    }
+    return names[0][0].toUpperCase()
+  }
+
+  const handleSignOut = async () => {
+    setOpen(false)
+    await signOut({ callbackUrl: "/" })
+  }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -71,19 +79,38 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm">
         <SheetHeader className="border-b border-border pb-4">
-          <Link
-            href="/"
-            className="flex justify-center transition-opacity duration-200 ease-in-out hover:opacity-60"
-          >
-            <Image
-              src={textLogo}
-              alt="NJ Stars"
-              width={160}
-              height={50}
-            />
-          </Link>
+          <div className="flex justify-center" onClick={() => setOpen(false)}>
+            <ThemeLogo width={160} height={50} />
+          </div>
         </SheetHeader>
-        <nav className="flex flex-col gap-4 mt-8">
+
+        {/* User Profile Section (if authenticated) */}
+        {session && (
+          <div className="py-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage
+                  src={session.user?.image || undefined}
+                  alt={session.user?.name || "User"}
+                />
+                <AvatarFallback className="bg-primary text-primary-foreground text-lg font-medium">
+                  {getUserInitials()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-foreground">
+                  {session.user?.name || "User"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {session.user?.email}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <nav className="flex flex-col gap-2 mt-6">
+          {/* Main Navigation Links */}
           {navLinks.map((link) => {
             const isActive = pathname === link.href
             return (
@@ -100,7 +127,34 @@ export function MobileNav() {
             )
           })}
 
+          {/* User Menu Items (if authenticated) */}
+          {session && (
+            <>
+              <div className="my-2 h-px bg-border" />
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                My Account
+              </p>
+              {userMenuItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 text-base font-medium hover:text-primary transition-colors py-2"
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className={isActive ? "text-primary" : ""}>
+                      {item.label}
+                    </span>
+                  </Link>
+                )
+              })}
+            </>
+          )}
+
           {/* Theme Toggle */}
+          <div className="my-2 h-px bg-border" />
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="flex items-center justify-between w-full py-2 text-lg font-medium hover:text-primary transition-colors"
@@ -115,15 +169,32 @@ export function MobileNav() {
             )}
           </button>
 
-          <div className="pt-4 border-t border-border">
-            <Link href="/portal/login" onClick={() => setOpen(false)}>
+          {/* Auth Section */}
+          <div className="pt-4 border-t border-border mt-2">
+            {status === "loading" ? (
+              <div className="h-10 bg-muted animate-pulse rounded-md" />
+            ) : session ? (
               <Button
                 variant="ghost"
-                className="w-full text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out"
+                onClick={handleSignOut}
+                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
               >
-                Sign In
+                <LogOut className="mr-2 h-5 w-5" />
+                Sign Out
               </Button>
-            </Link>
+            ) : (
+              <Link
+                href={`/portal/login?next=${encodeURIComponent(pathname || "/")}`}
+                onClick={() => setOpen(false)}
+              >
+                <Button
+                  variant="ghost"
+                  className="w-full text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out"
+                >
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </nav>
       </SheetContent>

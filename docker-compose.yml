@@ -51,6 +51,10 @@ services:
       META_APP_ID: ${META_APP_ID:-}
       META_APP_SECRET: ${META_APP_SECRET:-}
       FRONTEND_URL: http://localhost:3000
+      # Email settings (MailHog for development)
+      EMAIL_HOST: mailhog
+      EMAIL_PORT: 1025
+      EMAIL_USE_TLS: "false"
     volumes:
       - ./backend:/app
       - backend_cache:/app/__pycache__
@@ -74,11 +78,12 @@ services:
       target: development
     container_name: njstars-frontend
     restart: unless-stopped
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "rm -rf node_modules/@next/swc-darwin* 2>/dev/null; npm install --force && npm run dev"
     ports:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      INTERNAL_API_URL: http://backend:8000
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret-change-in-production}
@@ -91,6 +96,19 @@ services:
       - /app/.next
     depends_on:
       - backend
+    networks:
+      - njstars-network
+
+  # MailHog - Email Testing Service
+  # Web UI: http://localhost:8025
+  # SMTP: localhost:1025
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: njstars-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP server
+      - "8025:8025"   # Web UI
     networks:
       - njstars-network
 

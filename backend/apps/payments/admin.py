@@ -100,8 +100,8 @@ class ProductAdminForm(forms.ModelForm):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     form = ProductAdminForm
-    list_display = ['name', 'price', 'category', 'stock_quantity', 'is_active', 'featured', 'image_count']
-    list_filter = ['category', 'is_active', 'featured', 'best_selling', 'on_sale']
+    list_display = ['name', 'price', 'category', 'fulfillment_badge', 'stock_display', 'is_active', 'featured', 'image_count']
+    list_filter = ['fulfillment_type', 'category', 'is_active', 'featured', 'best_selling', 'on_sale']
     search_fields = ['name', 'description']
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ['created_at', 'updated_at']
@@ -114,22 +114,30 @@ class ProductAdmin(admin.ModelAdmin):
         ('Pricing', {
             'fields': ('price', 'compare_at_price')
         }),
+        ('Fulfillment', {
+            'fields': ('fulfillment_type',),
+            'description': '''
+                <strong>POD (Print on Demand):</strong> Products fulfilled via Printify. Set Printify IDs below.<br/>
+                <strong>Local:</strong> Products delivered by coach at practice. Track inventory manually.
+            '''
+        }),
         ('Categorization & Status', {
             'fields': ('category', 'is_active', 'featured', 'best_selling', 'on_sale')
         }),
         ('Inventory', {
-            'fields': ('manage_inventory', 'stock_quantity')
+            'fields': ('manage_inventory', 'stock_quantity'),
+            'description': 'For POD products, set "Manage inventory" to OFF (Printify handles stock).'
         }),
         ('Bulk Image Upload', {
             'fields': ('bulk_images',),
             'description': 'Upload multiple images at once. For individual image settings (primary, alt text, order), use the Images section below.'
         }),
+        ('Printify Integration (for POD products)', {
+            'fields': ('printify_product_id', 'printify_variant_id'),
+            'description': 'Required for POD products. Get these IDs from your Printify dashboard.'
+        }),
         ('Stripe Integration', {
             'fields': ('stripe_price_id', 'stripe_product_id'),
-            'classes': ('collapse',)
-        }),
-        ('Printify Integration (Phase 2)', {
-            'fields': ('printify_product_id', 'printify_variant_id'),
             'classes': ('collapse',)
         }),
         ('Legacy Image', {
@@ -142,6 +150,30 @@ class ProductAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def fulfillment_badge(self, obj):
+        """Display a colored badge for fulfillment type"""
+        if obj.is_pod:
+            return format_html(
+                '<span style="background: #7c3aed; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px;">POD</span>'
+            )
+        return format_html(
+            '<span style="background: #059669; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px;">Local</span>'
+        )
+    fulfillment_badge.short_description = "Fulfillment"
+    fulfillment_badge.admin_order_field = "fulfillment_type"
+
+    def stock_display(self, obj):
+        """Display stock status with visual indicator"""
+        if not obj.manage_inventory:
+            return format_html('<span style="color: #7c3aed;">∞ POD</span>')
+        if obj.stock_quantity <= 0:
+            return format_html('<span style="color: #dc2626;">Out of Stock</span>')
+        if obj.stock_quantity <= 5:
+            return format_html('<span style="color: #f59e0b;">{} left</span>', obj.stock_quantity)
+        return format_html('<span style="color: #059669;">{}</span>', obj.stock_quantity)
+    stock_display.short_description = "Stock"
+    stock_display.admin_order_field = "stock_quantity"
 
     def image_count(self, obj):
         count = obj.images.count()

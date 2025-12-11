@@ -46,6 +46,8 @@ export interface ProductImage {
   sort_order: number
 }
 
+export type FulfillmentType = 'pod' | 'local'
+
 export interface Product {
   id: number
   name: string
@@ -53,9 +55,17 @@ export interface Product {
   description: string
   price: number
   compare_at_price?: number | null
+  // Fulfillment
+  fulfillment_type: FulfillmentType
+  is_pod: boolean
+  is_local: boolean
+  shipping_estimate: string
+  fulfillment_display: string
+  // Images
   image_url?: string
   primary_image_url?: string | null
   images: ProductImage[]
+  // Stock & Status
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -90,6 +100,51 @@ export interface Coach {
   specialties_list: string[]
   is_active: boolean
   order: number
+}
+
+export interface OrderItem {
+  id: number
+  product_name: string
+  product_price: number
+  quantity: number
+  total_price: number
+  product_image?: string | null
+  fulfillment_type: FulfillmentType
+  fulfillment_display: string
+  printify_line_item_id?: string
+}
+
+export interface Order {
+  id: number
+  order_number: string
+  status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'canceled' | 'refunded'
+  status_display: string
+  subtotal: number
+  shipping: number
+  tax: number
+  total: number
+  // Shipping address
+  shipping_name: string
+  shipping_email: string
+  shipping_address_line1: string
+  shipping_address_line2?: string
+  shipping_city: string
+  shipping_state: string
+  shipping_zip: string
+  shipping_country: string
+  // Tracking info
+  tracking_number?: string
+  tracking_url?: string
+  has_tracking: boolean
+  // Printify info
+  printify_order_id?: string
+  has_pod_items: boolean
+  has_local_items: boolean
+  // Items and metadata
+  items: OrderItem[]
+  notes?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface LoginCredentials {

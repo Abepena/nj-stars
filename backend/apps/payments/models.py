@@ -9,6 +9,12 @@ import secrets
 
 User = get_user_model()
 
+# Fulfillment type choices (module-level for reuse across models)
+FULFILLMENT_TYPE_CHOICES = [
+    ('pod', 'Print on Demand (Printify)'),
+    ('local', 'Local/Vendor (Coach Delivery)'),
+]
+
 
 class SubscriptionPlan(models.Model):
     """Subscription plans for recurring memberships
@@ -159,7 +165,7 @@ class Payment(models.Model):
 
 
 class Product(models.Model):
-    """Products (merch) with Printify integration for Phase 2"""
+    """Products (merch) with Printify integration for POD and local vendor products"""
 
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True, blank=True)
@@ -175,24 +181,35 @@ class Product(models.Model):
         help_text="Original price for showing discounts"
     )
 
+    # Fulfillment type - determines how product is fulfilled
+    fulfillment_type = models.CharField(
+        max_length=20,
+        choices=FULFILLMENT_TYPE_CHOICES,
+        default='local',
+        help_text="How this product is fulfilled: POD via Printify or local coach delivery"
+    )
+
     # Stripe
     stripe_price_id = models.CharField(max_length=255, blank=True)
     stripe_product_id = models.CharField(max_length=255, blank=True)
 
-    # Print-on-Demand integration (Phase 2 - Printify)
+    # Print-on-Demand integration (Printify) - used when fulfillment_type='pod'
     printify_product_id = models.CharField(
         max_length=100,
         blank=True,
-        help_text="Printify Product ID (Phase 2)"
+        help_text="Printify Product ID - required for POD products"
     )
     printify_variant_id = models.CharField(
         max_length=100,
         blank=True,
-        help_text="Printify Variant ID (Phase 2)"
+        help_text="Printify Variant ID - required for POD products"
     )
 
-    # Inventory management (simple for MVP, Printify sync in Phase 2)
-    manage_inventory = models.BooleanField(default=True, help_text="Track inventory locally")
+    # Inventory management - POD products should set manage_inventory=False
+    manage_inventory = models.BooleanField(
+        default=True,
+        help_text="Track inventory locally. Set False for POD products (always in stock)"
+    )
     stock_quantity = models.IntegerField(default=0)
 
     # Categorization
@@ -242,6 +259,30 @@ class Product(models.Model):
         if not self.manage_inventory:
             return True
         return self.stock_quantity > 0
+
+    @property
+    def is_pod(self):
+        """Check if product is fulfilled via Print on Demand (Printify)"""
+        return self.fulfillment_type == 'pod'
+
+    @property
+    def is_local(self):
+        """Check if product is fulfilled locally (coach delivery)"""
+        return self.fulfillment_type == 'local'
+
+    @property
+    def shipping_estimate(self):
+        """Get estimated shipping time based on fulfillment type"""
+        if self.is_pod:
+            return "5-10 business days"
+        return "Coach delivery at next practice"
+
+    @property
+    def fulfillment_display(self):
+        """Human-readable fulfillment type for frontend display"""
+        if self.is_pod:
+            return "Made to Order"
+        return "Coach Delivery"
 
     @property
     def primary_image_url(self):
@@ -411,14 +452,26 @@ class OrderItem(models.Model):
     product_name = models.CharField(max_length=200)
     product_price = models.DecimalField(max_digits=10, decimal_places=2)
 
+    # Variant selections
+    selected_size = models.CharField(max_length=50, blank=True)
+    selected_color = models.CharField(max_length=50, blank=True)
+
     # Quantity
     quantity = models.IntegerField(default=1)
 
-    # Print-on-Demand tracking (Phase 2)
+    # Fulfillment type snapshot (matches product at time of purchase)
+    fulfillment_type = models.CharField(
+        max_length=20,
+        choices=FULFILLMENT_TYPE_CHOICES,
+        default='local',
+        help_text="Fulfillment type at time of purchase"
+    )
+
+    # Print-on-Demand tracking
     printify_line_item_id = models.CharField(
         max_length=100,
         blank=True,
-        help_text="Printify Line Item ID (Phase 2)"
+        help_text="Printify Line Item ID for POD products"
     )
 
     class Meta:

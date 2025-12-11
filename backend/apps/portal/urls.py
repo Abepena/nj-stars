@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserProfileViewSet, PlayerViewSet, DuesAccountViewSet,
     SavedPaymentMethodViewSet, PromoCreditViewSet, EventCheckInViewSet,
-    parent_dashboard, staff_dashboard, waiver_status, sign_waiver
+    parent_dashboard, staff_dashboard, waiver_status, sign_waiver,
+    social_auth
 )
 
 router = DefaultRouter()
@@ -20,4 +21,5 @@ urlpatterns = [
     path('dashboard/staff/', staff_dashboard, name='staff-dashboard'),
     path('waiver/status/', waiver_status, name='waiver-status'),
     path('waiver/sign/', sign_waiver, name='waiver-sign'),
+    path('social-auth/', social_auth, name='social-auth'),
 ]

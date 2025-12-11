@@ -24,6 +24,7 @@ from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
 from apps.cms.api import api_router as wagtail_api_router
+from apps.portal.views import confirm_email
 
 urlpatterns = [
     # Django Admin
@@ -43,6 +44,12 @@ urlpatterns = [
     path("api/payments/", include("apps.payments.urls")),
     path("api/portal/", include("apps.portal.urls")),
     path("api/", include("apps.core.urls")),
+
+    # Authentication API (dj-rest-auth)
+    path("api/auth/", include("dj_rest_auth.urls")),
+    # Custom email confirmation view (must be before registration urls to override)
+    path("api/auth/registration/account-confirm-email/<str:key>/", confirm_email, name="account_confirm_email"),
+    path("api/auth/registration/", include("dj_rest_auth.registration.urls")),
 
     # Wagtail pages - must be last
     path("cms/", include(wagtail_urls)),

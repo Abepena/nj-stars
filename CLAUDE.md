@@ -119,7 +119,9 @@ make prod-up            # Start production services
 make prod-down          # Stop production services
 ```
 
-### Local Development (Without Docker)
+### Local Development (Without Docker) - Not Recommended
+
+> **Note:** Docker is the recommended development environment. Only use local development if Docker is unavailable or having issues.
 
 **Backend:**
 ```bash
@@ -548,3 +550,32 @@ git push origin main
 - **Architecture:** Check `documentation/ARCHITECTURE.md`
 - **Meeting Notes:** Check `documentation/MEETING NOTES/`
 - **Git Workflow:** Check `documentation/GIT_WORKFLOW.md`
+
+---
+
+## Development Guidelines
+
+### Docker-First Development
+Always check for running Docker containers before starting development work:
+```bash
+docker ps  # Check running containers
+make up    # Start if not running
+```
+Work inside Docker containers for consistency with production environment.
+
+### TODO Labels for Incomplete Features
+Use `#TODO` comments in code for features that are:
+- Partially implemented
+- Waiting to be wired up
+- Missing full functionality
+
+This makes incomplete work easily searchable:
+```bash
+grep -r "#TODO" frontend/src/
+grep -r "#TODO" backend/apps/
+```
+
+### Current #TODO Items
+Search the codebase for `#TODO` to find all pending implementation items. Common patterns:
+- `#TODO-registrations` - Portal registrations page
+- `#TODO-settings` - Portal settings page

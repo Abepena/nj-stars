@@ -6,12 +6,15 @@ from .views import (
     create_product_checkout,
     create_event_checkout,
     stripe_webhook,
+    printify_webhook,
     BagAPIView,
     BagItemAPIView,
     bag_checkout,
     merge_bag,
     get_checkout_session,
     get_order,
+    get_user_orders,
+    calculate_shipping,
 )
 
 router = DefaultRouter()
@@ -29,8 +32,11 @@ urlpatterns = [
     path('bag/', BagAPIView.as_view(), name='bag'),
     path('bag/items/<int:item_id>/', BagItemAPIView.as_view(), name='bag-item'),
     path('bag/merge/', merge_bag, name='bag-merge'),
+    path('bag/shipping/', calculate_shipping, name='bag-shipping'),
     # Webhooks
     path('webhook/stripe/', stripe_webhook, name='stripe-webhook'),
-    # Order lookup
+    path('webhook/printify/', printify_webhook, name='printify-webhook'),
+    # Order endpoints
+    path('orders/', get_user_orders, name='user-orders'),
     path('orders/<str:order_number>/', get_order, name='order-detail'),
 ]

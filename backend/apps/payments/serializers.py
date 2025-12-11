@@ -30,9 +30,13 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    """Serializer for Product model"""
+    """Serializer for Product model with fulfillment type support"""
 
     in_stock = serializers.ReadOnlyField()
+    is_pod = serializers.ReadOnlyField()
+    is_local = serializers.ReadOnlyField()
+    shipping_estimate = serializers.ReadOnlyField()
+    fulfillment_display = serializers.ReadOnlyField()
     primary_image_url = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
 
@@ -71,15 +75,24 @@ class ProductSerializer(serializers.ModelSerializer):
             'price',
             'compare_at_price',
             'category',
+            # Fulfillment fields
+            'fulfillment_type',
+            'is_pod',
+            'is_local',
+            'shipping_estimate',
+            'fulfillment_display',
+            # Images
             'image_url',
             'primary_image_url',
             'images',
+            # Status
             'is_active',
             'featured',
             'best_selling',
             'on_sale',
             'stock_quantity',
             'in_stock',
+            # Timestamps
             'created_at',
             'updated_at',
         ]
@@ -212,9 +225,10 @@ class UpdateBagItemSerializer(serializers.Serializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    """Serializer for order items"""
+    """Serializer for order items with fulfillment info"""
 
     product_image = serializers.SerializerMethodField()
+    fulfillment_display = serializers.SerializerMethodField()
     total_price = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
     )
@@ -225,24 +239,38 @@ class OrderItemSerializer(serializers.ModelSerializer):
             'id',
             'product_name',
             'product_price',
+            'selected_size',
+            'selected_color',
             'quantity',
             'total_price',
             'product_image',
+            'fulfillment_type',
+            'fulfillment_display',
+            'printify_line_item_id',
         ]
         read_only_fields = ['id']
 
     def get_product_image(self, obj):
         """Get product image URL if product still exists"""
         if obj.product:
-            return obj.product.image_url
+            return obj.product.primary_image_url
         return None
+
+    def get_fulfillment_display(self, obj):
+        """Get human-readable fulfillment type"""
+        if obj.fulfillment_type == 'pod':
+            return 'Made to Order'
+        return 'Coach Delivery'
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """Serializer for Order model"""
+    """Serializer for Order model with tracking support"""
 
     items = OrderItemSerializer(many=True, read_only=True)
     status_display = serializers.SerializerMethodField()
+    has_tracking = serializers.SerializerMethodField()
+    has_pod_items = serializers.SerializerMethodField()
+    has_local_items = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -255,6 +283,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'shipping',
             'tax',
             'total',
+            # Shipping address
             'shipping_name',
             'shipping_email',
             'shipping_address_line1',
@@ -263,7 +292,17 @@ class OrderSerializer(serializers.ModelSerializer):
             'shipping_state',
             'shipping_zip',
             'shipping_country',
+            # Tracking info
+            'tracking_number',
+            'tracking_url',
+            'has_tracking',
+            # Printify info
+            'printify_order_id',
+            'has_pod_items',
+            'has_local_items',
+            # Items and timestamps
             'items',
+            'notes',
             'created_at',
             'updated_at',
         ]
@@ -272,3 +311,15 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_status_display(self, obj):
         """Return human-readable status"""
         return obj.get_status_display()
+
+    def get_has_tracking(self, obj):
+        """Check if order has tracking information"""
+        return bool(obj.tracking_number and obj.tracking_url)
+
+    def get_has_pod_items(self, obj):
+        """Check if order contains POD items"""
+        return obj.items.filter(product__fulfillment_type='pod').exists()
+
+    def get_has_local_items(self, obj):
+        """Check if order contains local delivery items"""
+        return obj.items.filter(product__fulfillment_type='local').exists()

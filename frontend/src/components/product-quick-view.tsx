@@ -62,6 +62,8 @@ interface ProductImage {
   sort_order: number
 }
 
+type FulfillmentType = 'pod' | 'local'
+
 interface Product {
   id: number
   name: string
@@ -69,9 +71,17 @@ interface Product {
   description: string
   price: string
   compare_at_price: string | null
+  // Fulfillment
+  fulfillment_type?: FulfillmentType
+  is_pod?: boolean
+  is_local?: boolean
+  shipping_estimate?: string
+  fulfillment_display?: string
+  // Images
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  // Stock & Status
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -257,11 +267,14 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
               {product.description}
             </p>
 
-            <div className="flex items-center gap-3 text-sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              {/* Stock Status */}
               <div className="flex items-center gap-2">
                 <div
                   className={`w-3 h-3 rounded-full ${
-                    product.stock_quantity > 15
+                    product.is_pod
+                      ? "bg-violet-500"
+                      : product.stock_quantity > 15
                       ? "bg-success"
                       : product.stock_quantity > 5
                       ? "bg-warning"
@@ -272,14 +285,18 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                 />
                 <span
                   className={
-                    product.stock_quantity === 0
+                    product.is_pod
+                      ? "text-violet-500 font-medium"
+                      : product.stock_quantity === 0
                       ? "text-destructive font-semibold"
                       : product.stock_quantity <= 5
                       ? "text-accent font-semibold"
                       : "text-foreground"
                   }
                 >
-                  {product.stock_quantity > 15
+                  {product.is_pod
+                    ? "Made to Order"
+                    : product.stock_quantity > 15
                     ? "In Stock"
                     : product.stock_quantity > 5
                     ? "⚡ Limited Drop"
@@ -288,6 +305,18 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                     : "Out of Stock"}
                 </span>
               </div>
+
+              {/* Fulfillment / Shipping Info */}
+              {product.shipping_estimate && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span>·</span>
+                  {product.is_pod ? (
+                    <span>Ships in {product.shipping_estimate}</span>
+                  ) : (
+                    <span className="text-emerald-500 font-medium">{product.shipping_estimate}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {product.stock_quantity > 0 && product.stock_quantity <= 5 && (

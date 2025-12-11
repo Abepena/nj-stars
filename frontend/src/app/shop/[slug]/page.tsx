@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft, Truck, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -22,6 +22,8 @@ interface ProductImage {
   sort_order: number
 }
 
+type FulfillmentType = 'pod' | 'local'
+
 interface Product {
   id: number
   name: string
@@ -38,6 +40,12 @@ interface Product {
   featured: boolean
   best_selling?: boolean
   on_sale?: boolean
+  // Fulfillment fields
+  fulfillment_type?: FulfillmentType
+  is_pod?: boolean
+  is_local?: boolean
+  shipping_estimate?: string
+  fulfillment_display?: string
 }
 
 // Variant configuration - mockup data for now
@@ -440,40 +448,67 @@ export default function ProductDetailPage() {
 
             {/* Stock Status with Marketing Language */}
             <div className="mb-6">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    product.stock_quantity > 15
-                      ? "bg-success"
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {/* Stock indicator */}
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      product.is_pod
+                        ? "bg-violet-500"
+                        : product.stock_quantity > 15
+                        ? "bg-success"
+                        : product.stock_quantity > 5
+                        ? "bg-warning"
+                        : product.stock_quantity > 0
+                        ? "bg-accent animate-pulse"
+                        : "bg-destructive"
+                    }`}
+                  />
+                  <span
+                    className={
+                      product.is_pod
+                        ? "text-violet-500 font-medium"
+                        : product.stock_quantity === 0
+                        ? "text-destructive font-semibold"
+                        : product.stock_quantity <= 5
+                        ? "text-accent font-semibold"
+                        : "text-foreground"
+                    }
+                  >
+                    {product.is_pod
+                      ? "Made to Order"
+                      : product.stock_quantity > 15
+                      ? "In Stock"
                       : product.stock_quantity > 5
-                      ? "bg-warning"
+                      ? "⚡ Limited Drop"
                       : product.stock_quantity > 0
-                      ? "bg-accent animate-pulse"
-                      : "bg-destructive"
-                  }`}
-                />
-                <span
-                  className={
-                    product.stock_quantity === 0
-                      ? "text-destructive font-semibold"
-                      : product.stock_quantity <= 5
-                      ? "text-accent font-semibold"
-                      : "text-foreground"
-                  }
-                >
-                  {product.stock_quantity > 15
-                    ? "In Stock"
-                    : product.stock_quantity > 5
-                    ? "⚡ Limited Drop"
-                    : product.stock_quantity > 0
-                    ? "🔥 Almost Gone!"
-                    : "Out of Stock"}
-                </span>
+                      ? "🔥 Almost Gone!"
+                      : "Out of Stock"}
+                  </span>
+                </div>
+
+                {/* Shipping estimate */}
+                {product.shipping_estimate && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>·</span>
+                    {product.is_pod ? (
+                      <span className="flex items-center gap-1.5">
+                        <Truck className="w-4 h-4" />
+                        Ships in {product.shipping_estimate}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-emerald-500 font-medium">
+                        <Package className="w-4 h-4" />
+                        {product.shipping_estimate}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Urgency Banner - no exact stock counts shown */}
-            {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+            {/* Urgency Banner - only show for local products with limited stock (POD is always available) */}
+            {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
               <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 mb-6">
                 <p className="text-sm text-accent font-semibold flex items-center gap-2">
                   <span className="animate-pulse">🔥</span>
@@ -481,7 +516,7 @@ export default function ProductDetailPage() {
                 </p>
               </div>
             )}
-            {product.stock_quantity > 5 && product.stock_quantity <= 15 && (
+            {!product.is_pod && product.stock_quantity > 5 && product.stock_quantity <= 15 && (
               <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6">
                 <p className="text-sm text-warning font-medium flex items-center gap-2">
                   <span>⚡</span>
@@ -490,8 +525,18 @@ export default function ProductDetailPage() {
               </div>
             )}
 
+            {/* POD Info Banner */}
+            {product.is_pod && (
+              <div className="bg-violet-500/10 border border-violet-500/30 rounded-lg p-4 mb-6">
+                <p className="text-sm text-violet-400 font-medium flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Made to order just for you. Ships via Printify in 5-10 business days.
+                </p>
+              </div>
+            )}
+
             {/* Quantity & Add to Bag */}
-            {product.stock_quantity > 0 ? (
+            {(product.is_pod || product.stock_quantity > 0) ? (
               <div className="space-y-4">
                 {/* Variant selection reminder */}
                 {!variantsSelected && (needsSize || needsColor) && (
@@ -577,17 +622,18 @@ export default function ProductDetailPage() {
             <Separator className="my-6" />
 
             <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-                  />
-                </svg>
-                <span>Free shipping on orders over $75</span>
-              </div>
+              {/* Shipping info based on fulfillment type */}
+              {product.is_pod ? (
+                <div className="flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-violet-500" />
+                  <span>Printed & shipped via Printify (5-10 business days)</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-emerald-500" />
+                  <span>Available for pickup at next practice</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -599,24 +645,26 @@ export default function ProductDetailPage() {
                 </svg>
                 <span>Official NJ Stars merchandise</span>
               </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                <span>Easy returns within 30 days</span>
-              </div>
+              {product.is_pod && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  <span>Easy returns within 30 days</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Mobile Sticky Add to Bag */}
-      {product.stock_quantity > 0 && (
+      {(product.is_pod || product.stock_quantity > 0) && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-50">
           <div className="flex items-center gap-3">
             {/* Price display */}

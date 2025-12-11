@@ -86,7 +86,7 @@ export default function ChildDetailPage() {
   const { data: session } = useSession()
   const params = useParams()
   const router = useRouter()
-  const childId = params.id as string
+  const childId = params?.id as string
 
   const [child, setChild] = useState<ChildDetail | null>(null)
   const [loading, setLoading] = useState(true)

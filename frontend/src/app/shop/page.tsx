@@ -22,6 +22,8 @@ interface ProductImage {
   sort_order: number
 }
 
+type FulfillmentType = 'pod' | 'local'
+
 interface Product {
   id: number
   name: string
@@ -29,9 +31,17 @@ interface Product {
   description: string
   price: string
   compare_at_price: string | null
+  // Fulfillment
+  fulfillment_type: FulfillmentType
+  is_pod: boolean
+  is_local: boolean
+  shipping_estimate: string
+  fulfillment_display: string
+  // Images
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  // Stock & Status
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -189,15 +199,23 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
           {product.name}
         </h3>
 
-        {/* Category - clickable */}
-        <button
-          onClick={(e) => handleBadgeClick(e, () => onCategoryClick(product.category))}
-          className={`text-xs text-muted-foreground hover:text-foreground transition-colors text-left ${
-            selectedCategories.includes(product.category) ? 'underline text-foreground' : ''
-          }`}
-        >
-          {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
-        </button>
+        {/* Category and Fulfillment */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => handleBadgeClick(e, () => onCategoryClick(product.category))}
+            className={`text-xs text-muted-foreground hover:text-foreground transition-colors text-left ${
+              selectedCategories.includes(product.category) ? 'underline text-foreground' : ''
+            }`}
+          >
+            {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+          </button>
+          <span className="text-muted-foreground">·</span>
+          {product.is_pod ? (
+            <span className="text-xs text-violet-500 font-medium">Made to Order</span>
+          ) : (
+            <span className="text-xs text-emerald-500 font-medium">Coach Delivery</span>
+          )}
+        </div>
 
         {/* Price */}
         <div className="flex items-baseline gap-2 pt-1">
