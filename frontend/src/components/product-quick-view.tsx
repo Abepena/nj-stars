@@ -75,6 +75,19 @@ interface ProductQuickViewProps {
 }
 
 
+// Standard size order for sorting
+const SIZE_ORDER: Record<string, number> = {
+  'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, '2XL': 6, '3XL': 7, '4XL': 8, '5XL': 9
+}
+
+function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const orderA = SIZE_ORDER[a.toUpperCase()] ?? 100
+    const orderB = SIZE_ORDER[b.toUpperCase()] ?? 100
+    return orderA - orderB
+  })
+}
+
 export function ProductQuickView({ product, open, onOpenChange }: ProductQuickViewProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
@@ -84,8 +97,8 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const [selectedColor, setSelectedColor] = useState<string>("")
   const { addToBag } = useBag()
 
-  // Use actual product variants from API
-  const sizes = product.available_sizes || []
+  // Use actual product variants from API, sort sizes S -> 3XL
+  const sizes = sortSizes(product.available_sizes || [])
   const colors = product.available_colors || []
 
   // Check if variants are required and selected
@@ -96,11 +109,12 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   // POD products are always available even with stock_quantity = 0
   const isAvailable = product.is_pod || product.stock_quantity > 0
 
-  // Reset selections when modal opens, auto-select first variants
+  // Reset selections when modal opens
+  // Auto-select first color (matches primary image), but NOT size
   useEffect(() => {
     if (open) {
       setSelectedColor(colors.length > 0 ? colors[0].name : "")
-      setSelectedSize(sizes.length > 0 ? sizes[0] : "")
+      setSelectedSize("")  // User must select size
       setQuantity(1)
       setCurrentImageIndex(0)
     }
@@ -154,60 +168,62 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
         </DialogHeader>
 
         <div className="grid md:grid-cols-2">
-          {/* Image */}
-          <div className="relative aspect-square bg-muted">
-            {productImages[currentImageIndex] ? (
-              <>
-                <Image
-                  src={productImages[currentImageIndex].url}
-                  alt={productImages[currentImageIndex].alt}
-                  fill
-                  className="object-cover"
-                  unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
-                />
-                {productImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={previousImage}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                    {/* Dots */}
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                      {productImages.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`w-2 h-2 rounded-full transition-colors ${
-                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                          }`}
-                          aria-label={`View image ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="h-full w-full flex items-center justify-center p-8">
-                <Image
-                  src="/brand/logos/logo square thick muted.svg"
-                  alt={product.name}
-                  width={120}
-                  height={120}
-                  className="opacity-30"
-                />
-              </div>
-            )}
+          {/* Image - with padding and rounded corners */}
+          <div className="p-4 md:p-6">
+            <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+              {productImages[currentImageIndex] ? (
+                <>
+                  <Image
+                    src={productImages[currentImageIndex].url}
+                    alt={productImages[currentImageIndex].alt}
+                    fill
+                    className="object-cover"
+                    unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
+                  />
+                  {productImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={previousImage}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                      {/* Dots - primary color for active */}
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        {productImages.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`w-2 h-2 rounded-full transition-colors ${
+                              index === currentImageIndex ? 'bg-primary' : 'bg-white/50'
+                            }`}
+                            aria-label={`View image ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center p-8">
+                  <Image
+                    src="/brand/logos/logo square thick muted.svg"
+                    alt={product.name}
+                    width={120}
+                    height={120}
+                    className="opacity-30"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Details */}

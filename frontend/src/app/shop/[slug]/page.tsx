@@ -76,6 +76,18 @@ interface Product {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
+// Standard size order for sorting
+const SIZE_ORDER: Record<string, number> = {
+  'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, '2XL': 6, '3XL': 7, '4XL': 8, '5XL': 9
+}
+
+function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const orderA = SIZE_ORDER[a.toUpperCase()] ?? 100
+    const orderB = SIZE_ORDER[b.toUpperCase()] ?? 100
+    return orderA - orderB
+  })
+}
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -95,8 +107,8 @@ export default function ProductDetailPage() {
 
   const { addToBag } = useBag()
 
-  // Get available variants from API data
-  const availableSizes = product?.available_sizes || []
+  // Get available variants from API data, sort sizes S -> 3XL
+  const availableSizes = sortSizes(product?.available_sizes || [])
   const availableColors = product?.available_colors || []
 
   // Check if variants are required and selected
@@ -104,19 +116,16 @@ export default function ProductDetailPage() {
   const needsColor = availableColors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
 
-  // Auto-select first available variant on product load
+  // Auto-select first color on product load (matches primary image)
+  // Do NOT auto-select size - user must choose
   useEffect(() => {
-    if (product && !selectedSize && !selectedColor) {
-      // Select first color if available
+    if (product && !selectedColor) {
+      // Select first color if available (matches primary image)
       if (availableColors.length > 0) {
         setSelectedColor(availableColors[0].name)
       }
-      // Select first size if available
-      if (availableSizes.length > 0) {
-        setSelectedSize(availableSizes[0])
-      }
     }
-  }, [product, availableSizes, availableColors, selectedSize, selectedColor])
+  }, [product, availableColors, selectedColor])
 
   // Reset image index when color changes (to show first image of new color)
   useEffect(() => {

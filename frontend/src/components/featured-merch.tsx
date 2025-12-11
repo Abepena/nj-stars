@@ -252,9 +252,18 @@ function ProductCard({ product, onClick }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
+  // Check if product has variants that require selection
+  const hasVariants = (product.available_sizes?.length > 0) || (product.available_colors?.length > 0)
+
   const handleAddToBag = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!product.in_stock || isAdding || showSuccess) return
+
+    // If product has variants, open quick view instead of direct add
+    if (hasVariants) {
+      onClick()
+      return
+    }
 
     setIsAdding(true)
     try {
