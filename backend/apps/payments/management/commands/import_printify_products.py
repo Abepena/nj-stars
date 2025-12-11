@@ -58,13 +58,10 @@ class Command(BaseCommand):
                 updated_count += 1
                 self.stdout.write(f"    Updated: {product.name}")
 
-            # Sync variants
+            # Sync variants and images (sync_product_variants handles both)
             variant_result = sync_product_variants(product)
-            self.stdout.write(f"    Variants: {variant_result.get('updated', 0)} synced")
-
-            # Sync images
-            image_count = self._sync_images(product, full_product)
-            self.stdout.write(f"    Images: {image_count} synced")
+            self.stdout.write(f"    Variants: {variant_result.get('created', 0)} created, {variant_result.get('updated', 0)} updated")
+            self.stdout.write(f"    Images: {variant_result.get('images_created', 0)} created, {variant_result.get('images_updated', 0)} updated")
 
         self.stdout.write("\n" + "=" * 60)
         self.stdout.write(f"  Created: {created_count} products")
