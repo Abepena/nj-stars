@@ -24,6 +24,7 @@ class Command(BaseCommand):
         # Known Printify product IDs (fetched via API earlier)
         # These are the currently published products in the shop
         product_ids = [
+            "693b2a78344381147d0315a1",  # NJ Stars Team Backpack
             "693b02117909e1cde809a3f2",  # NJ Stars Long Sleeve Tee
             "693a89c86bfaf12deb03cee4",  # NJ Stars Pigment-Dyed Hoodie
             "690aa3af11566e84f6045c8f",  # NJ Stars Elite Oversized Tee
