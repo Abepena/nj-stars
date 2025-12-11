@@ -76,9 +76,9 @@ def parse_variant_options(variant_data: dict, product_options: list = None) -> d
 
     Printify variants have:
     - `options`: array of option IDs like [881, 18]
-    - `title`: human-readable string like "Navy / 2XL"
+    - `title`: human-readable string like "Navy / 2XL" or "2XL / Navy"
 
-    The product-level `options` array maps IDs to names.
+    The product-level `options` array maps IDs to names AND defines the order.
 
     Args:
         variant_data: Single variant from Printify API
@@ -89,28 +89,8 @@ def parse_variant_options(variant_data: dict, product_options: list = None) -> d
     """
     result = {'size': '', 'color': '', 'color_hex': ''}
 
-    # Method 1: Parse the variant title (most reliable)
-    # Format is typically "Color / Size" or just "Size"
-    title = variant_data.get('title', '')
-    if title and ' / ' in title:
-        parts = title.split(' / ')
-        if len(parts) == 2:
-            result['color'] = parts[0].strip()
-            result['size'] = parts[1].strip()
-            result['color_hex'] = COLOR_HEX_MAP.get(result['color'].lower(), '')
-            return result
-    elif title:
-        # Single value - determine if it's a size or color
-        title_lower = title.lower().strip()
-        size_patterns = ['xs', 's', 'm', 'l', 'xl', '2xl', '3xl', '4xl', '5xl']
-        if any(title_lower == p for p in size_patterns):
-            result['size'] = title.strip()
-        else:
-            result['color'] = title.strip()
-            result['color_hex'] = COLOR_HEX_MAP.get(title_lower, '')
-        return result
-
-    # Method 2: Use options lookup if title parsing didn't work
+    # Method 1: Use options array with product-level type definitions (most reliable)
+    # This handles both "Color / Size" and "Size / Color" formats correctly
     if product_options:
         lookup = build_options_lookup(product_options)
         option_ids = variant_data.get('options', [])
@@ -123,6 +103,45 @@ def parse_variant_options(variant_data: dict, product_options: list = None) -> d
                 elif opt_info['type'] == 'color' and not result['color']:
                     result['color'] = opt_info['name']
                     result['color_hex'] = COLOR_HEX_MAP.get(opt_info['name'].lower(), '')
+
+        # If we found at least one value, return (color_hex might be empty for uncommon colors)
+        if result['size'] or result['color']:
+            return result
+
+    # Method 2: Fall back to title parsing if options lookup didn't work
+    title = variant_data.get('title', '')
+    if title and ' / ' in title:
+        parts = title.split(' / ')
+        if len(parts) == 2:
+            # Detect which part is size vs color using size patterns
+            size_patterns = ['xs', 's', 'm', 'l', 'xl', '2xl', '3xl', '4xl', '5xl', 'xxl', 'xxxl']
+            part0_lower = parts[0].strip().lower()
+            part1_lower = parts[1].strip().lower()
+
+            # Check if first part looks like a size
+            if any(part0_lower == p for p in size_patterns):
+                result['size'] = parts[0].strip()
+                result['color'] = parts[1].strip()
+            # Check if second part looks like a size
+            elif any(part1_lower == p for p in size_patterns):
+                result['color'] = parts[0].strip()
+                result['size'] = parts[1].strip()
+            else:
+                # Default: assume Color / Size format
+                result['color'] = parts[0].strip()
+                result['size'] = parts[1].strip()
+
+            result['color_hex'] = COLOR_HEX_MAP.get(result['color'].lower(), '')
+            return result
+    elif title:
+        # Single value - determine if it's a size or color
+        title_lower = title.lower().strip()
+        size_patterns = ['xs', 's', 'm', 'l', 'xl', '2xl', '3xl', '4xl', '5xl', 'xxl', 'xxxl']
+        if any(title_lower == p for p in size_patterns):
+            result['size'] = title.strip()
+        else:
+            result['color'] = title.strip()
+            result['color_hex'] = COLOR_HEX_MAP.get(title_lower, '')
 
     return result
 

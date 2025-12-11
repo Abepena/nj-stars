@@ -15,44 +15,23 @@ import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
 
-// Variant configuration by category
 interface ColorOption {
   name: string
   hex: string
 }
 
-interface VariantConfig {
-  sizes: string[]
-  colors: ColorOption[]
-}
-
-const VARIANT_CONFIGS: Record<string, VariantConfig> = {
-  jersey: {
-    sizes: ["YS", "YM", "YL", "S", "M", "L", "XL", "2XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "White", hex: "#ffffff" },
-    ],
-  },
-  apparel: {
-    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Navy", hex: "#1e3a5f" },
-      { name: "Gray", hex: "#6b7280" },
-    ],
-  },
-  accessories: {
-    sizes: ["One Size"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Red", hex: "#dc2626" },
-    ],
-  },
-  equipment: {
-    sizes: ["Standard"],
-    colors: [],
-  },
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
 }
 
 interface ProductImage {
@@ -82,6 +61,10 @@ interface Product {
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  // Variants (from API)
+  variants: ProductVariant[]
+  available_sizes: string[]
+  available_colors: ColorOption[]
   // Stock & Status
   stock_quantity: number
   category: string
@@ -106,25 +89,28 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const [selectedColor, setSelectedColor] = useState<string>("")
   const { addToBag } = useBag()
 
-  // Get variant configuration for this product's category
-  const variantConfig = VARIANT_CONFIGS[product.category] || VARIANT_CONFIGS.equipment
-  const sizes = variantConfig.sizes
-  const colors = variantConfig.colors
+  // Use actual product variants from API
+  const sizes = product.available_sizes || []
+  const colors = product.available_colors || []
 
   // Check if variants are required and selected
-  const needsSize = sizes.length > 1
+  const needsSize = sizes.length > 0
   const needsColor = colors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
 
-  // Reset selections when modal opens with a new product
+  // POD products are always available even with stock_quantity = 0
+  const isAvailable = product.is_pod || product.stock_quantity > 0
+
+  // Reset selections when modal opens with a new product, auto-select first variants
   useEffect(() => {
     if (open) {
-      setSelectedSize("")
-      setSelectedColor("")
+      // Auto-select first color and size if available
+      setSelectedColor(colors.length > 0 ? colors[0].name : "")
+      setSelectedSize(sizes.length > 0 ? sizes[0] : "")
       setQuantity(1)
       setCurrentImageIndex(0)
     }
-  }, [open, product.id])
+  }, [open, product.id, colors, sizes])
 
   // Build image gallery from uploaded images, falling back to legacy image_url
   const productImages: { url: string; alt: string }[] = (() => {
@@ -321,12 +307,13 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
               )}
             </div>
 
-            {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+            {/* Urgency banners only for non-POD products with limited stock */}
+            {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
               <div className="bg-accent/10 border border-accent/30 rounded-md p-3 text-sm text-accent font-semibold">
                 🔥 Selling fast! Only a few left - grab yours now!
               </div>
             )}
-            {product.stock_quantity > 5 && product.stock_quantity <= 15 && (
+            {!product.is_pod && product.stock_quantity > 5 && product.stock_quantity <= 15 && (
               <div className="bg-warning/10 border border-warning/30 rounded-md p-3 text-sm text-warning font-medium">
                 ⚡ Limited edition drop - don&apos;t miss out!
               </div>
@@ -334,7 +321,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
 
             <div className="flex flex-col gap-3 mt-auto pt-4">
               {/* Size Selector */}
-              {product.stock_quantity > 0 && needsSize && (
+              {isAvailable && needsSize && (
                 <div className="space-y-2">
                   <span className="text-sm font-medium">Size</span>
                   <div className="flex flex-wrap gap-2">
@@ -356,7 +343,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
               )}
 
               {/* Color Selector */}
-              {product.stock_quantity > 0 && needsColor && (
+              {isAvailable && needsColor && (
                 <div className="space-y-2">
                   <span className="text-sm font-medium">
                     Color{selectedColor && `: ${selectedColor}`}
@@ -381,7 +368,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
               )}
 
               {/* Quantity Selector */}
-              {product.stock_quantity > 0 && (
+              {isAvailable && (
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium">Quantity:</span>
                   <div className="flex items-center border rounded-md">
@@ -397,9 +384,9 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(product.is_pod ? 10 : product.stock_quantity, quantity + 1))}
                       className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted transition-colors text-lg"
-                      disabled={quantity >= product.stock_quantity}
+                      disabled={quantity >= (product.is_pod ? 10 : product.stock_quantity)}
                       aria-label="Increase quantity"
                     >
                       +
@@ -409,7 +396,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
               )}
 
               {/* Add to Bag Button */}
-              {product.stock_quantity > 0 ? (
+              {isAvailable ? (
                 <Button
                   className="w-full"
                   size="lg"

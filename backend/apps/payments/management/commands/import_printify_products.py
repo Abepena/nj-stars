@@ -8,6 +8,7 @@ from apps.payments.services.printify_sync import sync_product_variants
 from apps.payments.models import Product, ProductImage
 from django.utils.text import slugify
 from decimal import Decimal
+import html
 import re
 
 
@@ -76,9 +77,10 @@ class Command(BaseCommand):
         title = product_data.get('title', '').strip()
         description = product_data.get('description', '')
 
-        # Clean HTML from description
+        # Clean HTML tags and decode entities from description
         if description:
             description = re.sub(r'<[^>]+>', '', description)
+            description = html.unescape(description)  # Decode &#39; → '
 
         # Generate slug
         base_slug = slugify(title)[:50]

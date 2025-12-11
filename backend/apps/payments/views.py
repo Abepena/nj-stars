@@ -1068,6 +1068,8 @@ def _handle_product_publish(resource: dict):
     1. Creates a new Product record (or updates existing)
     2. Syncs all variants, prices, and images from Printify
     """
+    import html
+    import re
     from django.utils.text import slugify
     from .services.printify_sync import sync_product_variants
     from .services.printify_client import get_printify_client
@@ -1090,6 +1092,11 @@ def _handle_product_publish(resource: dict):
 
         title = printify_data.get('title', f'Product {printify_product_id}')
         description = printify_data.get('description', '')
+
+        # Clean HTML tags and decode entities from description
+        if description:
+            description = re.sub(r'<[^>]+>', '', description)
+            description = html.unescape(description)  # Decode &#39; → '
 
         # Generate unique slug
         base_slug = slugify(title)

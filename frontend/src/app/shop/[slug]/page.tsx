@@ -104,6 +104,25 @@ export default function ProductDetailPage() {
   const needsColor = availableColors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
 
+  // Auto-select first available variant on product load
+  useEffect(() => {
+    if (product && !selectedSize && !selectedColor) {
+      // Select first color if available
+      if (availableColors.length > 0) {
+        setSelectedColor(availableColors[0].name)
+      }
+      // Select first size if available
+      if (availableSizes.length > 0) {
+        setSelectedSize(availableSizes[0])
+      }
+    }
+  }, [product, availableSizes, availableColors, selectedSize, selectedColor])
+
+  // Reset image index when color changes (to show first image of new color)
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [selectedColor])
+
   useEffect(() => {
     async function fetchProduct() {
       try {
@@ -135,11 +154,30 @@ export default function ProductDetailPage() {
     }
   }, [slug])
 
-  // Build image gallery from uploaded images, falling back to legacy image_url
+  // Build image gallery filtered by selected color
   const productImages: { url: string; alt: string }[] = (() => {
     if (product?.images && product.images.length > 0) {
-      // Use uploaded images from the carousel
-      return product.images.map((img) => ({
+      // Get variant IDs for selected color
+      const selectedVariantIds = selectedColor
+        ? product.variants
+            .filter(v => v.color === selectedColor)
+            .map(v => v.printify_variant_id)
+            .filter((id): id is number => id !== null)
+        : []
+
+      // Filter images by selected color's variant IDs
+      let filteredImages = product.images
+      if (selectedVariantIds.length > 0) {
+        const colorImages = product.images.filter(img =>
+          img.printify_variant_ids.some(id => selectedVariantIds.includes(id))
+        )
+        // Use filtered images if any match, otherwise show all
+        if (colorImages.length > 0) {
+          filteredImages = colorImages
+        }
+      }
+
+      return filteredImages.map((img) => ({
         url: img.url,
         alt: img.alt_text || product.name,
       }))
