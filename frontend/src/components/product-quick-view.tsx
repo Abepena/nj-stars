@@ -76,15 +76,29 @@ interface ProductQuickViewProps {
 }
 
 
-// Standard size order for sorting
+// Comprehensive size order for Printify variants (smallest to largest)
 const SIZE_ORDER: Record<string, number> = {
-  'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, '2XL': 6, '3XL': 7, '4XL': 8, '5XL': 9
+  // Youth sizes
+  'YXS': 1, 'YS': 2, 'YM': 3, 'YL': 4, 'YXL': 5,
+  // Adult sizes
+  'XS': 10, 'S': 11, 'M': 12, 'L': 13, 'XL': 14,
+  '2XL': 15, 'XXL': 15,
+  '3XL': 16, 'XXXL': 16,
+  '4XL': 17, 'XXXXL': 17,
+  '5XL': 18,
+  '6XL': 19,
+  '7XL': 20,
+  '8XL': 21,
+  '9XL': 22,
+  '10XL': 23,
+  // Special sizes
+  'ONE SIZE': 50,
 }
 
 function sortSizes(sizes: string[]): string[] {
   return [...sizes].sort((a, b) => {
-    const orderA = SIZE_ORDER[a.toUpperCase()] ?? 100
-    const orderB = SIZE_ORDER[b.toUpperCase()] ?? 100
+    const orderA = SIZE_ORDER[a.toUpperCase().trim()] ?? 100
+    const orderB = SIZE_ORDER[b.toUpperCase().trim()] ?? 100
     return orderA - orderB
   })
 }
@@ -110,37 +124,16 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   // POD products are always available even with stock_quantity = 0
   const isAvailable = product.is_pod || product.stock_quantity > 0
 
-  // Find the color associated with the primary image
-  const getPrimaryImageColor = (): string => {
-    if (!product.images || product.images.length === 0 || !product.variants) {
-      return colors.length > 0 ? colors[0].name : ""
-    }
-
-    // Find the primary image
-    const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
-    if (!primaryImage?.printify_variant_ids?.length) {
-      return colors.length > 0 ? colors[0].name : ""
-    }
-
-    // Find a variant that matches this image's variant IDs
-    const matchingVariant = product.variants.find(v =>
-      v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
-    )
-
-    return matchingVariant?.color || (colors.length > 0 ? colors[0].name : "")
-  }
-
   // Reset selections when modal opens
-  // Auto-select color from primary image, but NOT size
+  // Auto-select first color (leftmost in UI), but NOT size
   useEffect(() => {
     if (open) {
-      setSelectedColor(getPrimaryImageColor())
+      setSelectedColor(colors.length > 0 ? colors[0].name : "")
       setSelectedSize("")  // User must select size
       setQuantity(1)
       setCurrentImageIndex(0)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, product.id])
+  }, [open, product.id, colors])
 
   // Reset image index when color changes
   useEffect(() => {
