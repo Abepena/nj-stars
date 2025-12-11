@@ -168,8 +168,8 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
         </DialogHeader>
 
         <div className="grid md:grid-cols-2">
-          {/* Image - with padding and rounded corners */}
-          <div className="p-4 md:p-6">
+          {/* Image & Title/Price (desktop: LHS) */}
+          <div className="p-4 md:p-6 flex flex-col">
             <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
               {productImages[currentImageIndex] ? (
                 <>
@@ -224,15 +224,25 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                 </div>
               )}
             </div>
+
+            {/* Title & Price - below image on desktop */}
+            <div className="hidden md:block mt-4">
+              <h2 className="text-xl font-bold">{product.name}</h2>
+              <p className="text-2xl font-bold text-primary mt-1">
+                ${parseFloat(product.price).toFixed(2)}
+              </p>
+            </div>
           </div>
 
-          {/* Details */}
-          <div className="p-6 flex flex-col">
-            {/* Title & Price */}
-            <h2 className="text-xl font-bold mb-1">{product.name}</h2>
-            <p className="text-2xl font-bold text-primary mb-6">
-              ${parseFloat(product.price).toFixed(2)}
-            </p>
+          {/* Details (RHS on desktop) */}
+          <div className="p-6 pt-0 md:pt-6 flex flex-col">
+            {/* Title & Price - mobile only (shows at top of RHS) */}
+            <div className="md:hidden mb-6">
+              <h2 className="text-xl font-bold mb-1">{product.name}</h2>
+              <p className="text-2xl font-bold text-primary">
+                ${parseFloat(product.price).toFixed(2)}
+              </p>
+            </div>
 
             {/* Variants */}
             <div className="space-y-5 flex-1">
