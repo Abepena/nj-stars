@@ -21,6 +21,7 @@ interface ProductImage {
   alt_text: string
   is_primary: boolean
   sort_order: number
+  printify_variant_ids: number[]
 }
 
 type FulfillmentType = 'pod' | 'local'

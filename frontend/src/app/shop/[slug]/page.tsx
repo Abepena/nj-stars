@@ -116,16 +116,37 @@ export default function ProductDetailPage() {
   const needsColor = availableColors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
 
-  // Auto-select first color on product load (matches primary image)
+  // Find the color associated with the primary image
+  const getPrimaryImageColor = (): string | null => {
+    if (!product?.images || product.images.length === 0 || !product.variants) {
+      return availableColors.length > 0 ? availableColors[0].name : null
+    }
+
+    // Find the primary image
+    const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+    if (!primaryImage?.printify_variant_ids?.length) {
+      return availableColors.length > 0 ? availableColors[0].name : null
+    }
+
+    // Find a variant that matches this image's variant IDs
+    const matchingVariant = product.variants.find(v =>
+      v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+    )
+
+    return matchingVariant?.color || (availableColors.length > 0 ? availableColors[0].name : null)
+  }
+
+  // Auto-select color from primary image on product load
   // Do NOT auto-select size - user must choose
   useEffect(() => {
     if (product && !selectedColor) {
-      // Select first color if available (matches primary image)
-      if (availableColors.length > 0) {
-        setSelectedColor(availableColors[0].name)
+      const primaryColor = getPrimaryImageColor()
+      if (primaryColor) {
+        setSelectedColor(primaryColor)
       }
     }
-  }, [product, availableColors, selectedColor])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product])
 
   // Reset image index when color changes (to show first image of new color)
   useEffect(() => {

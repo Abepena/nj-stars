@@ -40,6 +40,7 @@ interface ProductImage {
   alt_text: string
   is_primary: boolean
   sort_order: number
+  printify_variant_ids: number[]
 }
 
 type FulfillmentType = 'pod' | 'local'
@@ -109,21 +110,67 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   // POD products are always available even with stock_quantity = 0
   const isAvailable = product.is_pod || product.stock_quantity > 0
 
+  // Find the color associated with the primary image
+  const getPrimaryImageColor = (): string => {
+    if (!product.images || product.images.length === 0 || !product.variants) {
+      return colors.length > 0 ? colors[0].name : ""
+    }
+
+    // Find the primary image
+    const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+    if (!primaryImage?.printify_variant_ids?.length) {
+      return colors.length > 0 ? colors[0].name : ""
+    }
+
+    // Find a variant that matches this image's variant IDs
+    const matchingVariant = product.variants.find(v =>
+      v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+    )
+
+    return matchingVariant?.color || (colors.length > 0 ? colors[0].name : "")
+  }
+
   // Reset selections when modal opens
-  // Auto-select first color (matches primary image), but NOT size
+  // Auto-select color from primary image, but NOT size
   useEffect(() => {
     if (open) {
-      setSelectedColor(colors.length > 0 ? colors[0].name : "")
+      setSelectedColor(getPrimaryImageColor())
       setSelectedSize("")  // User must select size
       setQuantity(1)
       setCurrentImageIndex(0)
     }
-  }, [open, product.id, colors, sizes])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, product.id])
 
-  // Build image gallery
+  // Reset image index when color changes
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [selectedColor])
+
+  // Build image gallery filtered by selected color
   const productImages: { url: string; alt: string }[] = (() => {
     if (product.images && product.images.length > 0) {
-      return product.images.map((img) => ({
+      // Get variant IDs for selected color
+      const selectedVariantIds = selectedColor && product.variants
+        ? product.variants
+            .filter(v => v.color === selectedColor)
+            .map(v => v.printify_variant_id)
+            .filter((id): id is number => id !== null)
+        : []
+
+      // Filter images by selected color's variant IDs
+      let filteredImages = product.images
+      if (selectedVariantIds.length > 0) {
+        const colorImages = product.images.filter(img =>
+          img.printify_variant_ids?.some(id => selectedVariantIds.includes(id))
+        )
+        // Use filtered images if any match, otherwise show all
+        if (colorImages.length > 0) {
+          filteredImages = colorImages
+        }
+      }
+
+      return filteredImages.map((img) => ({
         url: img.url,
         alt: img.alt_text || product.name,
       }))
