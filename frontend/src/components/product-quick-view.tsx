@@ -114,7 +114,33 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
 
   // Use actual product variants from API, sort sizes S -> 3XL
   const sizes = sortSizes(product.available_sizes || [])
-  const colors = product.available_colors || []
+  const rawColors = product.available_colors || []
+
+  // Find the color associated with the primary image
+  const getPrimaryImageColor = (): string | null => {
+    if (!product.images?.length || !product.variants?.length) {
+      return null
+    }
+    // Find the primary image (or first image as fallback)
+    const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+    if (!primaryImage?.printify_variant_ids?.length) {
+      return null
+    }
+    // Find a variant that matches this image's variant IDs
+    const matchingVariant = product.variants.find(v =>
+      v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+    )
+    return matchingVariant?.color || null
+  }
+
+  // Reorder colors so primary image's color is first (leftmost in UI)
+  const primaryColor = getPrimaryImageColor()
+  const colors = primaryColor
+    ? [
+        ...rawColors.filter(c => c.name === primaryColor),
+        ...rawColors.filter(c => c.name !== primaryColor)
+      ]
+    : rawColors
 
   // Check if variants are required and selected
   const needsSize = sizes.length > 0
@@ -125,7 +151,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const isAvailable = product.is_pod || product.stock_quantity > 0
 
   // Reset selections when modal opens
-  // Auto-select first color (leftmost in UI), but NOT size
+  // Auto-select first color (primary image's color, now leftmost), but NOT size
   useEffect(() => {
     if (open) {
       setSelectedColor(colors.length > 0 ? colors[0].name : "")

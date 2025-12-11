@@ -123,14 +123,40 @@ export default function ProductDetailPage() {
 
   // Get available variants from API data, sort sizes S -> 3XL
   const availableSizes = sortSizes(product?.available_sizes || [])
-  const availableColors = product?.available_colors || []
+  const rawColors = product?.available_colors || []
+
+  // Find the color associated with the primary image
+  const getPrimaryImageColor = (): string | null => {
+    if (!product?.images?.length || !product.variants?.length) {
+      return null
+    }
+    // Find the primary image (or first image as fallback)
+    const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+    if (!primaryImage?.printify_variant_ids?.length) {
+      return null
+    }
+    // Find a variant that matches this image's variant IDs
+    const matchingVariant = product.variants.find(v =>
+      v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+    )
+    return matchingVariant?.color || null
+  }
+
+  // Reorder colors so primary image's color is first (leftmost in UI)
+  const primaryColor = getPrimaryImageColor()
+  const availableColors = primaryColor
+    ? [
+        ...rawColors.filter(c => c.name === primaryColor),
+        ...rawColors.filter(c => c.name !== primaryColor)
+      ]
+    : rawColors
 
   // Check if variants are required and selected
   const needsSize = availableSizes.length > 0
   const needsColor = availableColors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
 
-  // Auto-select first color (leftmost in UI) on product load
+  // Auto-select first color (primary image's color, now leftmost) on product load
   // Do NOT auto-select size - user must choose
   useEffect(() => {
     if (product && !selectedColor && availableColors.length > 0) {
