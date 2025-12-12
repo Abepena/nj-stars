@@ -1,5 +1,18 @@
 "use client"
 
+/**
+ * Player Dashboard Example
+ *
+ * #TODO: Fetch real player profile data from /api/portal/profile/
+ * #TODO: Fetch player's schedule from /api/events/ filtered by player registrations
+ * #TODO: Fetch attendance/stats from /api/portal/attendance/ or similar
+ * #TODO: Implement QR code check-in functionality
+ * #TODO: Fetch team roster from /api/portal/team/ or /api/portal/players/
+ * #TODO: Implement dues payment functionality
+ * #TODO: Add profile edit modal/page
+ * #TODO: Implement push notifications for upcoming events
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

@@ -7,13 +7,16 @@ import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { ShootingStars } from "@/components/ui/shooting-stars"
 import { ThemeLogo } from "@/components/ui/theme-logo"
-import { Mail, Lock, Eye, EyeOff, User, Phone, CheckCircle } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, User, Phone, CheckCircle, Users, UserCircle, ArrowLeft } from "lucide-react"
+
+type Role = "parent" | "player" | null
 
 export default function RegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams?.get("next") || "/portal/dashboard"
 
+  const [selectedRole, setSelectedRole] = useState<Role>(null)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -77,6 +80,7 @@ export default function RegisterPage() {
           first_name: formData.firstName,
           last_name: formData.lastName,
           phone: formData.phone,
+          role: selectedRole,
         }),
       })
 
@@ -196,17 +200,107 @@ export default function RegisterPage() {
                     Your account has been created successfully. Redirecting you to your dashboard...
                   </p>
                 </div>
+              ) : !selectedRole ? (
+                /* Step 1: Role Selection */
+                <div>
+                  <div className="mb-6 text-center">
+                    <h1 className="text-3xl font-bold text-[hsl(var(--text-primary))] leading-tight">
+                      Train Hard.{" "}
+                      <span className="text-primary">Play Elite.</span>
+                    </h1>
+                    <h2 className="mt-4 text-lg font-medium text-[hsl(var(--text-secondary))]">
+                      I am signing up as a...
+                    </h2>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Parent/Guardian Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("parent")}
+                      className="w-full p-6 rounded-xl border-2 border-[hsl(var(--bg-tertiary))] bg-[hsl(var(--bg-tertiary))]/30 hover:border-primary/50 hover:bg-primary/5 transition-all group text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                          <Users className="h-7 w-7 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-[hsl(var(--text-primary))]">
+                            Parent / Guardian
+                          </h3>
+                          <p className="text-sm text-[hsl(var(--text-secondary))]">
+                            Register and manage your children's activities
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Player Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("player")}
+                      className="w-full p-6 rounded-xl border-2 border-[hsl(var(--bg-tertiary))] bg-[hsl(var(--bg-tertiary))]/30 hover:border-secondary/50 hover:bg-secondary/5 transition-all group text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-full bg-secondary/10 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                          <UserCircle className="h-7 w-7 text-secondary" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-[hsl(var(--text-primary))]">
+                            Player (13+)
+                          </h3>
+                          <p className="text-sm text-[hsl(var(--text-secondary))]">
+                            Manage your own profile and registrations
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Sign In Link */}
+                  <p className="mt-8 text-center text-sm text-[hsl(var(--text-secondary))]">
+                    Already have an account?{" "}
+                    <Link
+                      href={`/portal/login${callbackUrl !== "/portal/dashboard" ? `?next=${encodeURIComponent(callbackUrl)}` : ""}`}
+                      className="font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                  </p>
+                </div>
               ) : (
+                /* Step 2: Registration Form */
                 <>
+                  {/* Back Button */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole(null)}
+                    className="flex items-center gap-1 text-sm text-[hsl(var(--text-tertiary))] hover:text-primary transition-colors mb-4"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </button>
+
                   {/* Form Header */}
                   <div className="mb-6">
                     <h1 className="text-3xl font-bold text-[hsl(var(--text-primary))] leading-tight text-center">
                       Train Hard.{" "}
                       <span className="text-primary">Play Elite.</span>
                     </h1>
-                    <h2 className="mt-4 text-lg font-medium text-[hsl(var(--text-secondary))] text-center">
-                      Create your account
-                    </h2>
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                        selectedRole === "parent" ? "bg-primary/10" : "bg-secondary/10"
+                      }`}>
+                        {selectedRole === "parent" ? (
+                          <Users className={`h-4 w-4 text-primary`} />
+                        ) : (
+                          <UserCircle className={`h-4 w-4 text-secondary`} />
+                        )}
+                      </div>
+                      <span className="text-lg font-medium text-[hsl(var(--text-secondary))]">
+                        {selectedRole === "parent" ? "Parent / Guardian" : "Player (13+)"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Form */}
@@ -339,7 +433,9 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Social Buttons */}
+                  {/* #TODO: Research Instagram and TikTok login options - target demographic is GenZ players */}
                   <div className="grid grid-cols-3 gap-3">
+                    {/* #TODO: Configure Google OAuth credentials in Google Cloud Console */}
                     {/* Google */}
                     <Button
                       type="button"
@@ -381,6 +477,7 @@ export default function RegisterPage() {
                       </svg>
                     </Button>
 
+                    {/* #TODO: Configure Apple Sign In - requires Apple Developer account and domain verification */}
                     {/* Apple */}
                     <Button
                       type="button"

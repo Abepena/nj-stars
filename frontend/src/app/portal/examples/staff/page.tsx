@@ -1,5 +1,21 @@
 "use client"
 
+/**
+ * Staff/Coach Dashboard Example
+ *
+ * #TODO: Fetch staff stats from /api/portal/staff/stats/
+ * #TODO: Implement check-in management with QR scanning
+ * #TODO: Fetch today's events from /api/events/?date=today
+ * #TODO: Fetch pending check-ins from /api/portal/check-ins/?status=pending
+ * #TODO: Implement check-in/check-out API calls
+ * #TODO: Fetch full roster from /api/portal/players/
+ * #TODO: Implement roster search/filter
+ * #TODO: Fetch recent registrations from /api/registrations/
+ * #TODO: Implement pending dues report
+ * #TODO: Add attendance export functionality (CSV/PDF)
+ * #TODO: Implement event creation for staff with permissions
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

@@ -1,5 +1,23 @@
 "use client"
 
+/**
+ * Superuser/Admin Dashboard Example
+ *
+ * #TODO: Fetch system stats from /api/portal/admin/stats/
+ * #TODO: Fetch revenue data from /api/payments/admin/revenue/
+ * #TODO: Implement user management CRUD (/portal/admin/users)
+ * #TODO: Implement billing admin tools (/portal/admin/billing)
+ * #TODO: Fetch and display orders list (/portal/admin/orders)
+ * #TODO: Implement reports generation (revenue, attendance, etc.)
+ * #TODO: Fetch pending issues from /api/portal/admin/issues/
+ * #TODO: Implement issue resolution workflow
+ * #TODO: Real-time activity feed via WebSocket
+ * #TODO: Implement staff management (promote/demote users)
+ * #TODO: Add Printify product management (/portal/admin/printify)
+ * #TODO: Implement Stripe dashboard integration/links
+ * #TODO: Add system settings management
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

@@ -8,11 +8,15 @@ declare module "next-auth" {
       role?: string
       provider?: string
     } & DefaultSession["user"]
+    apiToken?: string
   }
 
   interface User {
     role?: string
     provider?: string
+    token?: string
+    djangoToken?: string
+    djangoId?: number
   }
 }
 
@@ -21,5 +25,6 @@ declare module "next-auth/jwt" {
     id?: string
     role?: string
     provider?: string
+    apiToken?: string
   }
 }

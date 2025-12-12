@@ -1,5 +1,20 @@
 "use client"
 
+/**
+ * Parent Dashboard Example
+ *
+ * #TODO: Fetch real dashboard data from /api/portal/dashboard/
+ * #TODO: Fetch children list from /api/portal/players/
+ * #TODO: Fetch upcoming events from /api/portal/registrations/
+ * #TODO: Fetch dues balance from /api/portal/dues/
+ * #TODO: Implement add child flow (/portal/children/add)
+ * #TODO: Implement payment methods management (/portal/billing/payment-methods)
+ * #TODO: Implement orders history (/portal/orders)
+ * #TODO: Implement profile completion flow
+ * #TODO: Fetch and display promo credits from /api/portal/credits/
+ * #TODO: Real-time check-in status updates via WebSocket or polling
+ */
+
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
