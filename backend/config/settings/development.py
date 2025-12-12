@@ -6,9 +6,27 @@ from .base import *
 from decouple import config
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'backend']
+# Allow configuration via env var for Railway, with sensible local defaults
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,0.0.0.0,backend',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# CSRF trusted origins for Railway development
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:3000,http://127.0.0.1:3000',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# CORS for Railway development
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.railway\.app$",
+]
 
 # =============================================================================
 # EMAIL CONFIGURATION (MailHog for development)
