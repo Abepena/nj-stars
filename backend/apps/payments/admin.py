@@ -2,7 +2,9 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django import forms
 from django.db import models
+from django.forms.models import BaseInlineFormSet
 from .models import SubscriptionPlan, Subscription, Payment, Product, ProductImage, ProductVariant, Order, OrderItem, Bag, BagItem
+from django.core.exceptions import ValidationError
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -31,6 +33,90 @@ class BulkImageUploadForm(forms.Form):
         required=False,
         help_text="Select multiple images to upload (hold Ctrl/Cmd to select multiple)"
     )
+
+# ==================== Variant Helpers ====================
+
+NORMALIZED_SIZES = [
+    "YXS", "YS", "YM", "YL", "YXL",
+    "XS", "S", "M", "L", "XL",
+    "2XL", "3XL", "4XL", "5XL", "6XL", "7XL", "8XL", "9XL", "10XL",
+    "ONE SIZE",
+]
+
+SIZE_ALIASES = {
+    "SM": "S",
+    "SMALL": "S",
+    "SML": "S",
+    "MD": "M",
+    "MED": "M",
+    "MEDIUM": "M",
+    "LG": "L",
+    "LARGE": "L",
+    "XXL": "2XL",
+    "XXXL": "3XL",
+    "XXXXL": "4XL",
+    "XXXXXL": "5XL",
+    "2X": "2XL",
+    "3X": "3XL",
+    "4X": "4XL",
+    "5X": "5XL",
+}
+
+
+def normalize_size(size: str) -> str:
+    """Normalize a size string using aliases (case-insensitive)."""
+    key = (size or "").strip().upper()
+    return SIZE_ALIASES.get(key, key)
+
+
+class SizeDatalistInput(forms.TextInput):
+    """Text input with a datalist of common sizes; still allows free text."""
+
+    template_name = "payments/widgets/size_datalist.html"
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {})
+        kwargs["attrs"]["list"] = "size-options"
+        super().__init__(*args, **kwargs)
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["sizes"] = NORMALIZED_SIZES
+        return context
+
+
+class ProductVariantForm(forms.ModelForm):
+    """Inline form for variants with size suggestions."""
+
+    size = forms.CharField(
+        required=False,
+        widget=SizeDatalistInput(),
+        help_text="Choose a suggested size or type a custom value.",
+    )
+
+    class Meta:
+        model = ProductVariant
+        fields = "__all__"
+
+
+class ProductVariantInlineFormSet(BaseInlineFormSet):
+    """Prevent duplicate sizes on the same product (normalized)."""
+
+    def clean(self):
+        super().clean()
+        seen = {}
+        for index, form in enumerate(self.forms, start=1):
+            if self.can_delete and form.cleaned_data.get("DELETE"):
+                continue
+            size = form.cleaned_data.get("size", "")
+            if not size:
+                continue
+            normalized = normalize_size(size)
+            if normalized in seen:
+                raise ValidationError(
+                    f"Duplicate size detected: \"{size}\" appears on rows {seen[normalized]} and {index}."
+                )
+            seen[normalized] = index
 
 
 @admin.register(SubscriptionPlan)
@@ -107,6 +193,8 @@ class ProductVariantInline(admin.TabularInline):
     fields = ['size', 'color', 'color_hex', 'price', 'is_enabled', 'is_available', 'sort_order']
     readonly_fields = ['printify_variant_id', 'last_synced_at']
     ordering = ['sort_order', 'size', 'color']
+    form = ProductVariantForm
+    formset = ProductVariantInlineFormSet
 
     def get_readonly_fields(self, request, obj=None):
         """Make Printify fields read-only for POD products"""
