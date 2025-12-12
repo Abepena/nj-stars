@@ -368,12 +368,30 @@ export default function ShopPage() {
   const categoryCounts = getCategoryCounts()
   const tagCounts = getTagCounts()
 
-  const categories: FilterCategory[] = [
-    { value: "jersey", label: "Jerseys", count: categoryCounts["jersey"] || 0 },
-    { value: "apparel", label: "Apparel", count: categoryCounts["apparel"] || 0 },
-    { value: "accessories", label: "Accessories", count: categoryCounts["accessories"] || 0 },
-    { value: "equipment", label: "Equipment", count: categoryCounts["equipment"] || 0 },
-  ]
+  // Category labels map
+  const categoryLabels: Record<string, string> = {
+    jersey: "Jerseys",
+    hoodie: "Hoodies",
+    tee: "T-Shirts",
+    longsleeve: "Long Sleeves",
+    sweater: "Sweaters",
+    shorts: "Shorts",
+    hat: "Hats",
+    bag: "Bags",
+    accessories: "Accessories",
+    equipment: "Equipment",
+    apparel: "Apparel",
+  }
+
+  // Dynamically generate categories based on products
+  const categories: FilterCategory[] = Object.entries(categoryCounts)
+    .filter(([_, count]) => count > 0)
+    .map(([value, count]) => ({
+      value,
+      label: categoryLabels[value] || value.charAt(0).toUpperCase() + value.slice(1),
+      count,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 
   const tags: FilterTag[] = [
     { value: "featured", label: "Featured", count: tagCounts.featured },

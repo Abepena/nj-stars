@@ -430,7 +430,27 @@ def _submit_printify_order(order: Order, pod_items: list):
 
     This creates an order in Printify that will be fulfilled and shipped
     directly to the customer. The order goes to "On Hold" status initially.
+
+    In development (PRINTIFY_DRY_RUN=true), generates mock order IDs without
+    calling the actual Printify API.
     """
+    import uuid
+
+    # DEV MODE: Skip actual Printify API call, generate mock IDs
+    if getattr(settings, 'PRINTIFY_DRY_RUN', False):
+        mock_order_id = f"mock-{uuid.uuid4().hex[:12]}"
+        order.printify_order_id = mock_order_id
+        order.save()
+
+        # Generate mock line item IDs for each POD item
+        for i, item in enumerate(pod_items):
+            item.printify_line_item_id = f"mock-line-{i+1}"
+            item.save()
+
+        logger.info(f"[DRY RUN] Mock Printify order created: {mock_order_id} for {order.order_number}")
+        return mock_order_id
+
+    # PRODUCTION MODE: Call actual Printify API
     printify = get_printify_client()
     if not printify:
         logger.warning(f"Printify not configured, skipping order submission for {order.order_number}")
@@ -1110,6 +1130,36 @@ def printify_webhook(request):
         return HttpResponse(status=500)
 
 
+def _detect_category_from_tags(tags: list) -> str:
+    """
+    Detect product category from Printify tags.
+    Maps Printify's tag system to our categories.
+    """
+    tags_lower = [t.lower() for t in tags]
+    tags_str = ' '.join(tags_lower)
+
+    # Map Printify tags to our categories (check most specific first)
+    if 'hoodies' in tags_lower or 'hoodie' in tags_str:
+        return 'hoodie'
+    if 't-shirts' in tags_lower or 'tee' in tags_str:
+        return 'tee'
+    if 'long sleeve' in tags_str:
+        return 'longsleeve'
+    if 'sweater' in tags_str or 'sweatshirt' in tags_str:
+        return 'sweater'
+    if 'tank tops' in tags_lower or 'jersey' in tags_str:
+        return 'jersey'
+    if 'shorts' in tags_lower:
+        return 'shorts'
+    if 'hats' in tags_lower or 'caps' in tags_lower or 'hat' in tags_str or 'beanie' in tags_str:
+        return 'hat'
+    if 'bags' in tags_lower or 'backpack' in tags_str:
+        return 'bag'
+
+    # Default fallback
+    return 'apparel'
+
+
 def _handle_product_publish(resource: dict):
     """
     Handle product:publish:started webhook - auto-create product and sync variants.
@@ -1164,6 +1214,10 @@ def _handle_product_publish(resource: dict):
                 base_price = v['price'] / 100
                 break
 
+        # Detect category from Printify tags
+        tags = printify_data.get('tags', [])
+        category = _detect_category_from_tags(tags)
+
         # Create or update the product
         product, created = Product.objects.update_or_create(
             printify_product_id=printify_product_id,
@@ -1175,7 +1229,7 @@ def _handle_product_publish(resource: dict):
                 'fulfillment_type': 'pod',
                 'manage_inventory': False,  # POD products are always in stock
                 'is_active': True,
-                'category': 'apparel',  # Default category, can be changed in admin
+                'category': category,
             }
         )
 

@@ -217,14 +217,23 @@ class Product(models.Model):
     stock_quantity = models.IntegerField(default=0)
 
     # Categorization
+    CATEGORY_CHOICES = [
+        ('jersey', 'Jersey'),
+        ('hoodie', 'Hoodie'),
+        ('tee', 'T-Shirt'),
+        ('longsleeve', 'Long Sleeve'),
+        ('sweater', 'Sweater'),
+        ('shorts', 'Shorts'),
+        ('hat', 'Hat'),
+        ('bag', 'Bag'),
+        ('accessories', 'Accessories'),
+        ('equipment', 'Equipment'),
+        ('apparel', 'Apparel'),  # Fallback for uncategorized apparel
+    ]
     category = models.CharField(
         max_length=50,
-        choices=[
-            ('jersey', 'Jersey'),
-            ('apparel', 'Apparel'),
-            ('accessories', 'Accessories'),
-            ('equipment', 'Equipment'),
-        ]
+        choices=CATEGORY_CHOICES,
+        default='apparel'
     )
 
     # Media (legacy single image - kept for backwards compatibility)
