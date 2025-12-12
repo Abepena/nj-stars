@@ -203,7 +203,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
         </div>
 
         {/* Product name */}
-        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={product.name}>
           {product.name}
         </h3>
 
