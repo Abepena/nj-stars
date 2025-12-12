@@ -26,12 +26,13 @@
 
 The NJ Stars platform supports two fulfillment types:
 
-| Type | Description | Fulfillment | Shipping |
-|------|-------------|-------------|----------|
-| **POD (Print on Demand)** | Products fulfilled by Printify | Printify handles production & shipping | Shipped to customer's address |
-| **Local** | Products managed by coaches | Coach hands off to customer in person | No shipping (pickup at practice/game) |
+| Type                      | Description                    | Fulfillment                            | Shipping                              |
+| ------------------------- | ------------------------------ | -------------------------------------- | ------------------------------------- |
+| **POD (Print on Demand)** | Products fulfilled by Printify | Printify handles production & shipping | Shipped to customer's address         |
+| **Local**                 | Products managed by coaches    | Coach hands off to customer in person  | No shipping (pickup at practice/game) |
 
 A shopping bag can contain:
+
 - Only local products
 - Only POD products
 - **Mixed** (both local and POD products)
@@ -51,6 +52,7 @@ manage_inventory = False  # Always "in stock" (Printify manages availability)
 ```
 
 **Characteristics:**
+
 - Synced from Printify via webhooks or manual import
 - Has variants (size/color combinations) stored in `ProductVariant` model
 - Images linked to specific variants via `printify_variant_ids`
@@ -68,6 +70,7 @@ stock_quantity = 50  # Current inventory count
 ```
 
 **Characteristics:**
+
 - Created directly in Django admin
 - May have simple variants (sizes) or no variants
 - Inventory is tracked locally (`stock_quantity` decremented on purchase)
@@ -101,10 +104,10 @@ class BagItem(models.Model):
 
 ### Guest vs Authenticated Users
 
-| User Type | Bag Identification | Persistence |
-|-----------|-------------------|-------------|
-| **Authenticated** | `bag.user = request.user` | Permanent (until checkout) |
-| **Guest** | `bag.session_key` via `X-Bag-Session` header | Stored in localStorage |
+| User Type         | Bag Identification                           | Persistence                |
+| ----------------- | -------------------------------------------- | -------------------------- |
+| **Authenticated** | `bag.user = request.user`                    | Permanent (until checkout) |
+| **Guest**         | `bag.session_key` via `X-Bag-Session` header | Stored in localStorage     |
 
 **Bag Merge:** When a guest logs in, their session bag can be merged with their user bag via `POST /api/payments/bag/merge/`.
 
@@ -115,23 +118,24 @@ class BagItem(models.Model):
 ### Step 1: User Initiates Checkout
 
 **Frontend Action:**
+
 ```typescript
 // In bag.tsx
 const checkout = async (itemIds?: number[]) => {
   const response = await fetch(`${API_BASE}/api/payments/checkout/bag/`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'X-Bag-Session': sessionKey,  // For guest users
+      "Content-Type": "application/json",
+      "X-Bag-Session": sessionKey, // For guest users
     },
     body: JSON.stringify({
       success_url: `${origin}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/shop/cancel`,
-      item_ids: selectedItemIds,  // Optional: specific items to checkout
+      item_ids: selectedItemIds, // Optional: specific items to checkout
     }),
-  })
-  return response.json()  // { url: string, session_id: string }
-}
+  });
+  return response.json(); // { url: string, session_id: string }
+};
 ```
 
 ### Step 2: Backend Creates Stripe Session
@@ -197,6 +201,7 @@ def bag_checkout(request):
 ### Step 3: User Completes Payment on Stripe
 
 User is redirected to Stripe's hosted checkout page where they:
+
 1. Enter/confirm shipping address
 2. Enter payment details
 3. Complete payment
@@ -204,6 +209,7 @@ User is redirected to Stripe's hosted checkout page where they:
 ### Step 4: Stripe Sends Webhook
 
 After successful payment, Stripe sends a `checkout.session.completed` webhook to:
+
 ```
 POST /api/payments/webhook/stripe/
 ```
@@ -401,16 +407,17 @@ def _submit_printify_order(order, pod_items):
 
 ### Printify Order States
 
-| State | Description |
-|-------|-------------|
-| `on-hold` | Initial state - waiting for manual approval or auto-send |
-| `pending` | Order accepted, waiting for production |
-| `in-production` | Print provider is producing the item |
-| `shipped` | Item has been shipped |
-| `delivered` | Item delivered to customer |
-| `canceled` | Order was canceled |
+| State           | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| `on-hold`       | Initial state - waiting for manual approval or auto-send |
+| `pending`       | Order accepted, waiting for production                   |
+| `in-production` | Print provider is producing the item                     |
+| `shipped`       | Item has been shipped                                    |
+| `delivered`     | Item delivered to customer                               |
+| `canceled`      | Order was canceled                                       |
 
 **Important:** Printify orders start in `on-hold` status. They must be sent to production either:
+
 - Manually via Printify dashboard
 - Via API call to `send_to_production`
 - Automatically after 24 hours (if auto-approval enabled in Printify settings)
@@ -550,12 +557,12 @@ PRINTIFY_DRY_RUN=false  # Or simply don't set it
 
 ### Behavior Differences
 
-| Aspect | Development (`DRY_RUN=true`) | Production |
-|--------|------------------------------|------------|
-| Printify orders | Mock IDs generated | Real orders created |
-| Printify webhooks | Won't receive (no real orders) | Real status updates |
-| Stripe | Use test keys (`pk_test_*`) | Use live keys (`pk_live_*`) |
-| Shipping | Collected but not used | Used for Printify shipping |
+| Aspect            | Development (`DRY_RUN=true`)   | Production                  |
+| ----------------- | ------------------------------ | --------------------------- |
+| Printify orders   | Mock IDs generated             | Real orders created         |
+| Printify webhooks | Won't receive (no real orders) | Real status updates         |
+| Stripe            | Use test keys (`pk_test_*`)    | Use live keys (`pk_live_*`) |
+| Shipping          | Collected but not used         | Used for Printify shipping  |
 
 ### Switching to Production
 
@@ -570,41 +577,41 @@ PRINTIFY_DRY_RUN=false  # Or simply don't set it
 
 ### Bag Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/payments/bag/` | Optional | Get current bag |
-| `POST` | `/api/payments/bag/` | Optional | Add item to bag |
-| `DELETE` | `/api/payments/bag/` | Optional | Clear bag |
-| `PATCH` | `/api/payments/bag/items/{id}/` | Optional | Update item quantity |
-| `DELETE` | `/api/payments/bag/items/{id}/` | Optional | Remove item |
-| `POST` | `/api/payments/bag/merge/` | Required | Merge guest bag |
+| Method   | Endpoint                        | Auth     | Description          |
+| -------- | ------------------------------- | -------- | -------------------- |
+| `GET`    | `/api/payments/bag/`            | Optional | Get current bag      |
+| `POST`   | `/api/payments/bag/`            | Optional | Add item to bag      |
+| `DELETE` | `/api/payments/bag/`            | Optional | Clear bag            |
+| `PATCH`  | `/api/payments/bag/items/{id}/` | Optional | Update item quantity |
+| `DELETE` | `/api/payments/bag/items/{id}/` | Optional | Remove item          |
+| `POST`   | `/api/payments/bag/merge/`      | Required | Merge guest bag      |
 
 ### Checkout Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/payments/checkout/bag/` | Optional | Create Stripe checkout |
-| `GET` | `/api/payments/checkout/session/{id}/` | Optional | Get session details |
+| Method | Endpoint                               | Auth     | Description            |
+| ------ | -------------------------------------- | -------- | ---------------------- |
+| `POST` | `/api/payments/checkout/bag/`          | Optional | Create Stripe checkout |
+| `GET`  | `/api/payments/checkout/session/{id}/` | Optional | Get session details    |
 
 ### Order Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/payments/orders/` | Required | List user's orders |
-| `GET` | `/api/payments/orders/{number}/` | Public | Get order details |
+| Method | Endpoint                         | Auth     | Description        |
+| ------ | -------------------------------- | -------- | ------------------ |
+| `GET`  | `/api/payments/orders/`          | Required | List user's orders |
+| `GET`  | `/api/payments/orders/{number}/` | Public   | Get order details  |
 
 ### Handoff Endpoints (Staff Only)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/payments/handoffs/` | Staff | List handoff items |
+| Method  | Endpoint                       | Auth  | Description           |
+| ------- | ------------------------------ | ----- | --------------------- |
+| `GET`   | `/api/payments/handoffs/`      | Staff | List handoff items    |
 | `PATCH` | `/api/payments/handoffs/{id}/` | Staff | Update handoff status |
 
 ### Webhook Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/payments/webhook/stripe/` | Signature | Stripe webhooks |
+| Method | Endpoint                          | Auth      | Description       |
+| ------ | --------------------------------- | --------- | ----------------- |
+| `POST` | `/api/payments/webhook/stripe/`   | Signature | Stripe webhooks   |
 | `POST` | `/api/payments/webhook/printify/` | Signature | Printify webhooks |
 
 ---
@@ -649,6 +656,7 @@ PRINTIFY_DRY_RUN=false  # Or simply don't set it
 ```
 
 **Post-Checkout for Local Products:**
+
 ```
 ┌──────────┐     ┌──────────┐     ┌──────────┐
 │  Coach   │     │ Frontend │     │ Backend  │
@@ -752,6 +760,7 @@ PRINTIFY_DRY_RUN=false  # Or simply don't set it
 ```
 
 **Fulfillment for Mixed Bag:**
+
 ```
 Order created (status='paid')
 ├── POD Item (hoodie)
@@ -774,16 +783,16 @@ When BOTH are fulfilled:
 
 ## Key Files Reference
 
-| File | Purpose |
-|------|---------|
-| `backend/apps/payments/models.py` | Order, OrderItem, Bag, BagItem, Product models |
-| `backend/apps/payments/views.py` | Checkout, webhooks, handoff endpoints |
-| `backend/apps/payments/serializers.py` | API serializers |
-| `backend/apps/payments/services/printify_client.py` | Printify API client |
-| `frontend/src/lib/bag.tsx` | Bag context and API calls |
-| `frontend/src/app/shop/success/page.tsx` | Order confirmation page |
-| `frontend/src/app/portal/orders/page.tsx` | Order history (customer) |
-| `frontend/src/app/portal/deliveries/page.tsx` | Handoff management (staff) |
+| File                                                | Purpose                                        |
+| --------------------------------------------------- | ---------------------------------------------- |
+| `backend/apps/payments/models.py`                   | Order, OrderItem, Bag, BagItem, Product models |
+| `backend/apps/payments/views.py`                    | Checkout, webhooks, handoff endpoints          |
+| `backend/apps/payments/serializers.py`              | API serializers                                |
+| `backend/apps/payments/services/printify_client.py` | Printify API client                            |
+| `frontend/src/lib/bag.tsx`                          | Bag context and API calls                      |
+| `frontend/src/app/shop/success/page.tsx`            | Order confirmation page                        |
+| `frontend/src/app/portal/orders/page.tsx`           | Order history (customer)                       |
+| `frontend/src/app/portal/deliveries/page.tsx`       | Handoff management (staff)                     |
 
 ---
 
@@ -816,4 +825,4 @@ When BOTH are fulfilled:
 
 ---
 
-*Document maintained by the development team. Questions? Check the codebase or reach out to developers@leag.app.*
+_Document maintained by the development team. Questions? Check the codebase or reach out to developers@leag.app._
