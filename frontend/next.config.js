@@ -22,6 +22,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'api.njstarselite.com',
       },
+      // Printify mockup images
+      {
+        protocol: 'https',
+        hostname: 'images-api.printify.com',
+      },
       // Railway default domains
       {
         protocol: 'https',

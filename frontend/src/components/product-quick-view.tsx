@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check } from "lucide-react"
 import {
   Dialog,
@@ -12,46 +13,25 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
-import { getCategoryBadgeColor } from "@/lib/category-colors"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 
-// Variant configuration by category
 interface ColorOption {
   name: string
   hex: string
 }
 
-interface VariantConfig {
-  sizes: string[]
-  colors: ColorOption[]
-}
-
-const VARIANT_CONFIGS: Record<string, VariantConfig> = {
-  jersey: {
-    sizes: ["YS", "YM", "YL", "S", "M", "L", "XL", "2XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "White", hex: "#ffffff" },
-    ],
-  },
-  apparel: {
-    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Navy", hex: "#1e3a5f" },
-      { name: "Gray", hex: "#6b7280" },
-    ],
-  },
-  accessories: {
-    sizes: ["One Size"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Red", hex: "#dc2626" },
-    ],
-  },
-  equipment: {
-    sizes: ["Standard"],
-    colors: [],
-  },
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
 }
 
 interface ProductImage {
@@ -60,7 +40,10 @@ interface ProductImage {
   alt_text: string
   is_primary: boolean
   sort_order: number
+  printify_variant_ids: number[]
 }
+
+type FulfillmentType = 'pod' | 'local'
 
 interface Product {
   id: number
@@ -69,9 +52,17 @@ interface Product {
   description: string
   price: string
   compare_at_price: string | null
+  fulfillment_type?: FulfillmentType
+  is_pod?: boolean
+  is_local?: boolean
+  shipping_estimate?: string
+  fulfillment_display?: string
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  variants: ProductVariant[]
+  available_sizes: string[]
+  available_colors: ColorOption[]
   stock_quantity: number
   category: string
   in_stock: boolean
@@ -85,40 +76,137 @@ interface ProductQuickViewProps {
 }
 
 
+// Comprehensive size order for Printify variants (smallest to largest)
+const SIZE_ORDER: Record<string, number> = {
+  // Youth sizes
+  'YXS': 1, 'YS': 2, 'YM': 3, 'YL': 4, 'YXL': 5,
+  // Adult sizes
+  'XS': 10, 'S': 11, 'M': 12, 'L': 13, 'XL': 14,
+  '2XL': 15, 'XXL': 15,
+  '3XL': 16, 'XXXL': 16,
+  '4XL': 17, 'XXXXL': 17,
+  '5XL': 18,
+  '6XL': 19,
+  '7XL': 20,
+  '8XL': 21,
+  '9XL': 22,
+  '10XL': 23,
+  // Special sizes
+  'ONE SIZE': 50,
+}
+
+function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const orderA = SIZE_ORDER[a.toUpperCase().trim()] ?? 100
+    const orderB = SIZE_ORDER[b.toUpperCase().trim()] ?? 100
+    return orderA - orderB
+  })
+}
+
 export function ProductQuickView({ product, open, onOpenChange }: ProductQuickViewProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
-  const [isFadingOut, setIsFadingOut] = useState(false)
   const [selectedSize, setSelectedSize] = useState<string>("")
   const [selectedColor, setSelectedColor] = useState<string>("")
   const { addToBag } = useBag()
 
-  // Get variant configuration for this product's category
-  const variantConfig = VARIANT_CONFIGS[product.category] || VARIANT_CONFIGS.equipment
-  const sizes = variantConfig.sizes
-  const colors = variantConfig.colors
+  // Use actual product variants from API, sort sizes S -> 3XL
+  const sizes = sortSizes(product.available_sizes || [])
+  const rawColors = product.available_colors || []
+
+  // Find the color associated with the primary image
+  const getPrimaryImageColor = (): string | null => {
+    if (!product.images?.length || !product.variants?.length) {
+      return null
+    }
+    // Find the primary image (or first image as fallback)
+    const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+    if (!primaryImage?.printify_variant_ids?.length) {
+      return null
+    }
+    // Find a variant that matches this image's variant IDs
+    const matchingVariant = product.variants.find(v =>
+      v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+    )
+    return matchingVariant?.color || null
+  }
+
+  // Reorder colors so primary image's color is first (leftmost in UI)
+  const primaryColor = getPrimaryImageColor()
+  const colors = primaryColor
+    ? [
+        ...rawColors.filter(c => c.name === primaryColor),
+        ...rawColors.filter(c => c.name !== primaryColor)
+      ]
+    : rawColors
 
   // Check if variants are required and selected
-  const needsSize = sizes.length > 1
+  const needsSize = sizes.length > 0
   const needsColor = colors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
 
-  // Reset selections when modal opens with a new product
+  // POD products are always available even with stock_quantity = 0
+  const isAvailable = product.is_pod || product.stock_quantity > 0
+
+  // Reset selections when modal opens
+  // Auto-select first color (primary image's color, now leftmost), but NOT size
   useEffect(() => {
     if (open) {
-      setSelectedSize("")
-      setSelectedColor("")
+      // Get colors fresh to avoid stale closure
+      const freshColors = product.available_colors || []
+      const freshPrimaryColor = (() => {
+        if (!product.images?.length || !product.variants?.length) return null
+        const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+        if (!primaryImage?.printify_variant_ids?.length) return null
+        const matchingVariant = product.variants.find(v =>
+          v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+        )
+        return matchingVariant?.color || null
+      })()
+
+      // Reorder so primary color is first
+      const orderedColors = freshPrimaryColor
+        ? [...freshColors.filter(c => c.name === freshPrimaryColor), ...freshColors.filter(c => c.name !== freshPrimaryColor)]
+        : freshColors
+
+      setSelectedColor(orderedColors.length > 0 ? orderedColors[0].name : "")
+      setSelectedSize("")  // User must select size
       setQuantity(1)
       setCurrentImageIndex(0)
     }
-  }, [open, product.id])
+  }, [open, product.id, product.images, product.variants, product.available_colors])
 
-  // Build image gallery from uploaded images, falling back to legacy image_url
+  // Reset image index when color changes
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [selectedColor])
+
+  // Build image gallery filtered by selected color
   const productImages: { url: string; alt: string }[] = (() => {
     if (product.images && product.images.length > 0) {
-      return product.images.map((img) => ({
+      // Get variant IDs for selected color
+      const selectedVariantIds = selectedColor && product.variants
+        ? product.variants
+            .filter(v => v.color === selectedColor)
+            .map(v => v.printify_variant_id)
+            .filter((id): id is number => id !== null)
+        : []
+
+      // Filter images by selected color's variant IDs
+      let filteredImages = product.images
+      if (selectedVariantIds.length > 0) {
+        const colorImages = product.images.filter(img =>
+          img.printify_variant_ids?.some(id => selectedVariantIds.includes(id))
+        )
+        // Use filtered images if any match, otherwise show all
+        if (colorImages.length > 0) {
+          filteredImages = colorImages
+        }
+      }
+
+      return filteredImages.map((img) => ({
         url: img.url,
         alt: img.alt_text || product.name,
       }))
@@ -134,18 +222,11 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     try {
       await addToBag(product.id, quantity, selectedSize || undefined, selectedColor || undefined)
       setJustAdded(true)
-      // Start fade out after showing success
       setTimeout(() => {
-        setIsFadingOut(true)
-        // Close modal after fade animation completes
-        setTimeout(() => {
-          onOpenChange(false)
-          // Reset states after modal closes
-          setJustAdded(false)
-          setQuantity(1)
-          setIsFadingOut(false)
-        }, 300)
-      }, 600)
+        onOpenChange(false)
+        setJustAdded(false)
+        setQuantity(1)
+      }, 800)
     } catch (error) {
       console.error('Failed to add to bag:', error)
     } finally {
@@ -161,157 +242,130 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
   }
 
-  const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-y-auto transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
-        <DialogHeader>
-          <DialogTitle className="sr-only">{product.name}</DialogTitle>
-          <DialogDescription className="sr-only">
-            Quick view of {product.name} - ${product.price}
-          </DialogDescription>
+      <DialogContent className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl max-h-[90vh] md:max-h-[85vh] p-0 overflow-hidden">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{product.name}</DialogTitle>
+          <DialogDescription>Quick view of {product.name}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Image Carousel */}
-          <div className="relative w-full aspect-square">
-            {productImages[currentImageIndex] ? (
-              <>
-                <Image
-                  src={productImages[currentImageIndex].url}
-                  alt={productImages[currentImageIndex].alt}
-                  fill
-                  className="object-cover rounded-lg"
-                />
-                {/* Carousel Controls */}
-                {productImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={previousImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full transition-opacity"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full transition-opacity"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                    {/* Image Indicators */}
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
-                      {productImages.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          aria-label={`View image ${index + 1}`}
-                        >
-                          <span className={`w-3 h-3 rounded-full transition-colors ${
-                            index === currentImageIndex ? 'bg-background' : 'bg-background/50'
-                          }`} />
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="h-full w-full bg-muted flex items-center justify-center p-8 relative rounded-lg">
-                <Image
-                  src="/brand/logos/logo square thick muted.svg"
-                  alt={product.name}
-                  fill
-                  className="opacity-30 object-contain p-8"
-                />
-              </div>
-            )}
+        <div className="grid md:grid-cols-2 max-h-[90vh] md:max-h-[85vh] overflow-y-auto">
+          {/* Image & Title/Price (desktop: LHS) */}
+          <div className="p-4 md:p-6 flex flex-col">
+            <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+              {productImages[currentImageIndex] ? (
+                <>
+                  <Image
+                    src={productImages[currentImageIndex].url}
+                    alt={productImages[currentImageIndex].alt}
+                    fill
+                    className="object-cover"
+                    unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
+                  />
+                  {productImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={previousImage}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                      {/* Dots - primary color for active */}
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        {productImages.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`w-2 h-2 rounded-full transition-colors ${
+                              index === currentImageIndex ? 'bg-primary' : 'bg-white/50'
+                            }`}
+                            aria-label={`View image ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center p-8">
+                  <Image
+                    src="/brand/logos/logo square thick muted.svg"
+                    alt={product.name}
+                    width={120}
+                    height={120}
+                    className="opacity-30"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Title & Price - below image on desktop */}
+            <div className="hidden md:block mt-4">
+              <h2 className="text-xl font-bold">{product.name}</h2>
+              <p className="text-2xl font-bold text-primary mt-1">
+                ${parseFloat(product.price).toFixed(2)}
+              </p>
+            </div>
           </div>
 
-          {/* Product Details */}
-          <div className="flex flex-col space-y-4">
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h2 className="text-2xl font-bold flex-1">{product.name}</h2>
-                <span className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${getCategoryBadgeColor(product.category)}`}>
-                  {product.category}
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-3xl font-bold text-foreground">
-                  ${parseFloat(product.price).toFixed(2)}
-                </span>
-                {hasDiscount && (
-                  <span className="text-lg text-muted-foreground line-through">
-                    ${parseFloat(product.compare_at_price!).toFixed(2)}
-                  </span>
-                )}
-              </div>
+          {/* Details (RHS on desktop) */}
+          <div className="p-6 pt-0 md:pt-6 flex flex-col">
+            {/* Title & Price - mobile only (shows at top of RHS) */}
+            <div className="md:hidden mb-6">
+              <h2 className="text-xl font-bold mb-1">{product.name}</h2>
+              <p className="text-2xl font-bold text-primary">
+                ${parseFloat(product.price).toFixed(2)}
+              </p>
             </div>
 
-            <p className="text-muted-foreground leading-relaxed">
-              {product.description}
-            </p>
+            {/* Variants */}
+            <div className="space-y-5 flex-1">
+              {/* Color Selector */}
+              {isAvailable && needsColor && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Color
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          selectedColor === color.name
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent"
+                            : "border-border hover:border-muted-foreground"
+                        }`}
+                        style={{ backgroundColor: color.hex || '#808080' }}
+                        title={color.name}
+                        aria-label={`Select ${color.name}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <div className="flex items-center gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    product.stock_quantity > 15
-                      ? "bg-success"
-                      : product.stock_quantity > 5
-                      ? "bg-warning"
-                      : product.stock_quantity > 0
-                      ? "bg-accent animate-pulse"
-                      : "bg-destructive"
-                  }`}
-                />
-                <span
-                  className={
-                    product.stock_quantity === 0
-                      ? "text-destructive font-semibold"
-                      : product.stock_quantity <= 5
-                      ? "text-accent font-semibold"
-                      : "text-foreground"
-                  }
-                >
-                  {product.stock_quantity > 15
-                    ? "In Stock"
-                    : product.stock_quantity > 5
-                    ? "⚡ Limited Drop"
-                    : product.stock_quantity > 0
-                    ? "🔥 Almost Gone!"
-                    : "Out of Stock"}
-                </span>
-              </div>
-            </div>
-
-            {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-              <div className="bg-accent/10 border border-accent/30 rounded-md p-3 text-sm text-accent font-semibold">
-                🔥 Selling fast! Only a few left - grab yours now!
-              </div>
-            )}
-            {product.stock_quantity > 5 && product.stock_quantity <= 15 && (
-              <div className="bg-warning/10 border border-warning/30 rounded-md p-3 text-sm text-warning font-medium">
-                ⚡ Limited edition drop - don&apos;t miss out!
-              </div>
-            )}
-
-            <div className="flex flex-col gap-3 mt-auto pt-4">
               {/* Size Selector */}
-              {product.stock_quantity > 0 && needsSize && (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Size</span>
+              {isAvailable && needsSize && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Size
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {sizes.map((size) => (
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`min-w-[44px] min-h-[44px] px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
+                        className={`min-w-[2.5rem] px-3 py-1.5 border rounded text-sm font-medium transition-colors ${
                           selectedSize === size
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-input hover:bg-muted"
@@ -324,104 +378,73 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                 </div>
               )}
 
-              {/* Color Selector */}
-              {product.stock_quantity > 0 && needsColor && (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">
-                    Color{selectedColor && `: ${selectedColor}`}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color.name)}
-                        className={`min-w-[44px] min-h-[44px] w-10 h-10 rounded-full border-2 transition-all ${
-                          selectedColor === color.name
-                            ? "ring-2 ring-primary ring-offset-2"
-                            : "hover:scale-110"
-                        }`}
-                        style={{ backgroundColor: color.hex }}
-                        title={color.name}
-                        aria-label={`Select ${color.name}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity Selector */}
-              {product.stock_quantity > 0 && (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">Quantity:</span>
-                  <div className="flex items-center border rounded-md">
+              {/* Quantity */}
+              {isAvailable && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Quantity
+                  </label>
+                  <div className="inline-flex items-center border rounded">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-lg"
                       disabled={quantity <= 1}
-                      aria-label="Decrease quantity"
                     >
                       −
                     </button>
-                    <span className="px-4 min-h-[44px] flex items-center justify-center border-x min-w-[3rem] text-center">
+                    <span className="w-12 h-10 flex items-center justify-center border-x text-center font-medium">
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted transition-colors text-lg"
-                      disabled={quantity >= product.stock_quantity}
-                      aria-label="Increase quantity"
+                      onClick={() => setQuantity(Math.min(product.is_pod ? 10 : product.stock_quantity, quantity + 1))}
+                      className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      disabled={quantity >= (product.is_pod ? 10 : product.stock_quantity)}
                     >
                       +
                     </button>
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Add to Bag Button */}
-              {product.stock_quantity > 0 ? (
+            {/* Actions */}
+            <div className="mt-6 space-y-3">
+              {isAvailable ? (
                 <Button
-                  className="w-full"
-                  size="lg"
+                  className="w-full h-12 text-base font-semibold"
                   onClick={handleAddToBag}
                   disabled={isAdding || !variantsSelected}
                 >
                   {isAdding ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Adding...
                     </>
                   ) : justAdded ? (
                     <>
-                      <Check className="mr-2 h-4 w-4" />
-                      Added to Bag!
-                    </>
-                  ) : !variantsSelected ? (
-                    <>
-                      <ShoppingBag className="mr-2 h-4 w-4" />
-                      {!selectedSize && needsSize ? "Select Size" : "Select Color"}
+                      <Check className="mr-2 h-5 w-5" />
+                      Added!
                     </>
                   ) : (
                     <>
-                      <ShoppingBag className="mr-2 h-4 w-4" />
-                      Add to Bag
+                      <ShoppingBag className="mr-2 h-5 w-5" />
+                      Add to Cart
                     </>
                   )}
                 </Button>
               ) : (
-                <Button disabled className="w-full text-accent" size="lg">
+                <Button disabled className="w-full h-12" size="lg">
                   Out of Stock
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  window.location.href = `/shop/${product.slug}`
-                }}
+              <Link
+                href={`/shop/${product.slug}`}
+                className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+                onClick={() => onOpenChange(false)}
               >
                 View Full Details
-              </Button>
+              </Link>
             </div>
           </div>
         </div>

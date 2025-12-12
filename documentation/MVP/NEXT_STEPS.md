@@ -1,7 +1,7 @@
 # NJ Stars Platform - Next Steps & Roadmap
 
 > **Purpose:** Clear action items and roadmap for production deployment and future enhancements
-> **Last Updated:** December 9, 2025
+> **Last Updated:** December 10, 2025
 >
 > **Related Documents:**
 > - [Meeting Notes - Dec 9, 2025](./meeting%20notes/MEETING_NOTES_2025-12-09.md) - Custom products, revenue sharing, Instagram API
@@ -95,7 +95,7 @@ fb_exchange_token={current-long-lived-token}"
 
 ---
 
-## 🔥 IMMEDIATE PRIORITIES (Dec 9, 2025)
+## 🔥 IMMEDIATE PRIORITIES (Dec 10, 2025)
 
 ### Revenue Sharing Agreement
 Kenny has agreed to **20% platform fee** on all website revenue (events, merch, tryouts, camps).
@@ -105,12 +105,37 @@ Coach private training: **5% platform fee** (to incentivize platform use over DM
 
 | Task | Priority | Status | Section |
 |------|----------|--------|---------|
+| **Printify POD Integration** | 🔴 Critical | ✅ Complete | [4.12](#412-printify-pod-integration--critical-added-dec-10) |
 | Instagram API Integration | 🔴 Critical | Pending | [4.8](#48-multi-instagram-huddle--medium-added-dec-8) |
 | Custom Products/Invoice System | 🔴 Critical | Pending | [4.10](#410-custom-products-system--critical-added-dec-9) |
 | Coach Payout System | 🔴 High | Pending | [4.7](#47-coach-payout-system--medium-added-dec-8) |
 | Tryout Registration Form | 🔴 High | Pending | [4.2](#42-tryout-registration-form--high-updated-dec-8) |
 
-### Completed Today (Dec 9)
+### Completed Today (Dec 10)
+- [x] **Printify POD Integration**:
+  - Added `fulfillment_type` field to Product model (POD vs Local)
+  - Created Printify API client service (`services/printify_client.py`)
+  - Updated admin interface with fulfillment badges and improved fieldsets
+  - Added fulfillment info to frontend (shop page, product detail, quick view)
+  - Integrated Printify order submission in Stripe webhook
+  - Added Printify webhook handler for tracking updates
+  - Created shipping calculator endpoint
+  - Built order history page in portal (`/portal/orders`)
+  - See: [Plan](/Users/abe/.claude/plans/mutable-waddling-book.md)
+
+### Completed Earlier (Dec 10)
+- [x] **Authentication System (dj-rest-auth)**:
+  - Added `dj-rest-auth` package for REST API authentication
+  - Created custom registration serializer with first_name, last_name, phone fields
+  - Added password reset workflow with email notifications
+  - Created frontend pages: `/portal/forgot-password`, `/portal/reset-password/[uid]/[token]`, `/portal/register`
+- [x] **Login Page Redesign**:
+  - Split-pane layout with branding panel (desktop) and form panel
+  - Animated shooting stars background
+  - Reusable `ThemeLogo` component for theme-aware logos
+  - Mobile-first responsive design
+
+### Completed (Dec 9)
 - [x] Sticky sidebar filters for Shop page (reusable component)
 - [x] Product cards: click = QuickView (no buttons)
 - [x] Updated product names (removed "NJ Stars" prefix)
@@ -1195,6 +1220,68 @@ Client DMs coach for custom training → Coach creates invoice on platform → C
 
 ---
 
+### 4.12 Printify POD Integration 🔴 CRITICAL (Added Dec 10) ✅ COMPLETE
+
+**Time:** 5-7 days
+
+**Goal:** Support two fulfillment types for products:
+1. **POD (Print on Demand):** Fulfilled via Printify API (t-shirts, hoodies, accessories)
+2. **Local:** Coach hand-delivery at practice (game jerseys, shoes, vendor products)
+
+**What Was Implemented:**
+
+#### Backend Changes
+- **Product Model:** Added `fulfillment_type` field with choices: `pod`, `local`
+  - Helper properties: `is_pod`, `is_local`, `shipping_estimate`, `fulfillment_display`
+- **OrderItem Model:** Added `selected_size`, `selected_color`, `fulfillment_type` fields
+- **Printify Client:** New service at `apps/payments/services/printify_client.py`
+  - Methods: `create_order()`, `get_order()`, `send_to_production()`, `calculate_shipping()`
+- **Stripe Webhook Update:** Creates Order + OrderItems, submits POD items to Printify
+- **Printify Webhook:** New endpoint `POST /api/payments/webhook/printify/`
+  - Handles: `order:sent-to-production`, `order:shipment:created`, `order:shipment:delivered`
+- **Shipping Calculator:** New endpoint `POST /api/payments/bag/shipping/`
+- **User Orders API:** New endpoint `GET /api/payments/orders/`
+
+#### Frontend Changes
+- **Shop Page:** Added fulfillment badges (Made to Order / Coach Delivery)
+- **Product Detail:** POD info banner, shipping estimate, updated stock display
+- **Quick View Modal:** Shipping estimate, POD-aware stock indicator
+- **Order History Page:** New page at `/portal/orders` with tracking support
+
+#### Admin Changes
+- Fulfillment badge column in product list
+- Improved fieldsets showing fulfillment type prominently
+- Stock display shows "∞ POD" for print-on-demand products
+
+#### Environment Variables Required
+```bash
+# backend/.env
+PRINTIFY_API_KEY=your-api-key
+PRINTIFY_SHOP_ID=your-shop-id
+PRINTIFY_WEBHOOK_SECRET=optional-webhook-secret
+```
+
+#### Product Setup Workflow
+**For POD Products:**
+1. Create product in Printify dashboard
+2. Copy Product ID and Variant ID
+3. In Django admin: Create product, set `fulfillment_type = 'pod'`
+4. Paste Printify IDs
+5. Set `manage_inventory = False`
+
+**For Local Products:**
+1. Create product in Django admin
+2. Set `fulfillment_type = 'local'`
+3. Set `manage_inventory = True`
+4. Set initial `stock_quantity`
+
+#### Printify Webhook Setup
+1. Go to Printify Dashboard → Settings → Webhooks
+2. Add endpoint: `https://api.njstarselite.com/api/payments/webhook/printify/`
+3. Select events: shipment:created, order status changes
+
+---
+
 ### 4.11 Nice-to-Have Features 🟢 LOW
 
 #### Social Features
@@ -1327,9 +1414,11 @@ useEffect(() => {
 5. ✅ Shop page with multi-select filters and product tags
 6. ✅ Product Quick View modal implemented
 7. ✅ Hero section with CMS control
-8. 🔴 **Shopping Cart functionality** (see [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#7-shopping-cart-functionality-))
-9. 🔴 **Shop UX: Card = Quick View** (remove buttons from cards)
-10. 🔴 Set up Stripe live mode API keys for production
+8. ✅ **Authentication System** - dj-rest-auth integration with password reset and registration
+9. 🔴 **Shopping Cart functionality** (see [Meeting Notes](./meeting%20notes/MEETING_NOTES_2025-12-08.md#7-shopping-cart-functionality-))
+10. 🔴 **Shop UX: Card = Quick View** (remove buttons from cards)
+11. 🔴 Set up Stripe live mode API keys for production
+12. 🟠 **Configure production email** (SendGrid/Mailgun) for password reset emails
 
 ### This Month
 11. 🔴 **Tryout Registration Form Modal** (replace Google Form)

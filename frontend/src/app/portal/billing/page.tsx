@@ -15,7 +15,8 @@ import {
   ChevronRight,
   History,
   Wallet,
-  ToggleLeft
+  ToggleLeft,
+  Package,
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -210,7 +211,7 @@ export default function BillingPage() {
       </Card>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link href="/portal/billing/payment-methods">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-5">
@@ -221,6 +222,23 @@ export default function BillingPage() {
                 <h3 className="font-medium">Payment Methods</h3>
                 <p className="text-sm text-muted-foreground truncate">
                   {data.saved_cards.length} card(s) saved
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/portal/orders">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="h-12 w-12 rounded-full bg-violet-500/10 flex items-center justify-center shrink-0">
+                <Package className="h-6 w-6 text-violet-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium">Order History</h3>
+                <p className="text-sm text-muted-foreground truncate">
+                  Track purchases & shipping
                 </p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />

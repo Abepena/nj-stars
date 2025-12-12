@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
     'allauth.socialaccount.providers.apple',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
 
     # Third party - API
     'rest_framework',
@@ -188,8 +190,12 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 
 
-# Print-on-Demand (Future - Phase 2)
-# PRINTIFY_API_KEY = config('PRINTIFY_API_KEY', default='')
+# Print-on-Demand (Printify Integration)
+# Two product types: POD (via Printify) and Local (coach delivery)
+# See documentation/plans/PRINTIFY_INTEGRATION.md for setup guide
+PRINTIFY_API_KEY = config('PRINTIFY_API_KEY', default='')
+PRINTIFY_SHOP_ID = config('PRINTIFY_SHOP_ID', default='')
+PRINTIFY_WEBHOOK_SECRET = config('PRINTIFY_WEBHOOK_SECRET', default='')
 
 
 # Instagram Graph API
@@ -212,6 +218,9 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
+
+# Custom adapter for email confirmation URLs
+ACCOUNT_ADAPTER = 'apps.portal.adapters.CustomAccountAdapter'
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
@@ -257,7 +266,7 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
-    'x-cart-session',  # Custom header for guest cart session tracking
+    'x-bag-session',  # Custom header for guest bag session tracking
 ]
 
 
@@ -275,5 +284,51 @@ REST_FRAMEWORK = {
 }
 
 
-# Frontend URL
+# Frontend URL (Next.js app)
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
+# Backend URL (Django API) - used for email verification links
+BACKEND_URL = config('BACKEND_URL', default='http://localhost:8000')
+
+
+# dj-rest-auth settings
+REST_AUTH = {
+    'USE_JWT': False,  # Using Token auth, not JWT
+    'TOKEN_MODEL': 'rest_framework.authtoken.models.Token',
+    'PASSWORD_RESET_USE_SITES_DOMAIN': False,
+    'OLD_PASSWORD_FIELD_ENABLED': True,
+    'LOGOUT_ON_PASSWORD_CHANGE': False,
+    'REGISTER_SERIALIZER': 'apps.portal.auth_serializers.CustomRegisterSerializer',
+    'USER_DETAILS_SERIALIZER': 'apps.portal.auth_serializers.UserDetailsSerializer',
+}
+
+# Password reset email settings
+ACCOUNT_EMAIL_SUBJECT_PREFIX = '[NJ Stars Elite] '
+PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds
+
+# =============================================================================
+# EMAIL CONFIGURATION
+# =============================================================================
+# Currently using Django's built-in email backend.
+# For production at scale, consider migrating to:
+#   - SendGrid (recommended for transactional emails)
+#   - Amazon SES (cost-effective at scale)
+#   - Mailgun (good deliverability)
+#   - Postmark (excellent for transactional)
+#
+# TODO: Migrate to dedicated email service when:
+#   - Monthly email volume exceeds 500 emails
+#   - Need for email analytics/tracking
+#   - Deliverability becomes a concern
+# =============================================================================
+
+# Default email settings (can be overridden in development.py/production.py)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='NJ Stars Elite <noreply@njstarselite.com>')
+SERVER_EMAIL = config('SERVER_EMAIL', default='NJ Stars Elite <noreply@njstarselite.com>')
+
+# Email templates context
+EMAIL_CONTEXT = {
+    'site_name': 'NJ Stars Elite AAU',
+    'support_email': 'support@njstarselite.com',
+    'site_url': FRONTEND_URL,
+}

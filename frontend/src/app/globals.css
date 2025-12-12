@@ -150,6 +150,23 @@
   body {
     @apply bg-bg-primary text-text-primary;
   }
+
+  /* Override browser autofill styles to maintain dark theme */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px hsl(20 7.1% 16.5%) inset !important;
+    -webkit-text-fill-color: hsl(26.7 16.4% 89.2%) !important;
+    caret-color: hsl(26.7 16.4% 89.2%) !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* For Firefox */
+  input:autofill {
+    background-color: hsl(20 7.1% 16.5%) !important;
+    color: hsl(26.7 16.4% 89.2%) !important;
+  }
 }
 
 /* Confetti celebration animations */

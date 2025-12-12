@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, SubscriptionPlan, Bag, BagItem, Order, OrderItem
+from .models import Product, ProductImage, ProductVariant, SubscriptionPlan, Bag, BagItem, Order, OrderItem
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -15,6 +15,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
             'alt_text',
             'is_primary',
             'sort_order',
+            'printify_variant_ids',
         ]
 
     def get_url(self, obj):
@@ -29,12 +30,77 @@ class ProductImageSerializer(serializers.ModelSerializer):
         return obj.image_url or None
 
 
+class ProductVariantSerializer(serializers.ModelSerializer):
+    """Serializer for ProductVariant model"""
+
+    effective_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'id',
+            'printify_variant_id',
+            'title',
+            'size',
+            'color',
+            'color_hex',
+            'price',
+            'effective_price',
+            'is_enabled',
+            'is_available',
+            'sort_order',
+        ]
+        read_only_fields = ['id', 'printify_variant_id']
+
+
 class ProductSerializer(serializers.ModelSerializer):
-    """Serializer for Product model"""
+    """Serializer for Product model with fulfillment type support"""
 
     in_stock = serializers.ReadOnlyField()
+    is_pod = serializers.ReadOnlyField()
+    is_local = serializers.ReadOnlyField()
+    shipping_estimate = serializers.ReadOnlyField()
+    fulfillment_display = serializers.ReadOnlyField()
     primary_image_url = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    # Variant data
+    variants = serializers.SerializerMethodField()
+    available_sizes = serializers.SerializerMethodField()
+    available_colors = serializers.SerializerMethodField()
+
+    def get_variants(self, obj):
+        """Serialize enabled and available variants"""
+        variants = obj.variants.filter(is_enabled=True, is_available=True)
+        return ProductVariantSerializer(variants, many=True).data
+
+    def get_available_sizes(self, obj):
+        """Get unique available sizes for this product"""
+        sizes = obj.variants.filter(
+            is_enabled=True, is_available=True
+        ).exclude(size='').values_list('size', flat=True).distinct()
+        # Preserve order from sort_order rather than alphabetical
+        ordered_sizes = obj.variants.filter(
+            is_enabled=True, is_available=True, size__in=sizes
+        ).order_by('sort_order').values_list('size', flat=True)
+        # Remove duplicates while preserving order
+        seen = set()
+        return [s for s in ordered_sizes if not (s in seen or seen.add(s))]
+
+    def get_available_colors(self, obj):
+        """Get unique available colors with hex codes"""
+        colors = obj.variants.filter(
+            is_enabled=True, is_available=True
+        ).exclude(color='').values('color', 'color_hex')
+        # Deduplicate by color name (keep first occurrence)
+        seen = set()
+        unique_colors = []
+        for c in colors:
+            if c['color'] not in seen:
+                seen.add(c['color'])
+                unique_colors.append({'name': c['color'], 'hex': c['color_hex']})
+        return unique_colors
 
     def get_images(self, obj):
         """Serialize images with request context for absolute URLs"""
@@ -71,15 +137,28 @@ class ProductSerializer(serializers.ModelSerializer):
             'price',
             'compare_at_price',
             'category',
+            # Fulfillment fields
+            'fulfillment_type',
+            'is_pod',
+            'is_local',
+            'shipping_estimate',
+            'fulfillment_display',
+            # Images
             'image_url',
             'primary_image_url',
             'images',
+            # Variants
+            'variants',
+            'available_sizes',
+            'available_colors',
+            # Status
             'is_active',
             'featured',
             'best_selling',
             'on_sale',
             'stock_quantity',
             'in_stock',
+            # Timestamps
             'created_at',
             'updated_at',
         ]
@@ -212,9 +291,10 @@ class UpdateBagItemSerializer(serializers.Serializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    """Serializer for order items"""
+    """Serializer for order items with fulfillment info"""
 
     product_image = serializers.SerializerMethodField()
+    fulfillment_display = serializers.SerializerMethodField()
     total_price = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
     )
@@ -225,24 +305,38 @@ class OrderItemSerializer(serializers.ModelSerializer):
             'id',
             'product_name',
             'product_price',
+            'selected_size',
+            'selected_color',
             'quantity',
             'total_price',
             'product_image',
+            'fulfillment_type',
+            'fulfillment_display',
+            'printify_line_item_id',
         ]
         read_only_fields = ['id']
 
     def get_product_image(self, obj):
         """Get product image URL if product still exists"""
         if obj.product:
-            return obj.product.image_url
+            return obj.product.primary_image_url
         return None
+
+    def get_fulfillment_display(self, obj):
+        """Get human-readable fulfillment type"""
+        if obj.fulfillment_type == 'pod':
+            return 'Made to Order'
+        return 'Coach Delivery'
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """Serializer for Order model"""
+    """Serializer for Order model with tracking support"""
 
     items = OrderItemSerializer(many=True, read_only=True)
     status_display = serializers.SerializerMethodField()
+    has_tracking = serializers.SerializerMethodField()
+    has_pod_items = serializers.SerializerMethodField()
+    has_local_items = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -255,6 +349,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'shipping',
             'tax',
             'total',
+            # Shipping address
             'shipping_name',
             'shipping_email',
             'shipping_address_line1',
@@ -263,7 +358,17 @@ class OrderSerializer(serializers.ModelSerializer):
             'shipping_state',
             'shipping_zip',
             'shipping_country',
+            # Tracking info
+            'tracking_number',
+            'tracking_url',
+            'has_tracking',
+            # Printify info
+            'printify_order_id',
+            'has_pod_items',
+            'has_local_items',
+            # Items and timestamps
             'items',
+            'notes',
             'created_at',
             'updated_at',
         ]
@@ -272,3 +377,15 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_status_display(self, obj):
         """Return human-readable status"""
         return obj.get_status_display()
+
+    def get_has_tracking(self, obj):
+        """Check if order has tracking information"""
+        return bool(obj.tracking_number and obj.tracking_url)
+
+    def get_has_pod_items(self, obj):
+        """Check if order contains POD items"""
+        return obj.items.filter(product__fulfillment_type='pod').exists()
+
+    def get_has_local_items(self, obj):
+        """Check if order contains local delivery items"""
+        return obj.items.filter(product__fulfillment_type='local').exists()

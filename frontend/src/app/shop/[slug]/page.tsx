@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft, Truck, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -13,6 +13,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs"
 import { ProductDetailSkeleton } from "@/components/skeletons/product-detail-skeleton"
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 
 interface ProductImage {
   id: number
@@ -20,7 +21,29 @@ interface ProductImage {
   alt_text: string
   is_primary: boolean
   sort_order: number
+  printify_variant_ids: number[]
 }
+
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
+}
+
+interface AvailableColor {
+  name: string
+  hex: string
+}
+
+type FulfillmentType = 'pod' | 'local'
 
 interface Product {
   id: number
@@ -32,52 +55,53 @@ interface Product {
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  // Variants - from API
+  variants: ProductVariant[]
+  available_sizes: string[]
+  available_colors: AvailableColor[]
+  // Stock & Status
   stock_quantity: number
   category: string
   in_stock: boolean
   featured: boolean
   best_selling?: boolean
   on_sale?: boolean
-}
-
-// Variant configuration - mockup data for now
-// TODO: This will be fetched from Printify API or local inventory
-interface VariantConfig {
-  sizes: string[]
-  colors: { name: string; hex: string; image?: string }[]
-}
-
-const VARIANT_CONFIGS: Record<string, VariantConfig> = {
-  jersey: {
-    sizes: ["YS", "YM", "YL", "S", "M", "L", "XL", "2XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "White", hex: "#ffffff" },
-    ],
-  },
-  apparel: {
-    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Navy", hex: "#1e3a5f" },
-      { name: "Gray", hex: "#6b7280" },
-    ],
-  },
-  accessories: {
-    sizes: ["One Size"],
-    colors: [
-      { name: "Black", hex: "#1a1a1a" },
-      { name: "Red", hex: "#dc2626" },
-    ],
-  },
-  equipment: {
-    sizes: ["Standard"],
-    colors: [],
-  },
+  // Fulfillment fields
+  fulfillment_type?: FulfillmentType
+  is_pod?: boolean
+  is_local?: boolean
+  shipping_estimate?: string
+  fulfillment_display?: string
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
+// Comprehensive size order for Printify variants (smallest to largest)
+const SIZE_ORDER: Record<string, number> = {
+  // Youth sizes
+  'YXS': 1, 'YS': 2, 'YM': 3, 'YL': 4, 'YXL': 5,
+  // Adult sizes
+  'XS': 10, 'S': 11, 'M': 12, 'L': 13, 'XL': 14,
+  '2XL': 15, 'XXL': 15,
+  '3XL': 16, 'XXXL': 16,
+  '4XL': 17, 'XXXXL': 17,
+  '5XL': 18,
+  '6XL': 19,
+  '7XL': 20,
+  '8XL': 21,
+  '9XL': 22,
+  '10XL': 23,
+  // Special sizes
+  'ONE SIZE': 50,
+}
+
+function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const orderA = SIZE_ORDER[a.toUpperCase().trim()] ?? 100
+    const orderB = SIZE_ORDER[b.toUpperCase().trim()] ?? 100
+    return orderA - orderB
+  })
+}
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -97,20 +121,81 @@ export default function ProductDetailPage() {
 
   const { addToBag } = useBag()
 
-  // Get variant config based on product category
-  const variantConfig = product ? VARIANT_CONFIGS[product.category] || VARIANT_CONFIGS.equipment : null
+  // Get available variants from API data, sort sizes S -> 3XL
+  const availableSizes = sortSizes(product?.available_sizes || [])
+  const rawColors = product?.available_colors || []
+
+  // Find the color associated with the primary image
+  const getPrimaryImageColor = (): string | null => {
+    if (!product?.images?.length || !product.variants?.length) {
+      return null
+    }
+    // Find the primary image (or first image as fallback)
+    const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+    if (!primaryImage?.printify_variant_ids?.length) {
+      return null
+    }
+    // Find a variant that matches this image's variant IDs
+    const matchingVariant = product.variants.find(v =>
+      v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+    )
+    return matchingVariant?.color || null
+  }
+
+  // Reorder colors so primary image's color is first (leftmost in UI)
+  const primaryColor = getPrimaryImageColor()
+  const availableColors = primaryColor
+    ? [
+        ...rawColors.filter(c => c.name === primaryColor),
+        ...rawColors.filter(c => c.name !== primaryColor)
+      ]
+    : rawColors
 
   // Check if variants are required and selected
-  const needsSize = variantConfig && variantConfig.sizes.length > 1
-  const needsColor = variantConfig && variantConfig.colors.length > 0
+  const needsSize = availableSizes.length > 0
+  const needsColor = availableColors.length > 0
   const variantsSelected = (!needsSize || selectedSize) && (!needsColor || selectedColor)
+
+  // Auto-select first color (primary image's color, now leftmost) on product load
+  // Do NOT auto-select size - user must choose
+  useEffect(() => {
+    if (product && !selectedColor) {
+      // Compute colors fresh to avoid stale closure
+      const freshColors = product.available_colors || []
+      const freshPrimaryColor = (() => {
+        if (!product.images?.length || !product.variants?.length) return null
+        const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+        if (!primaryImage?.printify_variant_ids?.length) return null
+        const matchingVariant = product.variants.find(v =>
+          v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+        )
+        return matchingVariant?.color || null
+      })()
+
+      // Reorder so primary color is first
+      const orderedColors = freshPrimaryColor
+        ? [...freshColors.filter(c => c.name === freshPrimaryColor), ...freshColors.filter(c => c.name !== freshPrimaryColor)]
+        : freshColors
+
+      if (orderedColors.length > 0) {
+        setSelectedColor(orderedColors[0].name)
+      }
+    }
+  }, [product, selectedColor])
+
+  // Reset image index when color changes (to show first image of new color)
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [selectedColor])
 
   useEffect(() => {
     async function fetchProduct() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`${API_URL}/api/payments/products/${slug}/`)
+        const response = await fetch(`${API_URL}/api/payments/products/${slug}/`, {
+          cache: 'no-store'
+        })
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -136,11 +221,30 @@ export default function ProductDetailPage() {
     }
   }, [slug])
 
-  // Build image gallery from uploaded images, falling back to legacy image_url
+  // Build image gallery filtered by selected color
   const productImages: { url: string; alt: string }[] = (() => {
     if (product?.images && product.images.length > 0) {
-      // Use uploaded images from the carousel
-      return product.images.map((img) => ({
+      // Get variant IDs for selected color
+      const selectedVariantIds = selectedColor
+        ? product.variants
+            .filter(v => v.color === selectedColor)
+            .map(v => v.printify_variant_id)
+            .filter((id): id is number => id !== null)
+        : []
+
+      // Filter images by selected color's variant IDs
+      let filteredImages = product.images
+      if (selectedVariantIds.length > 0) {
+        const colorImages = product.images.filter(img =>
+          img.printify_variant_ids?.some(id => selectedVariantIds.includes(id))
+        )
+        // Use filtered images if any match, otherwise show all
+        if (colorImages.length > 0) {
+          filteredImages = colorImages
+        }
+      }
+
+      return filteredImages.map((img) => ({
         url: img.url,
         alt: img.alt_text || product.name,
       }))
@@ -249,6 +353,7 @@ export default function ProductDetailPage() {
                     fill
                     className="object-cover"
                     priority
+                    unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                   />
                   {/* Navigation Arrows */}
                   {productImages.length > 1 && (
@@ -306,7 +411,7 @@ export default function ProductDetailPage() {
                     }`}
                     aria-label={`View image ${index + 1}`}
                   >
-                    <Image src={img.url} alt={img.alt} fill className="object-cover" />
+                    <Image src={img.url} alt={img.alt} fill className="object-cover" unoptimized={shouldSkipImageOptimization(img.url)} />
                   </button>
                 ))}
               </div>
@@ -361,7 +466,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Variant Selection - Size */}
-            {variantConfig && variantConfig.sizes.length > 1 && (
+            {availableSizes.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wider">Size</h2>
@@ -370,7 +475,7 @@ export default function ProductDetailPage() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {variantConfig.sizes.map((size) => (
+                  {availableSizes.map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
@@ -393,7 +498,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Variant Selection - Color */}
-            {variantConfig && variantConfig.colors.length > 0 && (
+            {availableColors.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wider">
@@ -404,7 +509,7 @@ export default function ProductDetailPage() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {variantConfig.colors.map((color) => (
+                  {availableColors.map((color) => (
                     <button
                       key={color.name}
                       onClick={() => setSelectedColor(color.name)}
@@ -413,7 +518,7 @@ export default function ProductDetailPage() {
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
                           : "hover:scale-110"
                       }`}
-                      style={{ backgroundColor: color.hex }}
+                      style={{ backgroundColor: color.hex || '#808080' }}
                       aria-label={color.name}
                       aria-pressed={selectedColor === color.name}
                       title={color.name}
@@ -440,40 +545,67 @@ export default function ProductDetailPage() {
 
             {/* Stock Status with Marketing Language */}
             <div className="mb-6">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    product.stock_quantity > 15
-                      ? "bg-success"
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {/* Stock indicator */}
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      product.is_pod
+                        ? "bg-violet-500"
+                        : product.stock_quantity > 15
+                        ? "bg-success"
+                        : product.stock_quantity > 5
+                        ? "bg-warning"
+                        : product.stock_quantity > 0
+                        ? "bg-accent animate-pulse"
+                        : "bg-destructive"
+                    }`}
+                  />
+                  <span
+                    className={
+                      product.is_pod
+                        ? "text-violet-500 font-medium"
+                        : product.stock_quantity === 0
+                        ? "text-destructive font-semibold"
+                        : product.stock_quantity <= 5
+                        ? "text-accent font-semibold"
+                        : "text-foreground"
+                    }
+                  >
+                    {product.is_pod
+                      ? "Made to Order"
+                      : product.stock_quantity > 15
+                      ? "In Stock"
                       : product.stock_quantity > 5
-                      ? "bg-warning"
+                      ? "⚡ Limited Drop"
                       : product.stock_quantity > 0
-                      ? "bg-accent animate-pulse"
-                      : "bg-destructive"
-                  }`}
-                />
-                <span
-                  className={
-                    product.stock_quantity === 0
-                      ? "text-destructive font-semibold"
-                      : product.stock_quantity <= 5
-                      ? "text-accent font-semibold"
-                      : "text-foreground"
-                  }
-                >
-                  {product.stock_quantity > 15
-                    ? "In Stock"
-                    : product.stock_quantity > 5
-                    ? "⚡ Limited Drop"
-                    : product.stock_quantity > 0
-                    ? "🔥 Almost Gone!"
-                    : "Out of Stock"}
-                </span>
+                      ? "🔥 Almost Gone!"
+                      : "Out of Stock"}
+                  </span>
+                </div>
+
+                {/* Shipping estimate */}
+                {product.shipping_estimate && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>·</span>
+                    {product.is_pod ? (
+                      <span className="flex items-center gap-1.5">
+                        <Truck className="w-4 h-4" />
+                        Ships in {product.shipping_estimate}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-emerald-500 font-medium">
+                        <Package className="w-4 h-4" />
+                        {product.shipping_estimate}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Urgency Banner - no exact stock counts shown */}
-            {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+            {/* Urgency Banner - only show for local products with limited stock (POD is always available) */}
+            {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
               <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 mb-6">
                 <p className="text-sm text-accent font-semibold flex items-center gap-2">
                   <span className="animate-pulse">🔥</span>
@@ -481,7 +613,7 @@ export default function ProductDetailPage() {
                 </p>
               </div>
             )}
-            {product.stock_quantity > 5 && product.stock_quantity <= 15 && (
+            {!product.is_pod && product.stock_quantity > 5 && product.stock_quantity <= 15 && (
               <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6">
                 <p className="text-sm text-warning font-medium flex items-center gap-2">
                   <span>⚡</span>
@@ -490,8 +622,18 @@ export default function ProductDetailPage() {
               </div>
             )}
 
+            {/* POD Info Banner */}
+            {product.is_pod && (
+              <div className="bg-violet-500/10 border border-violet-500/30 rounded-lg p-4 mb-6">
+                <p className="text-sm text-violet-400 font-medium flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Made to order just for you. Ships via Printify in 5-10 business days.
+                </p>
+              </div>
+            )}
+
             {/* Quantity & Add to Bag */}
-            {product.stock_quantity > 0 ? (
+            {(product.is_pod || product.stock_quantity > 0) ? (
               <div className="space-y-4">
                 {/* Variant selection reminder */}
                 {!variantsSelected && (needsSize || needsColor) && (
@@ -577,17 +719,18 @@ export default function ProductDetailPage() {
             <Separator className="my-6" />
 
             <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-                  />
-                </svg>
-                <span>Free shipping on orders over $75</span>
-              </div>
+              {/* Shipping info based on fulfillment type */}
+              {product.is_pod ? (
+                <div className="flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-violet-500" />
+                  <span>Printed & shipped via Printify (5-10 business days)</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-emerald-500" />
+                  <span>Available for pickup at next practice</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -599,24 +742,26 @@ export default function ProductDetailPage() {
                 </svg>
                 <span>Official NJ Stars merchandise</span>
               </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                <span>Easy returns within 30 days</span>
-              </div>
+              {product.is_pod && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  <span>Easy returns within 30 days</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Mobile Sticky Add to Bag */}
-      {product.stock_quantity > 0 && (
+      {(product.is_pod || product.stock_quantity > 0) && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 z-50">
           <div className="flex items-center gap-3">
             {/* Price display */}

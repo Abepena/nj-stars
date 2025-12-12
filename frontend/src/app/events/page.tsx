@@ -1058,15 +1058,15 @@ function CalendarView({
                               </span>
                             ) : event.is_registration_open && (
                               <Button
-                                variant="ghost"
+                                variant="default"
                                 size="sm"
-                                className="h-auto py-1 px-2 text-xs text-primary hover:text-primary-foreground hover:bg-primary mt-1"
+                                className="min-h-[44px] md:min-h-0 md:h-auto py-2.5 md:py-1.5 px-4 md:px-3 text-sm md:text-xs font-medium mt-2 md:mt-1"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   onRegisterClick(event)
                                 }}
                               >
-                                Register →
+                                Register
                               </Button>
                             )}
                             {event.spots_remaining !== null && event.spots_remaining <= 10 && (
@@ -1230,15 +1230,15 @@ function EventCard({
             </span>
           ) : event.is_registration_open && (
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
-              className="h-auto py-1 px-2 text-xs text-primary hover:text-primary-foreground hover:bg-primary"
+              className="min-h-[44px] md:min-h-0 md:h-auto py-2.5 md:py-1.5 px-4 md:px-3 text-sm md:text-xs font-medium"
               onClick={(e) => {
                 e.stopPropagation()
                 onRegisterClick()
               }}
             >
-              Register →
+              Register
             </Button>
           )}
         </div>

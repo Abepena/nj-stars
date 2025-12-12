@@ -11,6 +11,7 @@ import { ProductQuickView } from "@/components/product-quick-view"
 import { FilterSidebar, type FilterCategory, type FilterTag, type FilterColor, type SortOption } from "@/components/filter-sidebar"
 import { Button } from "@/components/ui/button"
 import { getCategoryColor } from "@/lib/category-colors"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -19,6 +20,28 @@ interface ProductImage {
   url: string
   alt_text: string
   is_primary: boolean
+  sort_order: number
+  printify_variant_ids: number[]
+}
+
+type FulfillmentType = 'pod' | 'local'
+
+interface ProductColor {
+  name: string
+  hex: string
+}
+
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
   sort_order: number
 }
 
@@ -29,15 +52,27 @@ interface Product {
   description: string
   price: string
   compare_at_price: string | null
+  // Fulfillment
+  fulfillment_type: FulfillmentType
+  is_pod: boolean
+  is_local: boolean
+  shipping_estimate: string
+  fulfillment_display: string
+  // Images
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  // Stock & Status
   stock_quantity: number
   category: string
   in_stock: boolean
   featured: boolean
   best_selling?: boolean
   on_sale?: boolean
+  // Variants (from Printify sync)
+  variants: ProductVariant[]
+  available_colors: ProductColor[]
+  available_sizes: string[]
 }
 
 
@@ -52,27 +87,9 @@ interface ProductCardProps {
   selectedCategories: string[]
 }
 
-// Mock color variants - will come from API later
-const PRODUCT_COLORS: Record<string, { name: string; hex: string }[]> = {
-  jersey: [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "White", hex: "#ffffff" },
-  ],
-  apparel: [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "Navy", hex: "#1e3a5f" },
-    { name: "Gray", hex: "#6b7280" },
-  ],
-  accessories: [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "Red", hex: "#dc2626" },
-  ],
-  equipment: [],
-}
-
 function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTags, selectedCategories }: ProductCardProps) {
   const hasDiscount = product.compare_at_price && parseFloat(product.compare_at_price) > parseFloat(product.price)
-  const colors = PRODUCT_COLORS[product.category] || []
+  const colors = product.available_colors || []
 
   // Handle badge click without triggering card click
   const handleBadgeClick = (e: React.MouseEvent, handler: () => void) => {
@@ -101,7 +118,8 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
             src={product.primary_image_url || product.image_url}
             alt={product.name}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover"
+            unoptimized={shouldSkipImageOptimization(product.primary_image_url || product.image_url)}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center p-8 relative">
@@ -115,7 +133,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
         )}
 
         {/* Out of stock overlay */}
-        {product.stock_quantity === 0 && (
+        {!product.in_stock && (
           <div className="absolute inset-0 bg-background/70 flex items-center justify-center rounded-lg">
             <span className="text-sm font-medium text-muted-foreground">Sold Out</span>
           </div>
@@ -179,7 +197,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
               Sale
             </button>
           )}
-          {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+          {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
             <span className="text-xs text-accent font-medium">Almost Gone!</span>
           )}
         </div>
@@ -189,15 +207,23 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
           {product.name}
         </h3>
 
-        {/* Category - clickable */}
-        <button
-          onClick={(e) => handleBadgeClick(e, () => onCategoryClick(product.category))}
-          className={`text-xs text-muted-foreground hover:text-foreground transition-colors text-left ${
-            selectedCategories.includes(product.category) ? 'underline text-foreground' : ''
-          }`}
-        >
-          {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
-        </button>
+        {/* Category and Fulfillment */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => handleBadgeClick(e, () => onCategoryClick(product.category))}
+            className={`text-xs text-muted-foreground hover:text-foreground transition-colors text-left ${
+              selectedCategories.includes(product.category) ? 'underline text-foreground' : ''
+            }`}
+          >
+            {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+          </button>
+          <span className="text-muted-foreground">·</span>
+          {product.is_pod ? (
+            <span className="text-xs text-violet-500 font-medium">Made to Order</span>
+          ) : (
+            <span className="text-xs text-emerald-500 font-medium">Coach Delivery</span>
+          )}
+        </div>
 
         {/* Price */}
         <div className="flex items-baseline gap-2 pt-1">
@@ -232,7 +258,9 @@ export default function ShopPage() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`${API_BASE}/api/payments/products/`)
+        const response = await fetch(`${API_BASE}/api/payments/products/`, {
+          cache: 'no-store'
+        })
 
         if (!response.ok) {
           throw new Error(`Failed to fetch products: ${response.statusText}`)

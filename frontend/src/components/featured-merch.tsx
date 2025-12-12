@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
 import { ProductCardSkeleton } from "@/components/skeletons/product-card-skeleton"
 import { ProductQuickView } from "@/components/product-quick-view"
+import { shouldSkipImageOptimization } from "@/lib/utils"
 import { useBag } from "@/lib/bag"
 
 interface ProductImage {
@@ -15,6 +16,26 @@ interface ProductImage {
   url: string
   alt_text: string
   is_primary: boolean
+  sort_order: number
+  printify_variant_ids: number[]
+}
+
+interface ColorOption {
+  name: string
+  hex: string
+}
+
+interface ProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: number | null
+  effective_price: number
+  is_enabled: boolean
+  is_available: boolean
   sort_order: number
 }
 
@@ -29,12 +50,18 @@ interface Product {
   image_url: string
   primary_image_url: string | null
   images: ProductImage[]
+  variants: ProductVariant[]
+  available_sizes: string[]
+  available_colors: ColorOption[]
   is_active: boolean
   featured: boolean
   best_selling: boolean
   on_sale: boolean
   stock_quantity: number
   in_stock: boolean
+  fulfillment_type?: 'pod' | 'local'
+  is_pod?: boolean
+  is_local?: boolean
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -66,7 +93,9 @@ export function FeaturedMerch({
         setError(null)
 
         // Fetch featured products (or any that have tags)
-        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true`)
+        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true`, {
+          cache: 'no-store'
+        })
 
         if (!response.ok) {
           throw new Error('Failed to fetch products')
@@ -226,9 +255,18 @@ function ProductCard({ product, onClick }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
+  // Check if product has variants that require selection
+  const hasVariants = (product.available_sizes?.length > 0) || (product.available_colors?.length > 0)
+
   const handleAddToBag = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!product.in_stock || isAdding || showSuccess) return
+
+    // If product has variants, open quick view instead of direct add
+    if (hasVariants) {
+      onClick()
+      return
+    }
 
     setIsAdding(true)
     try {
@@ -265,7 +303,8 @@ function ProductCard({ product, onClick }: ProductCardProps) {
             src={product.primary_image_url || product.image_url}
             alt={product.name}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover"
+            unoptimized={shouldSkipImageOptimization(product.primary_image_url || product.image_url)}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center p-8 relative">

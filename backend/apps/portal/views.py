@@ -1,9 +1,14 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Sum, Q
+from django.shortcuts import redirect
+from django.conf import settings
+from allauth.account.models import EmailConfirmationHMAC, EmailConfirmation
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import get_user_model
 
 from .models import (
     UserProfile, Player, GuardianRelationship,
@@ -424,4 +429,154 @@ def sign_waiver(request):
         'waiver_signed_at': profile.waiver_signed_at,
         'waiver_version': profile.waiver_version,
         'waiver_signer_name': profile.waiver_signer_name,
+    }, status=status.HTTP_200_OK)
+
+
+# ==================== Email Confirmation Views ====================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def confirm_email(request, key):
+    """
+    Confirm email address and redirect to frontend.
+
+    This replaces the default dj-rest-auth template-based view with a
+    redirect to our Next.js frontend.
+
+    GET /api/auth/registration/account-confirm-email/<key>/
+
+    Redirects to:
+    - Success: {FRONTEND_URL}/portal/verify-email?status=success
+    - Error: {FRONTEND_URL}/portal/verify-email?status=error&message=...
+    """
+    frontend_url = settings.FRONTEND_URL
+
+    try:
+        # Try HMAC-based confirmation first (newer method)
+        email_confirmation = EmailConfirmationHMAC.from_key(key)
+        if email_confirmation:
+            email_confirmation.confirm(request)
+            return redirect(f"{frontend_url}/portal/verify-email?status=success")
+    except Exception:
+        pass
+
+    try:
+        # Fall back to database-based confirmation
+        email_confirmation = EmailConfirmation.objects.get(key=key)
+        email_confirmation.confirm(request)
+        return redirect(f"{frontend_url}/portal/verify-email?status=success")
+    except EmailConfirmation.DoesNotExist:
+        return redirect(f"{frontend_url}/portal/verify-email?status=error&message=invalid_key")
+    except Exception as e:
+        return redirect(f"{frontend_url}/portal/verify-email?status=error&message=confirmation_failed")
+
+
+# ==================== Social Auth Views ====================
+
+User = get_user_model()
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def social_auth(request):
+    """
+    Handle social authentication from NextAuth.
+
+    This endpoint receives user data from social providers (Google, Facebook, Apple)
+    via the frontend and creates/updates the Django user and profile.
+
+    POST /api/portal/social-auth/
+    {
+        "provider": "google" | "facebook" | "apple",
+        "provider_account_id": "123456789",
+        "email": "user@example.com",
+        "name": "John Doe",
+        "first_name": "John",           # Optional
+        "last_name": "Doe",             # Optional
+        "image": "https://...",         # Profile picture URL
+        "email_verified": true          # Whether provider verified email
+    }
+
+    Returns:
+    {
+        "user": { ... user details ... },
+        "token": "abc123...",           # Django REST token for API calls
+        "created": true/false           # Whether user was newly created
+    }
+    """
+    data = request.data
+
+    # Validate required fields
+    provider = data.get('provider')
+    provider_account_id = data.get('provider_account_id')
+    email = data.get('email')
+
+    if not all([provider, provider_account_id, email]):
+        return Response(
+            {'error': 'Missing required fields: provider, provider_account_id, email'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Parse name fields
+    name = data.get('name', '')
+    first_name = data.get('first_name', '')
+    last_name = data.get('last_name', '')
+
+    # If first/last not provided, try to parse from full name
+    if name and not (first_name and last_name):
+        name_parts = name.strip().split(' ', 1)
+        first_name = first_name or name_parts[0]
+        last_name = last_name or (name_parts[1] if len(name_parts) > 1 else '')
+
+    image = data.get('image', '')
+    email_verified = data.get('email_verified', False)
+
+    # Find or create user
+    created = False
+    try:
+        user = User.objects.get(email=email)
+        # Update user info if provided and empty
+        if first_name and not user.first_name:
+            user.first_name = first_name
+        if last_name and not user.last_name:
+            user.last_name = last_name
+        user.save()
+    except User.DoesNotExist:
+        # Create new user
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        # Set unusable password for social-only users
+        user.set_unusable_password()
+        user.save()
+        created = True
+
+    # Get or create profile
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    # Store social auth metadata in profile (for future reference)
+    # We could add a SocialAccount model later if needed for linking multiple providers
+
+    # Get or create auth token
+    token, _ = Token.objects.get_or_create(user=user)
+
+    # Build response with user details
+    from .serializers import UserProfileSerializer
+    profile_data = UserProfileSerializer(profile).data
+
+    return Response({
+        'user': {
+            'pk': user.pk,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'name': f"{user.first_name} {user.last_name}".strip() or user.email,
+            'image': image,  # Pass through the social image
+            **profile_data,
+        },
+        'token': token.key,
+        'created': created,
     }, status=status.HTTP_200_OK)
