@@ -188,6 +188,7 @@ The platform fee is calculated differently depending on the revenue type to acco
 - [ ] Are there existing products to migrate from current site?
 - [ ] Who approves POD designs before they go live?
 - [ ] **Decision:** Auto-submit Printify orders or hold for manual review?
+- [ ] **Decision:** Subscribe to Printify Premium upfront (20% production discount) — cost vs expected merch volume and payback period.
 
 ---
 
