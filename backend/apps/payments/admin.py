@@ -67,17 +67,23 @@ class ProductImageInline(admin.TabularInline):
     ordering = ['sort_order', 'created_at']
 
     def image_preview(self, obj):
+        from django.conf import settings
         # Preview uploaded image
         if obj.image:
-            return format_html(
-                '<img src="{}" style="max-height: 80px; max-width: 80px; object-fit: cover; border-radius: 4px;" />',
-                obj.image.url
-            )
+            try:
+                url = obj.image.url
+                return format_html(
+                    '<img src="{}" style="max-height: 80px; max-width: 80px; object-fit: cover; border-radius: 4px;" '
+                    'onerror="this.alt=\'Load error\'; this.style.border=\'1px solid red\'" />',
+                    url
+                )
+            except Exception:
+                return "Upload error"
         # Preview URL image
         if obj.image_url:
             return format_html(
                 '<img src="{}" style="max-height: 80px; max-width: 80px; object-fit: cover; border-radius: 4px;" '
-                'onerror="this.style.display=\'none\'" />',
+                'onerror="this.alt=\'Load error\'; this.style.border=\'1px solid red\'" />',
                 obj.image_url
             )
         return "-"

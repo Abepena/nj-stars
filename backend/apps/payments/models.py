@@ -398,6 +398,15 @@ class ProductImage(models.Model):
             ProductImage.objects.filter(
                 product=self.product, is_primary=True
             ).exclude(pk=self.pk).update(is_primary=False)
+
+        # Auto-set as primary if no primary image exists for this product
+        if not self.is_primary and self.product_id:
+            has_primary = ProductImage.objects.filter(
+                product_id=self.product_id, is_primary=True
+            ).exclude(pk=self.pk).exists()
+            if not has_primary:
+                self.is_primary = True
+
         super().save(*args, **kwargs)
 
 
