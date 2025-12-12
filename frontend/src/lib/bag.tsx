@@ -8,6 +8,29 @@ const CHECKOUT_ITEMS_KEY = 'nj-stars-checkout-items'
 
 // ==================== Types ====================
 
+export interface BagProductImage {
+  id: number
+  url: string
+  alt_text: string
+  is_primary: boolean
+  sort_order: number
+  printify_variant_ids: number[]
+}
+
+export interface BagProductVariant {
+  id: number
+  printify_variant_id: number | null
+  title: string
+  size: string
+  color: string
+  color_hex: string
+  price: string | null
+  effective_price: string
+  is_enabled: boolean
+  is_available: boolean
+  sort_order: number
+}
+
 export interface BagProduct {
   id: number
   name: string
@@ -17,6 +40,11 @@ export interface BagProduct {
   compare_at_price: string | null
   category: string
   image_url: string
+  primary_image_url: string | null
+  images: BagProductImage[]
+  variants: BagProductVariant[]
+  fulfillment_type: 'pod' | 'local'
+  is_pod: boolean
   is_active: boolean
   featured: boolean
   best_selling: boolean
