@@ -154,12 +154,29 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   // Auto-select first color (primary image's color, now leftmost), but NOT size
   useEffect(() => {
     if (open) {
-      setSelectedColor(colors.length > 0 ? colors[0].name : "")
+      // Get colors fresh to avoid stale closure
+      const freshColors = product.available_colors || []
+      const freshPrimaryColor = (() => {
+        if (!product.images?.length || !product.variants?.length) return null
+        const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+        if (!primaryImage?.printify_variant_ids?.length) return null
+        const matchingVariant = product.variants.find(v =>
+          v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+        )
+        return matchingVariant?.color || null
+      })()
+
+      // Reorder so primary color is first
+      const orderedColors = freshPrimaryColor
+        ? [...freshColors.filter(c => c.name === freshPrimaryColor), ...freshColors.filter(c => c.name !== freshPrimaryColor)]
+        : freshColors
+
+      setSelectedColor(orderedColors.length > 0 ? orderedColors[0].name : "")
       setSelectedSize("")  // User must select size
       setQuantity(1)
       setCurrentImageIndex(0)
     }
-  }, [open, product.id, colors])
+  }, [open, product.id, product.images, product.variants, product.available_colors])
 
   // Reset image index when color changes
   useEffect(() => {
@@ -227,13 +244,13 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden">
+      <DialogContent className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl max-h-[90vh] md:max-h-[85vh] p-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{product.name}</DialogTitle>
           <DialogDescription>Quick view of {product.name}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-2">
+        <div className="grid md:grid-cols-2 max-h-[90vh] md:max-h-[85vh] overflow-y-auto">
           {/* Image & Title/Price (desktop: LHS) */}
           <div className="p-4 md:p-6 flex flex-col">
             <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">

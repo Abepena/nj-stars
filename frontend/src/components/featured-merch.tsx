@@ -301,7 +301,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
             src={product.primary_image_url || product.image_url}
             alt={product.name}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover"
             unoptimized={shouldSkipImageOptimization(product.primary_image_url || product.image_url)}
           />
         ) : (

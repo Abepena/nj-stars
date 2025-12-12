@@ -159,10 +159,29 @@ export default function ProductDetailPage() {
   // Auto-select first color (primary image's color, now leftmost) on product load
   // Do NOT auto-select size - user must choose
   useEffect(() => {
-    if (product && !selectedColor && availableColors.length > 0) {
-      setSelectedColor(availableColors[0].name)
+    if (product && !selectedColor) {
+      // Compute colors fresh to avoid stale closure
+      const freshColors = product.available_colors || []
+      const freshPrimaryColor = (() => {
+        if (!product.images?.length || !product.variants?.length) return null
+        const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
+        if (!primaryImage?.printify_variant_ids?.length) return null
+        const matchingVariant = product.variants.find(v =>
+          v.printify_variant_id && primaryImage.printify_variant_ids.includes(v.printify_variant_id)
+        )
+        return matchingVariant?.color || null
+      })()
+
+      // Reorder so primary color is first
+      const orderedColors = freshPrimaryColor
+        ? [...freshColors.filter(c => c.name === freshPrimaryColor), ...freshColors.filter(c => c.name !== freshPrimaryColor)]
+        : freshColors
+
+      if (orderedColors.length > 0) {
+        setSelectedColor(orderedColors[0].name)
+      }
     }
-  }, [product, availableColors, selectedColor])
+  }, [product, selectedColor])
 
   // Reset image index when color changes (to show first image of new color)
   useEffect(() => {
@@ -215,7 +234,7 @@ export default function ProductDetailPage() {
       let filteredImages = product.images
       if (selectedVariantIds.length > 0) {
         const colorImages = product.images.filter(img =>
-          img.printify_variant_ids.some(id => selectedVariantIds.includes(id))
+          img.printify_variant_ids?.some(id => selectedVariantIds.includes(id))
         )
         // Use filtered images if any match, otherwise show all
         if (colorImages.length > 0) {
