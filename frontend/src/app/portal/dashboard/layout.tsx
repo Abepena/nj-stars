@@ -143,9 +143,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
             <div className="p-6 border-b">
               <Link href="/" className="flex items-center gap-2 group">
                 <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                <ThemeLogo width={120} height={38} linkTo={null} />
+                <ThemeLogo width={148} height={46} linkTo={null} />
               </Link>
-              <p className="text-sm text-muted-foreground mt-1">Member Portal</p>
             </div>
 
             {/* User Info */}
