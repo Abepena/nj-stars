@@ -104,6 +104,19 @@ function sortSizes(sizes: string[]): string[] {
   })
 }
 
+function getSortedSizes(product: Product): string[] {
+  const variantSizes = product.variants
+    ?.map((v) => v.size?.trim())
+    .filter((s): s is string => !!s)
+    .filter((s, idx, arr) => arr.indexOf(s) === idx) || []
+
+  if (variantSizes.length > 0) {
+    return sortSizes(variantSizes)
+  }
+
+  return sortSizes(product.available_sizes || [])
+}
+
 export function ProductQuickView({ product, open, onOpenChange }: ProductQuickViewProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
@@ -114,7 +127,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const { addToBag } = useBag()
 
   // Use actual product variants from API, sort sizes S -> 3XL
-  const sizes = sortSizes(product.available_sizes || [])
+  const sizes = getSortedSizes(product)
   const rawColors = product.available_colors || []
 
   // Find the color associated with the primary image
@@ -158,7 +171,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     if (open) {
       // Get colors fresh to avoid stale closure
       const freshColors = product.available_colors || []
-      const freshSizes = product.available_sizes || []
+      const freshSizes = getSortedSizes(product)
       const freshPrimaryColor = (() => {
         if (!product.images?.length || !product.variants?.length) return null
         const primaryImage = product.images.find(img => img.is_primary) || product.images[0]

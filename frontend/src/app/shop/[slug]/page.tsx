@@ -104,6 +104,20 @@ function sortSizes(sizes: string[]): string[] {
   })
 }
 
+function getSortedSizes(product?: Product | null): string[] {
+  if (!product) return []
+  const variantSizes = product.variants
+    ?.map((v) => v.size?.trim())
+    .filter((s): s is string => !!s)
+    .filter((s, idx, arr) => arr.indexOf(s) === idx) || []
+
+  if (variantSizes.length > 0) {
+    return sortSizes(variantSizes)
+  }
+
+  return sortSizes(product.available_sizes || [])
+}
+
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -123,7 +137,7 @@ export default function ProductDetailPage() {
   const { addToBag } = useBag()
 
   // Get available variants from API data, sort sizes S -> 3XL
-  const availableSizes = sortSizes(product?.available_sizes || [])
+  const availableSizes = getSortedSizes(product)
   const rawColors = product?.available_colors || []
 
   // Find the color associated with the primary image
