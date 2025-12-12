@@ -61,33 +61,43 @@ class PaymentAdmin(admin.ModelAdmin):
 
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
-    extra = 1
-    fields = ['image', 'image_url', 'image_preview', 'alt_text', 'is_primary', 'sort_order']
-    readonly_fields = ['image_preview']
+    extra = 0  # No empty rows - use bulk upload instead
+    fields = ['image_preview', 'is_primary', 'sort_order', 'delete_checkbox']
+    readonly_fields = ['image_preview', 'delete_checkbox']
     ordering = ['sort_order', 'created_at']
+    can_delete = True
+    verbose_name = "Image"
+    verbose_name_plural = "Uploaded Images (use Bulk Upload above to add new images)"
 
     def image_preview(self, obj):
-        from django.conf import settings
-        # Preview uploaded image
+        """Show larger preview with filename"""
+        url = None
         if obj.image:
             try:
                 url = obj.image.url
-                return format_html(
-                    '<img src="{}" style="max-height: 80px; max-width: 80px; object-fit: cover; border-radius: 4px;" '
-                    'onerror="this.alt=\'Load error\'; this.style.border=\'1px solid red\'" />',
-                    url
-                )
             except Exception:
-                return "Upload error"
-        # Preview URL image
-        if obj.image_url:
+                pass
+        elif obj.image_url:
+            url = obj.image_url
+
+        if url:
+            # Extract filename for display
+            filename = url.split('/')[-1][:30]
             return format_html(
-                '<img src="{}" style="max-height: 80px; max-width: 80px; object-fit: cover; border-radius: 4px;" '
-                'onerror="this.alt=\'Load error\'; this.style.border=\'1px solid red\'" />',
-                obj.image_url
+                '<div style="display: flex; align-items: center; gap: 10px;">'
+                '<img src="{}" style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px;" '
+                'onerror="this.alt=\'Error\'; this.style.border=\'1px solid red\'" />'
+                '<span style="color: #666; font-size: 11px;">{}</span>'
+                '</div>',
+                url, filename
             )
         return "-"
-    image_preview.short_description = "Preview"
+    image_preview.short_description = "Image"
+
+    def delete_checkbox(self, obj):
+        """Visual indicator that delete checkbox is available"""
+        return format_html('<span style="color: #999; font-size: 11px;">Use checkbox →</span>')
+    delete_checkbox.short_description = "Delete"
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -135,6 +145,11 @@ class ProductAdmin(admin.ModelAdmin):
         (None, {
             'fields': ('name', 'slug', 'description')
         }),
+        ('📸 Upload Images', {
+            'fields': ('bulk_images',),
+            'description': '<strong>Select multiple files at once</strong> (hold Ctrl/Cmd and click). '
+                           'First uploaded image becomes primary. Manage existing images in the section below.'
+        }),
         ('Pricing', {
             'fields': ('price', 'compare_at_price')
         }),
@@ -153,13 +168,10 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('manage_inventory', 'stock_quantity'),
             'description': 'For POD products, set "Manage inventory" to OFF (Printify handles stock).'
         }),
-        ('Bulk Image Upload', {
-            'fields': ('bulk_images',),
-            'description': 'Upload multiple images at once. For individual image settings (primary, alt text, order), use the Images section below.'
-        }),
         ('Printify Integration (for POD products)', {
             'fields': ('printify_product_id', 'printify_variant_id'),
-            'description': 'Required for POD products. Get these IDs from your Printify dashboard.'
+            'description': 'Required for POD products. Get these IDs from your Printify dashboard.',
+            'classes': ('collapse',)
         }),
         ('Stripe Integration', {
             'fields': ('stripe_price_id', 'stripe_product_id'),
