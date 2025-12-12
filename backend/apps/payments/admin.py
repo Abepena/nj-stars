@@ -133,13 +133,13 @@ class ProductAdminForm(forms.ModelForm):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     form = ProductAdminForm
-    list_display = ['name', 'price', 'category', 'fulfillment_badge', 'variant_count', 'stock_display', 'is_active', 'featured', 'image_count']
+    list_display = ['name', 'price', 'category', 'fulfillment_badge', 'stripe_status', 'variant_count', 'stock_display', 'is_active', 'featured', 'image_count']
     list_filter = ['fulfillment_type', 'category', 'is_active', 'is_discontinued', 'featured', 'best_selling', 'on_sale']
     search_fields = ['name', 'description']
     prepopulated_fields = {'slug': ('name',)}
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'stripe_product_id', 'stripe_price_id']
     inlines = [ProductImageInline, ProductVariantInline]
-    actions = ['sync_variants_from_printify']
+    actions = ['sync_variants_from_printify', 'sync_to_stripe']
 
     fieldsets = (
         (None, {
@@ -173,9 +173,11 @@ class ProductAdmin(admin.ModelAdmin):
             'description': 'Required for POD products. Get these IDs from your Printify dashboard.',
             'classes': ('collapse',)
         }),
-        ('Stripe Integration', {
-            'fields': ('stripe_price_id', 'stripe_product_id'),
-            'classes': ('collapse',)
+        ('Stripe Integration (auto-generated)', {
+            'fields': ('stripe_product_id', 'stripe_price_id'),
+            'classes': ('collapse',),
+            'description': 'These IDs are <strong>auto-generated</strong> when you save a local product. '
+                           'For POD products, checkout creates prices dynamically.'
         }),
         ('Legacy Image', {
             'fields': ('image_url',),
@@ -231,6 +233,42 @@ class ProductAdmin(admin.ModelAdmin):
             return format_html('<span style="color: #059669;">{}</span>', total)
         return format_html('<span>{}/{}</span>', enabled, total)
     variant_count.short_description = "Variants"
+
+    def stripe_status(self, obj):
+        """Display Stripe sync status"""
+        if obj.is_pod:
+            return format_html('<span style="color: #9ca3af;">N/A</span>')
+        if obj.stripe_product_id and obj.stripe_price_id:
+            return format_html('<span style="color: #059669;">✓ Synced</span>')
+        if obj.stripe_product_id:
+            return format_html('<span style="color: #f59e0b;">⚠ No price</span>')
+        return format_html('<span style="color: #9ca3af;">—</span>')
+    stripe_status.short_description = "Stripe"
+
+    @admin.action(description="Sync selected products to Stripe")
+    def sync_to_stripe(self, request, queryset):
+        """Manually sync selected products to Stripe"""
+        synced = 0
+        skipped = 0
+        errors = []
+
+        for product in queryset:
+            if product.is_pod:
+                skipped += 1
+                continue
+            try:
+                product._sync_to_stripe()
+                product.save(update_fields=['stripe_product_id', 'stripe_price_id'])
+                synced += 1
+            except Exception as e:
+                errors.append(f"{product.name}: {str(e)[:50]}")
+
+        if synced:
+            self.message_user(request, f"Synced {synced} product(s) to Stripe")
+        if skipped:
+            self.message_user(request, f"Skipped {skipped} POD product(s)", level='warning')
+        if errors:
+            self.message_user(request, f"Errors: {'; '.join(errors[:3])}", level='error')
 
     @admin.action(description="Sync variants from Printify")
     def sync_variants_from_printify(self, request, queryset):
