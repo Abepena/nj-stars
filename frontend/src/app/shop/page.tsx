@@ -311,6 +311,14 @@ export default function ShopPage() {
       )
     }
 
+    // Filter by colors (check if product has any of the selected colors)
+    if (selectedColors.length > 0) {
+      filtered = filtered.filter(product => {
+        const productColors = product.available_colors?.map(c => c.name.toLowerCase()) || []
+        return selectedColors.some(color => productColors.includes(color.toLowerCase()))
+      })
+    }
+
     // Sort products
     switch (sortBy) {
       case "featured":
@@ -333,7 +341,7 @@ export default function ShopPage() {
     }
 
     setFilteredProducts(filtered)
-  }, [searchQuery, selectedCategories, selectedTags, sortBy, products])
+  }, [searchQuery, selectedCategories, selectedTags, selectedColors, sortBy, products])
 
   // Calculate category counts
   const getCategoryCounts = () => {
@@ -373,21 +381,28 @@ export default function ShopPage() {
     { value: "on_sale", label: "Sale", count: tagCounts.on_sale },
   ]
 
-  // Available colors for filtering
-  const filterColors: FilterColor[] = [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "Blue", hex: "#2563eb" },
-    { name: "Brown", hex: "#92400e" },
-    { name: "Green", hex: "#16a34a" },
-    { name: "Grey", hex: "#6b7280" },
-    { name: "Navy", hex: "#1e3a5f" },
-    { name: "Orange", hex: "#ea580c" },
-    { name: "Pink", hex: "#ec4899" },
-    { name: "Purple", hex: "#9333ea" },
-    { name: "Red", hex: "#dc2626" },
-    { name: "White", hex: "#ffffff" },
-    { name: "Yellow", hex: "#eab308" },
-  ]
+  // Extract unique colors from products
+  const getAvailableColors = (): FilterColor[] => {
+    const colorMap = new Map<string, string>()
+    products.forEach(product => {
+      product.available_colors?.forEach(color => {
+        // Use color name as key (case-insensitive) to avoid duplicates
+        const key = color.name.toLowerCase()
+        if (!colorMap.has(key)) {
+          colorMap.set(key, color.hex)
+        }
+      })
+    })
+    // Convert to array and sort alphabetically
+    return Array.from(colorMap.entries())
+      .map(([name, hex]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        hex
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  const filterColors: FilterColor[] = getAvailableColors()
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
