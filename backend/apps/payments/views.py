@@ -45,6 +45,11 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     List all products or retrieve a single product.
     Supports filtering by category and featured status.
+
+    Special parameter:
+    - fill_to: When used with featured=true, fills up to this number
+               with random non-featured products if there aren't enough
+               featured products. Useful for homepage displays.
     """
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
@@ -54,6 +59,51 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'price', 'created_at']
     ordering = ['name']
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to handle fill_to parameter for featured products.
+        """
+        fill_to = request.query_params.get('fill_to')
+        featured = request.query_params.get('featured')
+
+        # Only apply fill logic when both featured=true and fill_to are specified
+        if featured and featured.lower() == 'true' and fill_to:
+            try:
+                fill_to = int(fill_to)
+            except ValueError:
+                fill_to = None
+
+            if fill_to and fill_to > 0:
+                # Get featured products
+                featured_products = list(
+                    Product.objects.filter(is_active=True, featured=True)
+                )
+                featured_count = len(featured_products)
+
+                # If we have fewer than fill_to, add random non-featured products
+                if featured_count < fill_to:
+                    needed = fill_to - featured_count
+                    featured_ids = [p.id for p in featured_products]
+
+                    # Get random non-featured products (excluding already-featured ones)
+                    random_products = list(
+                        Product.objects.filter(is_active=True, featured=False)
+                        .exclude(id__in=featured_ids)
+                        .order_by('?')[:needed]
+                    )
+
+                    # Combine: featured first, then random fillers
+                    all_products = featured_products + random_products
+                else:
+                    all_products = featured_products[:fill_to]
+
+                # Serialize and return
+                serializer = self.get_serializer(all_products, many=True)
+                return Response({'results': serializer.data})
+
+        # Default behavior for all other cases
+        return super().list(request, *args, **kwargs)
 
 
 class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):

@@ -92,8 +92,8 @@ export function FeaturedMerch({
         setLoading(true)
         setError(null)
 
-        // Fetch featured products (or any that have tags)
-        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true`, {
+        // Fetch featured products, filling up to limit with random products if needed
+        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true&fill_to=${limit}`, {
           cache: 'no-store'
         })
 
