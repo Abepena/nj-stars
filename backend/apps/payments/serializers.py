@@ -192,6 +192,9 @@ class BagItemSerializer(serializers.ModelSerializer):
 
     product = ProductSerializer(read_only=True)
     product_id = serializers.IntegerField(write_only=True)
+    unit_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
     total_price = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
     )
@@ -206,6 +209,7 @@ class BagItemSerializer(serializers.ModelSerializer):
             'quantity',
             'selected_size',
             'selected_color',
+            'unit_price',
             'total_price',
             'is_available',
             'added_at',

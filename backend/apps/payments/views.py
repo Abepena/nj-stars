@@ -661,7 +661,7 @@ def bag_checkout(request):
             line_items.append({
                 'price_data': {
                     'currency': 'usd',
-                    'unit_amount': int(item.product.price * 100),
+                    'unit_amount': int(item.unit_price * 100),  # Use variant price, converted to cents
                     'product_data': {
                         'name': product_name,
                         'description': item.product.description[:500] if item.product.description else '',
