@@ -151,11 +151,13 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const isAvailable = product.is_pod || product.stock_quantity > 0
 
   // Reset selections when modal opens
-  // Auto-select first color (primary image's color, now leftmost), but NOT size
+  // Auto-select first color (primary image's color, now leftmost)
+  // Auto-select size if there's only one option
   useEffect(() => {
     if (open) {
       // Get colors fresh to avoid stale closure
       const freshColors = product.available_colors || []
+      const freshSizes = product.available_sizes || []
       const freshPrimaryColor = (() => {
         if (!product.images?.length || !product.variants?.length) return null
         const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
@@ -172,11 +174,12 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
         : freshColors
 
       setSelectedColor(orderedColors.length > 0 ? orderedColors[0].name : "")
-      setSelectedSize("")  // User must select size
+      // Auto-select size if only one option, otherwise user must select
+      setSelectedSize(freshSizes.length === 1 ? freshSizes[0] : "")
       setQuantity(1)
       setCurrentImageIndex(0)
     }
-  }, [open, product.id, product.images, product.variants, product.available_colors])
+  }, [open, product.id, product.images, product.variants, product.available_colors, product.available_sizes])
 
   // Reset image index when color changes
   useEffect(() => {
