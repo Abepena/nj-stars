@@ -8,17 +8,17 @@ from decouple import config
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# Allow configuration via env var for Railway, with sensible local defaults
+# Allow configuration via env var for Railway, with sensible defaults including Railway dev domain
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,0.0.0.0,backend',
+    default='localhost,127.0.0.1,0.0.0.0,backend,api.development.njstarselite.com,.railway.app',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
-# CSRF trusted origins for Railway development
+# CSRF trusted origins - includes Railway dev and Vercel preview domains by default
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000',
+    default='http://localhost:3000,http://127.0.0.1:3000,https://api.development.njstarselite.com,https://*.vercel.app,https://*.railway.app',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
@@ -26,6 +26,7 @@ CSRF_TRUSTED_ORIGINS = config(
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
     r"^https://.*\.railway\.app$",
+    r"^https://.*\.njstarselite\.com$",
 ]
 
 # =============================================================================
