@@ -1510,6 +1510,56 @@ class PrintifyPublishView(PrintifyAdminView):
             )
 
 
+class PrintifyUnpublishView(PrintifyAdminView):
+    """
+    Unpublish a Printify product.
+
+    POST /api/payments/admin/printify/unpublish/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Unpublish the product
+            result = client.unpublish_product(product_id)
+            return Response({
+                'success': True,
+                'message': f'Product {product_id} unpublished successfully',
+                'product_id': product_id
+            })
+        except PrintifyError as e:
+            logger.error(f"Failed to unpublish Printify product {product_id}: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error unpublishing Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to unpublish product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class PrintifyProductsView(PrintifyAdminView):
     """
     List all Printify products (for admin dashboard).

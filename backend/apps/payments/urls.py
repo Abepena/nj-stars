@@ -18,6 +18,7 @@ from .views import (
     HandoffListView,
     HandoffUpdateView,
     PrintifyPublishView,
+    PrintifyUnpublishView,
     PrintifyProductsView,
     PrintifySyncView,
 )
@@ -50,5 +51,6 @@ urlpatterns = [
     # Printify admin (superuser only)
     path('admin/printify/products/', PrintifyProductsView.as_view(), name='printify-products'),
     path('admin/printify/publish/', PrintifyPublishView.as_view(), name='printify-publish'),
+    path('admin/printify/unpublish/', PrintifyUnpublishView.as_view(), name='printify-unpublish'),
     path('admin/printify/sync/', PrintifySyncView.as_view(), name='printify-sync'),
 ]
