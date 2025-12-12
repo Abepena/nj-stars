@@ -193,7 +193,9 @@ export default function ProductDetailPage() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`${API_URL}/api/payments/products/${slug}/`)
+        const response = await fetch(`${API_URL}/api/payments/products/${slug}/`, {
+          cache: 'no-store'
+        })
 
         if (!response.ok) {
           if (response.status === 404) {

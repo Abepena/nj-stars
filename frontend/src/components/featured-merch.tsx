@@ -93,7 +93,9 @@ export function FeaturedMerch({
         setError(null)
 
         // Fetch featured products (or any that have tags)
-        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true`)
+        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true`, {
+          cache: 'no-store'
+        })
 
         if (!response.ok) {
           throw new Error('Failed to fetch products')

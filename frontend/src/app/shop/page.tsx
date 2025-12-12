@@ -258,7 +258,9 @@ export default function ShopPage() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`${API_BASE}/api/payments/products/`)
+        const response = await fetch(`${API_BASE}/api/payments/products/`, {
+          cache: 'no-store'
+        })
 
         if (!response.ok) {
           throw new Error(`Failed to fetch products: ${response.statusText}`)
