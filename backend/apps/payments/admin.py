@@ -141,6 +141,9 @@ class ProductAdmin(admin.ModelAdmin):
     inlines = [ProductImageInline, ProductVariantInline]
     actions = ['sync_variants_from_printify', 'sync_to_stripe']
 
+    class Media:
+        js = ('payments/js/product_admin.js',)
+
     fieldsets = (
         (None, {
             'fields': ('name', 'slug', 'description')
