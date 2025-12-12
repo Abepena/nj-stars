@@ -6,6 +6,10 @@ from django.utils.text import slugify
 from django.utils import timezone
 from datetime import timedelta
 import secrets
+import stripe
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -252,7 +256,72 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
+
+        # Auto-create Stripe product/price for local products
+        if self.is_local and self.is_active and self.price:
+            self._sync_to_stripe()
+
         super().save(*args, **kwargs)
+
+    def _sync_to_stripe(self):
+        """Create or update Stripe product and price"""
+        from django.conf import settings
+
+        # Skip if Stripe isn't configured
+        if not getattr(settings, 'STRIPE_SECRET_KEY', None):
+            return
+
+        try:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            price_cents = int(self.price * 100)
+
+            # Create or update Stripe Product
+            if self.stripe_product_id:
+                # Update existing product
+                stripe.Product.modify(
+                    self.stripe_product_id,
+                    name=self.name,
+                    description=self.description[:500] if self.description else None,
+                    active=self.is_active,
+                )
+            else:
+                # Create new product
+                stripe_product = stripe.Product.create(
+                    name=self.name,
+                    description=self.description[:500] if self.description else None,
+                    metadata={'django_product_id': str(self.pk) if self.pk else 'new'},
+                )
+                self.stripe_product_id = stripe_product.id
+
+            # Create new price if needed (Stripe prices are immutable)
+            # Only create if no price exists OR if price changed
+            should_create_price = False
+            if not self.stripe_price_id:
+                should_create_price = True
+            else:
+                # Check if existing price matches
+                try:
+                    existing_price = stripe.Price.retrieve(self.stripe_price_id)
+                    if existing_price.unit_amount != price_cents:
+                        # Price changed - archive old, create new
+                        stripe.Price.modify(self.stripe_price_id, active=False)
+                        should_create_price = True
+                except stripe.error.InvalidRequestError:
+                    should_create_price = True
+
+            if should_create_price and self.stripe_product_id:
+                stripe_price = stripe.Price.create(
+                    product=self.stripe_product_id,
+                    unit_amount=price_cents,
+                    currency='usd',
+                )
+                self.stripe_price_id = stripe_price.id
+
+            logger.info(f"Synced product '{self.name}' to Stripe: {self.stripe_product_id}")
+
+        except stripe.error.StripeError as e:
+            logger.warning(f"Stripe sync failed for product '{self.name}': {e}")
+            # Don't raise - allow save to continue even if Stripe fails
 
     def __str__(self):
         return self.name
