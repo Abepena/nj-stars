@@ -260,7 +260,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                     src={productImages[currentImageIndex].url}
                     alt={productImages[currentImageIndex].alt}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                   />
                   {productImages.length > 1 && (

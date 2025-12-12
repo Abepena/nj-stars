@@ -351,7 +351,7 @@ export default function ProductDetailPage() {
                     src={productImages[currentImageIndex].url}
                     alt={productImages[currentImageIndex].alt}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     priority
                     unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                   />
