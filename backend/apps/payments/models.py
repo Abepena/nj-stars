@@ -257,6 +257,10 @@ class Product(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
 
+        # POD products should never track inventory (they're made to order)
+        if self.fulfillment_type == 'pod':
+            self.manage_inventory = False
+
         # Auto-create Stripe product/price for local products
         if self.is_local and self.is_active and self.price:
             self._sync_to_stripe()

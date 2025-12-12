@@ -1173,6 +1173,7 @@ def _handle_product_publish(resource: dict):
                 'description': description,
                 'price': base_price,
                 'fulfillment_type': 'pod',
+                'manage_inventory': False,  # POD products are always in stock
                 'is_active': True,
                 'category': 'apparel',  # Default category, can be changed in admin
             }
