@@ -4,24 +4,6 @@
  */
 
 export const CATEGORY_COLORS: Record<string, { active: string; inactive: string }> = {
-  // Product categories
-  jersey: {
-    active: "bg-accent/30 text-accent font-medium border border-accent/70",
-    inactive: "bg-accent/8 text-accent/70 border border-accent/25 hover:bg-accent/12",
-  },
-  apparel: {
-    active: "bg-secondary/30 text-secondary font-medium border border-secondary/70",
-    inactive: "bg-secondary/8 text-secondary/70 border border-secondary/25 hover:bg-secondary/12",
-  },
-  accessories: {
-    active: "bg-tertiary/30 text-tertiary font-medium border border-tertiary/70",
-    inactive: "bg-tertiary/8 text-tertiary/70 border border-tertiary/25 hover:bg-tertiary/12",
-  },
-  equipment: {
-    active: "bg-info/30 text-info font-medium border border-info/70",
-    inactive: "bg-info/8 text-info/70 border border-info/25 hover:bg-info/12",
-  },
-
   // Event types
   tryout: {
     active: "bg-accent/30 text-accent font-medium border border-accent/70",

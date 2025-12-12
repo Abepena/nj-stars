@@ -16,6 +16,7 @@ from .services.printify_client import get_printify_client, PrintifyError
 import logging
 
 logger = logging.getLogger(__name__)
+from django.utils import timezone
 from .serializers import (
     ProductSerializer,
     SubscriptionPlanSerializer,
@@ -24,6 +25,8 @@ from .serializers import (
     AddToBagSerializer,
     UpdateBagItemSerializer,
     OrderSerializer,
+    HandoffItemSerializer,
+    HandoffUpdateSerializer,
 )
 
 # Initialize Stripe
@@ -1318,3 +1321,121 @@ def _handle_order_event(event_type: str, resource: dict):
         logger.info(f"Order {order.order_number} canceled in Printify")
 
     return HttpResponse(status=200)
+
+
+# =============================================================================
+# HANDOFF MANAGEMENT (Local Product Delivery)
+# =============================================================================
+
+class HandoffListView(APIView):
+    """
+    List local items pending handoff (staff only).
+
+    GET /api/payments/handoffs/?status=pending
+    Query params:
+        - status: pending (default), ready, delivered, all
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Require staff access
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Staff access required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Get status filter
+        status_filter = request.query_params.get('status', 'pending')
+
+        # Query local delivery items from paid orders
+        items = OrderItem.objects.filter(
+            fulfillment_type='local',
+            order__status__in=['paid', 'processing', 'shipped'],  # Active orders
+        )
+
+        # Apply status filter
+        if status_filter != 'all':
+            items = items.filter(handoff_status=status_filter)
+
+        # Order by oldest first
+        items = items.select_related('order', 'handoff_completed_by').order_by('order__created_at')
+
+        serializer = HandoffItemSerializer(items, many=True)
+        return Response(serializer.data)
+
+
+class HandoffUpdateView(APIView):
+    """
+    Update handoff status for a local delivery item (staff only).
+
+    PATCH /api/payments/handoffs/<item_id>/
+    Body: { "status": "delivered", "notes": "Picked up at practice" }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, item_id):
+        # Require staff access
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Staff access required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Get the item
+        try:
+            item = OrderItem.objects.select_related('order').get(
+                pk=item_id,
+                fulfillment_type='local'
+            )
+        except OrderItem.DoesNotExist:
+            return Response(
+                {'error': 'Item not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Validate request data
+        serializer = HandoffUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Update handoff status
+        new_status = serializer.validated_data['status']
+        item.handoff_status = new_status
+        item.handoff_notes = serializer.validated_data.get('notes', '')
+
+        if new_status == 'delivered':
+            item.handoff_completed_at = timezone.now()
+            item.handoff_completed_by = request.user
+        elif new_status in ['pending', 'ready']:
+            # Reset completion fields if moving back to non-delivered status
+            item.handoff_completed_at = None
+            item.handoff_completed_by = None
+
+        item.save()
+
+        # Check if all local items in order are delivered
+        self._update_order_status_if_complete(item.order)
+
+        return Response(HandoffItemSerializer(item).data)
+
+    def _update_order_status_if_complete(self, order):
+        """Update order status to delivered if all items are fulfilled."""
+        local_items = order.items.filter(fulfillment_type='local')
+        pod_items = order.items.filter(fulfillment_type='pod')
+
+        # Check if all local items are delivered
+        all_local_delivered = all(
+            i.handoff_status == 'delivered' for i in local_items
+        ) if local_items.exists() else True
+
+        # Check if POD items are shipped/delivered (or none exist)
+        all_pod_fulfilled = (
+            not pod_items.exists() or
+            order.status in ['shipped', 'delivered']
+        )
+
+        # If everything is complete, mark order as delivered
+        if all_local_delivered and all_pod_fulfilled:
+            order.status = 'delivered'
+            order.save()
+            logger.info(f"Order {order.order_number} fully delivered (all items handed off)")

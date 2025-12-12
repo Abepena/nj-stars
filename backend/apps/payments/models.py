@@ -695,6 +695,37 @@ class OrderItem(models.Model):
         help_text="Printify Line Item ID for POD products"
     )
 
+    # Local delivery handoff tracking (for coach in-person delivery)
+    HANDOFF_STATUS_CHOICES = [
+        ('pending', 'Pending Pickup'),
+        ('ready', 'Ready for Pickup'),
+        ('delivered', 'Delivered'),
+    ]
+    handoff_status = models.CharField(
+        max_length=20,
+        choices=HANDOFF_STATUS_CHOICES,
+        default='pending',
+        blank=True,
+        help_text="Status for local product handoffs"
+    )
+    handoff_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the handoff was completed"
+    )
+    handoff_completed_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='completed_handoffs',
+        help_text="Staff member who completed the handoff"
+    )
+    handoff_notes = models.TextField(
+        blank=True,
+        help_text="Notes about the handoff (e.g., who picked it up)"
+    )
+
     class Meta:
         ordering = ['id']
 

@@ -15,6 +15,8 @@ from .views import (
     get_order,
     get_user_orders,
     calculate_shipping,
+    HandoffListView,
+    HandoffUpdateView,
 )
 
 router = DefaultRouter()
@@ -39,4 +41,7 @@ urlpatterns = [
     # Order endpoints
     path('orders/', get_user_orders, name='user-orders'),
     path('orders/<str:order_number>/', get_order, name='order-detail'),
+    # Handoff management (staff only)
+    path('handoffs/', HandoffListView.as_view(), name='handoff-list'),
+    path('handoffs/<int:item_id>/', HandoffUpdateView.as_view(), name='handoff-update'),
 ]
