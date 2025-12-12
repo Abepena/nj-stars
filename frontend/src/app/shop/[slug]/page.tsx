@@ -14,6 +14,7 @@ import { ProductDetailSkeleton } from "@/components/skeletons/product-detail-ske
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
+import { getColorHex } from "@/lib/color-utils"
 
 interface ProductImage {
   id: number
@@ -518,7 +519,7 @@ export default function ProductDetailPage() {
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
                           : "hover:scale-110"
                       }`}
-                      style={{ backgroundColor: color.hex || '#808080' }}
+                      style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                       aria-label={color.name}
                       aria-pressed={selectedColor === color.name}
                       title={color.name}
@@ -529,7 +530,7 @@ export default function ProductDetailPage() {
                       {selectedColor === color.name && (
                         <Check
                           className={`absolute inset-0 m-auto w-5 h-5 ${
-                            color.hex === "#ffffff" || color.hex === "#6b7280"
+                            getColorHex(color.name, color.hex) === "#ffffff" || getColorHex(color.name, color.hex) === "#9ca3af"
                               ? "text-gray-800"
                               : "text-white"
                           }`}

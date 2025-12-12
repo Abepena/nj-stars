@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
 import { shouldSkipImageOptimization } from "@/lib/utils"
+import { getColorHex } from "@/lib/color-utils"
 
 interface ColorOption {
   name: string
@@ -348,7 +349,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                             ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent"
                             : "border-border hover:border-muted-foreground"
                         }`}
-                        style={{ backgroundColor: color.hex || '#808080' }}
+                        style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                         title={color.name}
                         aria-label={`Select ${color.name}`}
                       />

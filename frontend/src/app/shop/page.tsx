@@ -12,6 +12,7 @@ import { FilterSidebar, type FilterCategory, type FilterTag, type FilterColor, t
 import { Button } from "@/components/ui/button"
 import { getCategoryColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
+import { normalizeColors, productMatchesColorFilter, getColorHex } from "@/lib/color-utils"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -149,7 +150,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
               <span
                 key={color.name}
                 className="w-4 h-4 rounded-full border border-border"
-                style={{ backgroundColor: color.hex }}
+                style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                 title={color.name}
               />
             ))}
@@ -311,12 +312,11 @@ export default function ShopPage() {
       )
     }
 
-    // Filter by colors (check if product has any of the selected colors)
+    // Filter by colors (handles color grouping like "Pigment Black" → "Black")
     if (selectedColors.length > 0) {
-      filtered = filtered.filter(product => {
-        const productColors = product.available_colors?.map(c => c.name.toLowerCase()) || []
-        return selectedColors.some(color => productColors.includes(color.toLowerCase()))
-      })
+      filtered = filtered.filter(product =>
+        productMatchesColorFilter(product.available_colors || [], selectedColors)
+      )
     }
 
     // Sort products
@@ -381,25 +381,15 @@ export default function ShopPage() {
     { value: "on_sale", label: "Sale", count: tagCounts.on_sale },
   ]
 
-  // Extract unique colors from products
+  // Extract unique colors from products (normalized and grouped)
   const getAvailableColors = (): FilterColor[] => {
-    const colorMap = new Map<string, string>()
+    const allColors: { name: string; hex: string }[] = []
     products.forEach(product => {
       product.available_colors?.forEach(color => {
-        // Use color name as key (case-insensitive) to avoid duplicates
-        const key = color.name.toLowerCase()
-        if (!colorMap.has(key)) {
-          colorMap.set(key, color.hex)
-        }
+        allColors.push(color)
       })
     })
-    // Convert to array and sort alphabetically
-    return Array.from(colorMap.entries())
-      .map(([name, hex]) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        hex
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name))
+    return normalizeColors(allColors)
   }
 
   const filterColors: FilterColor[] = getAvailableColors()
