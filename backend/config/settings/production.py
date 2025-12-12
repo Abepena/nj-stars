@@ -115,3 +115,41 @@ LOGGING = {
         },
     },
 }
+
+# =============================================================================
+# CLOUDINARY CONFIGURATION - Media File Storage
+# =============================================================================
+# Cloudinary provides persistent cloud storage for uploaded media files.
+# Railway's filesystem is ephemeral - files are lost on redeploy.
+#
+# Setup:
+# 1. Create free account at https://cloudinary.com
+# 2. Go to Dashboard to find your credentials
+# 3. Add to Railway environment variables:
+#    CLOUDINARY_CLOUD_NAME=your-cloud-name
+#    CLOUDINARY_API_KEY=your-api-key
+#    CLOUDINARY_API_SECRET=your-api-secret
+# =============================================================================
+
+CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='')
+CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY', default='')
+CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='')
+
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    # Cloudinary is configured - use it for media storage
+    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
+
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY': CLOUDINARY_API_KEY,
+        'API_SECRET': CLOUDINARY_API_SECRET,
+    }
+
+    # Use Cloudinary for media files
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+    import logging
+    logging.info("Cloudinary configured for media storage")
+else:
+    import logging
+    logging.warning("Cloudinary not configured - media files will use local storage (ephemeral on Railway)")
