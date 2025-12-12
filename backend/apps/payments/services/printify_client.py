@@ -317,6 +317,58 @@ class PrintifyClient:
         """
         return self._request("GET", "/products.json", params={"limit": limit})
 
+    def get_products(self) -> list:
+        """
+        Get all products from the shop.
+
+        Returns:
+            List of product data
+        """
+        result = self.list_products(limit=100)
+        return result.get('data', [])
+
+    def publish_product(self, product_id: str) -> dict:
+        """
+        Publish a product to the shop.
+
+        This makes the product available for ordering via API.
+
+        Args:
+            product_id: Printify product ID
+
+        Returns:
+            Empty dict on success
+
+        Note:
+            The publish endpoint triggers the product:publish:started webhook
+            which will auto-sync the product to our database.
+        """
+        data = {
+            'title': True,
+            'description': True,
+            'images': True,
+            'variants': True,
+            'tags': True,
+            'keyFeatures': True,
+            'shipping_template': True,
+        }
+
+        logger.info(f"Publishing Printify product: {product_id}")
+        return self._request("POST", f"/products/{product_id}/publish.json", data=data)
+
+    def unpublish_product(self, product_id: str) -> dict:
+        """
+        Unpublish a product from the shop.
+
+        Args:
+            product_id: Printify product ID
+
+        Returns:
+            Empty dict on success
+        """
+        logger.info(f"Unpublishing Printify product: {product_id}")
+        return self._request("POST", f"/products/{product_id}/unpublish.json")
+
     # -------------------------------------------------------------------------
     # Webhook Verification (for future webhook handling)
     # -------------------------------------------------------------------------

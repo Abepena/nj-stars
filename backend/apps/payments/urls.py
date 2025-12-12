@@ -17,6 +17,9 @@ from .views import (
     calculate_shipping,
     HandoffListView,
     HandoffUpdateView,
+    PrintifyPublishView,
+    PrintifyProductsView,
+    PrintifySyncView,
 )
 
 router = DefaultRouter()
@@ -44,4 +47,8 @@ urlpatterns = [
     # Handoff management (staff only)
     path('handoffs/', HandoffListView.as_view(), name='handoff-list'),
     path('handoffs/<int:item_id>/', HandoffUpdateView.as_view(), name='handoff-update'),
+    # Printify admin (superuser only)
+    path('admin/printify/products/', PrintifyProductsView.as_view(), name='printify-products'),
+    path('admin/printify/publish/', PrintifyPublishView.as_view(), name='printify-publish'),
+    path('admin/printify/sync/', PrintifySyncView.as_view(), name='printify-sync'),
 ]

@@ -1439,3 +1439,215 @@ class HandoffUpdateView(APIView):
             order.status = 'delivered'
             order.save()
             logger.info(f"Order {order.order_number} fully delivered (all items handed off)")
+
+
+# =============================================================================
+# PRINTIFY ADMIN ENDPOINTS (Superuser only)
+# =============================================================================
+
+class PrintifyAdminView(APIView):
+    """
+    Admin endpoints for Printify management (superuser only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _require_superuser(self, request):
+        if not request.user.is_superuser:
+            return Response(
+                {'error': 'Superuser access required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return None
+
+
+class PrintifyPublishView(PrintifyAdminView):
+    """
+    Publish a Printify product.
+
+    POST /api/payments/admin/printify/publish/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Publish the product
+            result = client.publish_product(product_id)
+            return Response({
+                'success': True,
+                'message': f'Product {product_id} published successfully',
+                'product_id': product_id
+            })
+        except PrintifyError as e:
+            logger.error(f"Failed to publish Printify product {product_id}: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error publishing Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to publish product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyProductsView(PrintifyAdminView):
+    """
+    List all Printify products (for admin dashboard).
+
+    GET /api/payments/admin/printify/products/
+    """
+
+    def get(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            products = client.get_products()
+            # Return simplified product list
+            simplified = [{
+                'id': p.get('id'),
+                'title': p.get('title'),
+                'is_locked': p.get('is_locked', False),
+                'visible': p.get('visible', False),
+                'created_at': p.get('created_at'),
+                'images': p.get('images', [])[:1],  # Just first image
+            } for p in products]
+            return Response({'products': simplified})
+        except PrintifyError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class PrintifySyncView(PrintifyAdminView):
+    """
+    Manually sync a Printify product to local database.
+
+    POST /api/payments/admin/printify/sync/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        from .services.printify_sync import sync_product_variants
+
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Fetch product from Printify
+            printify_data = client.get_product(product_id)
+
+            # Use the webhook handler logic to create/update the product
+            import html
+            import re
+            from django.utils.text import slugify
+
+            title = printify_data.get('title', f'Product {product_id}')
+            description = printify_data.get('description', '')
+
+            if description:
+                description = re.sub(r'<[^>]+>', '', description)
+                description = html.unescape(description)
+
+            base_slug = slugify(title)
+            slug = base_slug
+            counter = 1
+            while Product.objects.filter(slug=slug).exclude(printify_product_id=product_id).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            variants = printify_data.get('variants', [])
+            base_price = 0
+            for v in variants:
+                if v.get('is_enabled') and v.get('price'):
+                    base_price = v['price'] / 100
+                    break
+
+            tags = printify_data.get('tags', [])
+            category = _detect_category_from_tags(tags)
+
+            product, created = Product.objects.update_or_create(
+                printify_product_id=product_id,
+                defaults={
+                    'name': title,
+                    'slug': slug,
+                    'description': description,
+                    'price': base_price,
+                    'fulfillment_type': 'pod',
+                    'manage_inventory': False,
+                    'is_active': True,
+                    'category': category,
+                }
+            )
+
+            sync_stats = sync_product_variants(product)
+
+            return Response({
+                'success': True,
+                'created': created,
+                'product': {
+                    'id': product.id,
+                    'name': product.name,
+                    'slug': product.slug,
+                    'category': product.category,
+                },
+                'sync_stats': sync_stats
+            })
+
+        except PrintifyError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error syncing Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to sync product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
