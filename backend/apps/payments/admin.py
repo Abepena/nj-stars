@@ -103,8 +103,8 @@ class ProductImageInline(admin.TabularInline):
 class ProductVariantInline(admin.TabularInline):
     """Inline for managing product variants"""
     model = ProductVariant
-    extra = 0
-    fields = ['title', 'size', 'color', 'color_hex', 'price', 'is_enabled', 'is_available', 'sort_order']
+    extra = 1  # One empty row for adding variants
+    fields = ['size', 'color', 'color_hex', 'price', 'is_enabled', 'is_available', 'sort_order']
     readonly_fields = ['printify_variant_id', 'last_synced_at']
     ordering = ['sort_order', 'size', 'color']
 
@@ -113,7 +113,7 @@ class ProductVariantInline(admin.TabularInline):
         readonly = list(self.readonly_fields)
         if obj and obj.is_pod:
             # For POD products, variant data comes from Printify - make more fields read-only
-            readonly.extend(['title', 'size', 'color', 'is_available'])
+            readonly.extend(['size', 'color', 'is_available'])
         return readonly
 
 

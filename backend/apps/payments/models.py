@@ -429,10 +429,11 @@ class ProductVariant(models.Model):
         help_text="Printify variant ID - required for POD products"
     )
 
-    # Display info
+    # Display info (auto-generated from color/size if blank)
     title = models.CharField(
         max_length=255,
-        help_text="Human-readable variant name (e.g., 'Black / XL')"
+        blank=True,
+        help_text="Auto-generated from color/size if left blank"
     )
 
     # Variant options (parsed from Printify or manually entered)
@@ -488,6 +489,17 @@ class ProductVariant(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.title}"
+
+    def save(self, *args, **kwargs):
+        # Auto-generate title from color and size if not provided
+        if not self.title or self.title.strip() == '':
+            parts = []
+            if self.color:
+                parts.append(self.color)
+            if self.size:
+                parts.append(self.size)
+            self.title = ' / '.join(parts) if parts else 'Default'
+        super().save(*args, **kwargs)
 
     @property
     def effective_price(self):
