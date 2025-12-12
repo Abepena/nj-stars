@@ -33,3 +33,28 @@ CSRF_COOKIE_SECURE = False
 # INSTALLED_APPS += ['debug_toolbar']
 # MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
 # INTERNAL_IPS = ['127.0.0.1']
+
+# =============================================================================
+# CLOUDINARY CONFIGURATION (Optional for development)
+# =============================================================================
+# Enable Cloudinary in development if credentials are provided.
+# Useful for Railway "development" environment which has ephemeral storage.
+# Local Docker development can skip this (uses local /media/ folder).
+# =============================================================================
+CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='')
+CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY', default='')
+CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='')
+
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
+
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY': CLOUDINARY_API_KEY,
+        'API_SECRET': CLOUDINARY_API_SECRET,
+    }
+
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+    import logging
+    logging.info("Cloudinary configured for media storage (development)")
