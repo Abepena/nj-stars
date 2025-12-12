@@ -766,9 +766,24 @@ class BagItem(models.Model):
         return " - ".join(parts)
 
     @property
+    def unit_price(self):
+        """Get the correct price for this item (variant price or base product price)"""
+        # Look up variant by size/color if selected
+        if self.selected_size or self.selected_color:
+            variant = self.product.variants.filter(
+                size=self.selected_size or '',
+                color=self.selected_color or '',
+                is_enabled=True
+            ).first()
+            if variant and variant.price:
+                return variant.price
+        # Fall back to product base price
+        return self.product.price
+
+    @property
     def total_price(self):
         """Calculate total price for this bag item"""
-        return self.product.price * self.quantity
+        return self.unit_price * self.quantity
 
     @property
     def is_available(self):
