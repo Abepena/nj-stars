@@ -28,19 +28,19 @@ interface PortalLayoutProps {
 }
 
 const parentNavItems = [
-  { href: "/portal/dashboard", label: "Dashboard", icon: Home },
-  { href: "/portal/children", label: "My Children", icon: Users },
-  { href: "/portal/billing", label: "Billing & Dues", icon: CreditCard },
-  { href: "/portal/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/portal/credits", label: "Credits", icon: Gift },
-  { href: "/portal/profile", label: "My Profile", icon: User },
+  { href: "/portal/dashboard", label: "Dashboard", icon: Home, exact: true },
+  { href: "/portal/dashboard/children", label: "My Children", icon: Users },
+  { href: "/portal/dashboard/billing", label: "Billing & Dues", icon: CreditCard },
+  { href: "/portal/dashboard/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/portal/dashboard/credits", label: "Credits", icon: Gift },
+  { href: "/portal/dashboard/settings", label: "Settings", icon: User },
 ]
 
 const staffNavItems = [
-  { href: "/portal/admin", label: "Admin Dashboard", icon: Shield },
-  { href: "/portal/deliveries", label: "Deliveries", icon: Package },
-  { href: "/portal/admin/check-ins", label: "Check-Ins", icon: ClipboardList },
-  { href: "/portal/admin/roster", label: "Roster", icon: Users },
+  { href: "/portal/dashboard/admin", label: "Admin Dashboard", icon: Shield },
+  { href: "/portal/dashboard/deliveries", label: "Deliveries", icon: Package },
+  { href: "/portal/dashboard/check-ins", label: "Check-Ins", icon: ClipboardList },
+  { href: "/portal/dashboard/roster", label: "Roster", icon: Users },
 ]
 
 export default function PortalLayout({ children }: PortalLayoutProps) {
@@ -62,7 +62,9 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   }
 
   const NavLink = ({ item }: { item: typeof parentNavItems[0] }) => {
-    const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
+    const isActive = item.exact
+      ? pathname === item.href
+      : pathname === item.href || pathname?.startsWith(item.href + "/")
     const Icon = item.icon
 
     return (
