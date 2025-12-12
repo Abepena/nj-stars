@@ -69,9 +69,10 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       <Link
         href={item.href}
         className={cn(
-          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-          "hover:bg-muted",
-          isActive && "bg-primary/10 text-primary font-medium"
+          "flex items-center gap-3 px-4 py-3 rounded-md transition-colors border",
+          isActive
+            ? "bg-muted text-foreground font-medium border-border"
+            : "text-muted-foreground border-transparent hover:bg-muted/50 hover:text-foreground"
         )}
         onClick={() => setMobileNavOpen(false)}
       >
