@@ -169,7 +169,7 @@ class ProductAdmin(admin.ModelAdmin):
         }),
         ('Inventory', {
             'fields': ('manage_inventory', 'stock_quantity'),
-            'description': 'For POD products, set "Manage inventory" to OFF (Printify handles stock).'
+            'description': 'For POD products, <strong>uncheck</strong> "Manage inventory" (Printify handles stock).'
         }),
         ('Printify Integration (for POD products)', {
             'fields': ('printify_product_id', 'printify_variant_id'),
