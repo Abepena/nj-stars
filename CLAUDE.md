@@ -473,6 +473,36 @@ make restart-backend
 make shell-backend
 ```
 
+### Run Commands on Railway Database (from Local Docker)
+
+To run Django management commands against **Railway's development database** from your local machine:
+
+```bash
+# 1. Link to Railway project (one-time setup)
+railway link -p <project-id> -e development
+
+# 2. Get the public database URL
+railway variables -s Postgres --json | python3 -c "import sys,json; print(json.load(sys.stdin)['DATABASE_PUBLIC_URL'])"
+
+# 3. Run command via Docker with Railway's DATABASE_URL
+# Use the helper script:
+./scripts/railway-dev-cmd.sh "python manage.py createsuperuser"
+
+# Or manually (replace <URL> with the DATABASE_PUBLIC_URL from step 2):
+docker exec -e DATABASE_URL="<URL>" njstars-backend python manage.py <command>
+```
+
+**Example: Create superuser on Railway development:**
+```bash
+./scripts/railway-dev-cmd.sh "python manage.py shell -c \"
+from django.contrib.auth import get_user_model
+User = get_user_model()
+User.objects.create_superuser('admin', 'email@example.com', 'password')
+\""
+```
+
+**Why this works:** The local Docker container runs Django with Railway's database URL injected as an environment variable, connecting your local code to the remote database.
+
 ---
 
 ## Key Files Reference
