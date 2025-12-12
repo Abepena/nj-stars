@@ -96,25 +96,41 @@ const SIZE_ORDER: Record<string, number> = {
   'ONE SIZE': 50,
 }
 
-function sortSizes(sizes: string[]): string[] {
-  return [...sizes].sort((a, b) => {
-    const orderA = SIZE_ORDER[a.toUpperCase().trim()] ?? 100
-    const orderB = SIZE_ORDER[b.toUpperCase().trim()] ?? 100
-    return orderA - orderB
-  })
+const SIZE_ALIASES: Record<string, string> = {
+  SM: 'S',
+  SMALL: 'S',
+  SML: 'S',
+  MD: 'M',
+  MED: 'M',
+  MEDIUM: 'M',
+  LG: 'L',
+  LARGE: 'L',
+  XXL: '2XL',
+  XXXL: '3XL',
+  XXXXL: '4XL',
+  XXXXXL: '5XL',
+  '2X': '2XL',
+  '3X': '3XL',
+  '4X': '4XL',
+  '5X': '5XL',
 }
 
-function getSortedSizes(product: Product): string[] {
-  const variantSizes = product.variants
-    ?.map((v) => v.size?.trim())
-    .filter((s): s is string => !!s)
-    .filter((s, idx, arr) => arr.indexOf(s) === idx) || []
+function normalizeSize(size: string): string {
+  const key = size.toUpperCase().trim()
+  return SIZE_ALIASES[key] || key
+}
 
-  if (variantSizes.length > 0) {
-    return sortSizes(variantSizes)
-  }
+function getSizeOrder(size: string): number {
+  const normalized = normalizeSize(size)
+  return SIZE_ORDER[normalized] ?? 100
+}
 
-  return sortSizes(product.available_sizes || [])
+function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const orderA = getSizeOrder(a)
+    const orderB = getSizeOrder(b)
+    return orderA - orderB
+  })
 }
 
 export function ProductQuickView({ product, open, onOpenChange }: ProductQuickViewProps) {
@@ -127,7 +143,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const { addToBag } = useBag()
 
   // Use actual product variants from API, sort sizes S -> 3XL
-  const sizes = getSortedSizes(product)
+  const sizes = sortSizes(product.available_sizes || [])
   const rawColors = product.available_colors || []
 
   // Find the color associated with the primary image
@@ -171,7 +187,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
     if (open) {
       // Get colors fresh to avoid stale closure
       const freshColors = product.available_colors || []
-      const freshSizes = getSortedSizes(product)
+      const freshSizes = product.available_sizes || []
       const freshPrimaryColor = (() => {
         if (!product.images?.length || !product.variants?.length) return null
         const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
