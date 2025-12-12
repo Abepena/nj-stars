@@ -165,7 +165,8 @@ def create_product_checkout(request):
                     'product_data': {
                         'name': product.name,
                         'description': product.description,
-                        'images': [product.image_url] if product.image_url else [],
+                        # Prefer primary image (supports Printify variant images)
+                        'images': [product.primary_image_url] if product.primary_image_url else [],
                     },
                 },
                 'quantity': quantity,
@@ -703,6 +704,31 @@ def bag_checkout(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+        def _variant_for_item(item):
+            """Find matching variant for selected size/color (if any)."""
+            if item.selected_size or item.selected_color:
+                return item.product.variants.filter(
+                    size=item.selected_size or '',
+                    color=item.selected_color or '',
+                    is_enabled=True
+                ).first()
+            return None
+
+        def _image_for_item(item):
+            """
+            Choose the most accurate image for Stripe:
+            - If variant has Printify variant ID, use the first image that contains that ID.
+            - Fallback to product primary image.
+            """
+            variant = _variant_for_item(item)
+            if variant and variant.printify_variant_id:
+                variant_image = item.product.images.filter(
+                    printify_variant_ids__contains=[variant.printify_variant_id]
+                ).first()
+                if variant_image and variant_image.url:
+                    return variant_image.url
+            return item.product.primary_image_url
+
         # Build line items from bag
         line_items = []
         checkout_item_ids = []  # Track which items are being checked out
@@ -738,7 +764,9 @@ def bag_checkout(request):
                     'product_data': {
                         'name': product_name,
                         'description': item.product.description[:500] if item.product.description else '',
-                        'images': [item.product.image_url] if item.product.image_url else [],
+                        'images': [
+                            img for img in [_image_for_item(item)] if img
+                        ],
                     },
                 },
                 'quantity': item.quantity,

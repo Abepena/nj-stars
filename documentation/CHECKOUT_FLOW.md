@@ -816,4 +816,4 @@ When BOTH are fulfilled:
 
 ---
 
-*Document maintained by the development team. Questions? Check the codebase or ask in Slack.*
+*Document maintained by the development team. Questions? Check the codebase or reach out to developers@leag.app.*
