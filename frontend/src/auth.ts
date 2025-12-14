@@ -122,6 +122,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email: user.email,
             name: `${user.first_name} ${user.last_name}`.trim() || user.email,
             token: loginData.key,
+            is_superuser: user.is_superuser,
+            is_staff: user.is_staff,
+            role: user.role,
           }
         } catch (error) {
           console.error("Authentication error:", error)
@@ -183,6 +186,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (user.image) {
           token.picture = user.image
         }
+
+        // Store superuser/staff status and role
+        if ((user as { is_superuser?: boolean }).is_superuser !== undefined) {
+          token.is_superuser = (user as { is_superuser?: boolean }).is_superuser
+        }
+        if ((user as { is_staff?: boolean }).is_staff !== undefined) {
+          token.is_staff = (user as { is_staff?: boolean }).is_staff
+        }
+        if ((user as { role?: string }).role) {
+          token.role = (user as { role?: string }).role
+        }
       }
       return token
     },
@@ -196,6 +210,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (token.picture) {
           session.user.image = token.picture as string
         }
+
+        // Include superuser/staff status and role
+        ;(session.user as { is_superuser?: boolean }).is_superuser = token.is_superuser as boolean
+        ;(session.user as { is_staff?: boolean }).is_staff = token.is_staff as boolean
+        ;(session.user as { role?: string }).role = token.role as string
       }
       return session
     },

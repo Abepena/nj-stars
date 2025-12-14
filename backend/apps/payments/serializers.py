@@ -393,3 +393,51 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_has_local_items(self, obj):
         """Check if order contains local delivery items"""
         return obj.items.filter(product__fulfillment_type='local').exists()
+
+
+class HandoffItemSerializer(serializers.ModelSerializer):
+    """Serializer for local delivery items pending handoff"""
+
+    order_number = serializers.CharField(source='order.order_number', read_only=True)
+    order_date = serializers.DateTimeField(source='order.created_at', read_only=True)
+    customer_name = serializers.CharField(source='order.shipping_name', read_only=True)
+    customer_email = serializers.CharField(source='order.shipping_email', read_only=True)
+    handoff_completed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = [
+            'id',
+            'order_number',
+            'order_date',
+            'customer_name',
+            'customer_email',
+            'product_name',
+            'selected_size',
+            'selected_color',
+            'quantity',
+            'handoff_status',
+            'handoff_completed_at',
+            'handoff_completed_by_name',
+            'handoff_notes',
+        ]
+
+    def get_handoff_completed_by_name(self, obj):
+        """Get the name of staff who completed the handoff"""
+        if obj.handoff_completed_by:
+            return obj.handoff_completed_by.get_full_name() or obj.handoff_completed_by.username
+        return None
+
+
+class HandoffUpdateSerializer(serializers.Serializer):
+    """Serializer for updating handoff status"""
+
+    status = serializers.ChoiceField(
+        choices=['pending', 'ready', 'delivered'],
+        help_text="New handoff status"
+    )
+    notes = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Optional notes about the handoff"
+    )

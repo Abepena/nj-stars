@@ -16,6 +16,7 @@ from .services.printify_client import get_printify_client, PrintifyError
 import logging
 
 logger = logging.getLogger(__name__)
+from django.utils import timezone
 from .serializers import (
     ProductSerializer,
     SubscriptionPlanSerializer,
@@ -24,6 +25,8 @@ from .serializers import (
     AddToBagSerializer,
     UpdateBagItemSerializer,
     OrderSerializer,
+    HandoffItemSerializer,
+    HandoffUpdateSerializer,
 )
 
 # Initialize Stripe
@@ -45,6 +48,11 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     List all products or retrieve a single product.
     Supports filtering by category and featured status.
+
+    Special parameter:
+    - fill_to: When used with featured=true, fills up to this number
+               with random non-featured products if there aren't enough
+               featured products. Useful for homepage displays.
     """
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
@@ -54,6 +62,51 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'price', 'created_at']
     ordering = ['name']
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to handle fill_to parameter for featured products.
+        """
+        fill_to = request.query_params.get('fill_to')
+        featured = request.query_params.get('featured')
+
+        # Only apply fill logic when both featured=true and fill_to are specified
+        if featured and featured.lower() == 'true' and fill_to:
+            try:
+                fill_to = int(fill_to)
+            except ValueError:
+                fill_to = None
+
+            if fill_to and fill_to > 0:
+                # Get featured products
+                featured_products = list(
+                    Product.objects.filter(is_active=True, featured=True)
+                )
+                featured_count = len(featured_products)
+
+                # If we have fewer than fill_to, add random non-featured products
+                if featured_count < fill_to:
+                    needed = fill_to - featured_count
+                    featured_ids = [p.id for p in featured_products]
+
+                    # Get random non-featured products (excluding already-featured ones)
+                    random_products = list(
+                        Product.objects.filter(is_active=True, featured=False)
+                        .exclude(id__in=featured_ids)
+                        .order_by('?')[:needed]
+                    )
+
+                    # Combine: featured first, then random fillers
+                    all_products = featured_products + random_products
+                else:
+                    all_products = featured_products[:fill_to]
+
+                # Serialize and return
+                serializer = self.get_serializer(all_products, many=True)
+                return Response({'results': serializer.data})
+
+        # Default behavior for all other cases
+        return super().list(request, *args, **kwargs)
 
 
 class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
@@ -112,7 +165,8 @@ def create_product_checkout(request):
                     'product_data': {
                         'name': product.name,
                         'description': product.description,
-                        'images': [product.image_url] if product.image_url else [],
+                        # Prefer primary image (supports Printify variant images)
+                        'images': [product.primary_image_url] if product.primary_image_url else [],
                     },
                 },
                 'quantity': quantity,
@@ -380,7 +434,27 @@ def _submit_printify_order(order: Order, pod_items: list):
 
     This creates an order in Printify that will be fulfilled and shipped
     directly to the customer. The order goes to "On Hold" status initially.
+
+    In development (PRINTIFY_DRY_RUN=true), generates mock order IDs without
+    calling the actual Printify API.
     """
+    import uuid
+
+    # DEV MODE: Skip actual Printify API call, generate mock IDs
+    if getattr(settings, 'PRINTIFY_DRY_RUN', False):
+        mock_order_id = f"mock-{uuid.uuid4().hex[:12]}"
+        order.printify_order_id = mock_order_id
+        order.save()
+
+        # Generate mock line item IDs for each POD item
+        for i, item in enumerate(pod_items):
+            item.printify_line_item_id = f"mock-line-{i+1}"
+            item.save()
+
+        logger.info(f"[DRY RUN] Mock Printify order created: {mock_order_id} for {order.order_number}")
+        return mock_order_id
+
+    # PRODUCTION MODE: Call actual Printify API
     printify = get_printify_client()
     if not printify:
         logger.warning(f"Printify not configured, skipping order submission for {order.order_number}")
@@ -630,6 +704,43 @@ def bag_checkout(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+        def _variant_for_item(item):
+            """Find matching variant for selected size/color (if any)."""
+            if item.selected_size or item.selected_color:
+                return item.product.variants.filter(
+                    size=item.selected_size or '',
+                    color=item.selected_color or '',
+                    is_enabled=True
+                ).first()
+            return None
+
+        def _make_absolute_url(url):
+            """Convert relative URL to absolute URL for Stripe."""
+            if not url:
+                return None
+            # Already absolute
+            if url.startswith('http://') or url.startswith('https://'):
+                return url
+            # Relative URL - prepend backend URL
+            backend_url = getattr(settings, 'BACKEND_URL', 'http://localhost:8000').rstrip('/')
+            return f"{backend_url}{url}"
+
+        def _image_for_item(item):
+            """
+            Choose the most accurate image for Stripe:
+            - If variant has Printify variant ID, use the first image that contains that ID.
+            - Fallback to product primary image.
+            Returns absolute URL (Stripe requires absolute URLs).
+            """
+            variant = _variant_for_item(item)
+            if variant and variant.printify_variant_id:
+                variant_image = item.product.images.filter(
+                    printify_variant_ids__contains=[variant.printify_variant_id]
+                ).first()
+                if variant_image and variant_image.url:
+                    return _make_absolute_url(variant_image.url)
+            return _make_absolute_url(item.product.primary_image_url)
+
         # Build line items from bag
         line_items = []
         checkout_item_ids = []  # Track which items are being checked out
@@ -665,7 +776,9 @@ def bag_checkout(request):
                     'product_data': {
                         'name': product_name,
                         'description': item.product.description[:500] if item.product.description else '',
-                        'images': [item.product.image_url] if item.product.image_url else [],
+                        'images': [
+                            img for img in [_image_for_item(item)] if img
+                        ],
                     },
                 },
                 'quantity': item.quantity,
@@ -1060,6 +1173,36 @@ def printify_webhook(request):
         return HttpResponse(status=500)
 
 
+def _detect_category_from_tags(tags: list) -> str:
+    """
+    Detect product category from Printify tags.
+    Maps Printify's tag system to our categories.
+    """
+    tags_lower = [t.lower() for t in tags]
+    tags_str = ' '.join(tags_lower)
+
+    # Map Printify tags to our categories (check most specific first)
+    if 'hoodies' in tags_lower or 'hoodie' in tags_str:
+        return 'hoodie'
+    if 't-shirts' in tags_lower or 'tee' in tags_str:
+        return 'tee'
+    if 'long sleeve' in tags_str:
+        return 'longsleeve'
+    if 'sweater' in tags_str or 'sweatshirt' in tags_str:
+        return 'sweater'
+    if 'tank tops' in tags_lower or 'jersey' in tags_str:
+        return 'jersey'
+    if 'shorts' in tags_lower:
+        return 'shorts'
+    if 'hats' in tags_lower or 'caps' in tags_lower or 'hat' in tags_str or 'beanie' in tags_str:
+        return 'hat'
+    if 'bags' in tags_lower or 'backpack' in tags_str:
+        return 'bag'
+
+    # Default fallback
+    return 'apparel'
+
+
 def _handle_product_publish(resource: dict):
     """
     Handle product:publish:started webhook - auto-create product and sync variants.
@@ -1114,6 +1257,10 @@ def _handle_product_publish(resource: dict):
                 base_price = v['price'] / 100
                 break
 
+        # Detect category from Printify tags
+        tags = printify_data.get('tags', [])
+        category = _detect_category_from_tags(tags)
+
         # Create or update the product
         product, created = Product.objects.update_or_create(
             printify_product_id=printify_product_id,
@@ -1123,8 +1270,9 @@ def _handle_product_publish(resource: dict):
                 'description': description,
                 'price': base_price,
                 'fulfillment_type': 'pod',
+                'manage_inventory': False,  # POD products are always in stock
                 'is_active': True,
-                'category': 'apparel',  # Default category, can be changed in admin
+                'category': category,
             }
         )
 
@@ -1213,3 +1361,383 @@ def _handle_order_event(event_type: str, resource: dict):
         logger.info(f"Order {order.order_number} canceled in Printify")
 
     return HttpResponse(status=200)
+
+
+# =============================================================================
+# HANDOFF MANAGEMENT (Local Product Delivery)
+# =============================================================================
+
+class HandoffListView(APIView):
+    """
+    List local items pending handoff (staff only).
+
+    GET /api/payments/handoffs/?status=pending
+    Query params:
+        - status: pending (default), ready, delivered, all
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Require staff access
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Staff access required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Get status filter
+        status_filter = request.query_params.get('status', 'pending')
+
+        # Query local delivery items from paid orders
+        items = OrderItem.objects.filter(
+            fulfillment_type='local',
+            order__status__in=['paid', 'processing', 'shipped'],  # Active orders
+        )
+
+        # Apply status filter
+        if status_filter != 'all':
+            items = items.filter(handoff_status=status_filter)
+
+        # Order by oldest first
+        items = items.select_related('order', 'handoff_completed_by').order_by('order__created_at')
+
+        serializer = HandoffItemSerializer(items, many=True)
+        return Response(serializer.data)
+
+
+class HandoffUpdateView(APIView):
+    """
+    Update handoff status for a local delivery item (staff only).
+
+    PATCH /api/payments/handoffs/<item_id>/
+    Body: { "status": "delivered", "notes": "Picked up at practice" }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, item_id):
+        # Require staff access
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Staff access required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Get the item
+        try:
+            item = OrderItem.objects.select_related('order').get(
+                pk=item_id,
+                fulfillment_type='local'
+            )
+        except OrderItem.DoesNotExist:
+            return Response(
+                {'error': 'Item not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Validate request data
+        serializer = HandoffUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Update handoff status
+        new_status = serializer.validated_data['status']
+        item.handoff_status = new_status
+        item.handoff_notes = serializer.validated_data.get('notes', '')
+
+        if new_status == 'delivered':
+            item.handoff_completed_at = timezone.now()
+            item.handoff_completed_by = request.user
+        elif new_status in ['pending', 'ready']:
+            # Reset completion fields if moving back to non-delivered status
+            item.handoff_completed_at = None
+            item.handoff_completed_by = None
+
+        item.save()
+
+        # Check if all local items in order are delivered
+        self._update_order_status_if_complete(item.order)
+
+        return Response(HandoffItemSerializer(item).data)
+
+    def _update_order_status_if_complete(self, order):
+        """Update order status to delivered if all items are fulfilled."""
+        local_items = order.items.filter(fulfillment_type='local')
+        pod_items = order.items.filter(fulfillment_type='pod')
+
+        # Check if all local items are delivered
+        all_local_delivered = all(
+            i.handoff_status == 'delivered' for i in local_items
+        ) if local_items.exists() else True
+
+        # Check if POD items are shipped/delivered (or none exist)
+        all_pod_fulfilled = (
+            not pod_items.exists() or
+            order.status in ['shipped', 'delivered']
+        )
+
+        # If everything is complete, mark order as delivered
+        if all_local_delivered and all_pod_fulfilled:
+            order.status = 'delivered'
+            order.save()
+            logger.info(f"Order {order.order_number} fully delivered (all items handed off)")
+
+
+# =============================================================================
+# PRINTIFY ADMIN ENDPOINTS (Superuser only)
+# =============================================================================
+
+class PrintifyAdminView(APIView):
+    """
+    Admin endpoints for Printify management (superuser only).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _require_superuser(self, request):
+        if not request.user.is_superuser:
+            return Response(
+                {'error': 'Superuser access required'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return None
+
+
+class PrintifyPublishView(PrintifyAdminView):
+    """
+    Publish a Printify product.
+
+    POST /api/payments/admin/printify/publish/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Publish the product
+            result = client.publish_product(product_id)
+            return Response({
+                'success': True,
+                'message': f'Product {product_id} published successfully',
+                'product_id': product_id
+            })
+        except PrintifyError as e:
+            logger.error(f"Failed to publish Printify product {product_id}: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error publishing Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to publish product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyUnpublishView(PrintifyAdminView):
+    """
+    Unpublish a Printify product.
+
+    POST /api/payments/admin/printify/unpublish/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Unpublish the product
+            result = client.unpublish_product(product_id)
+            return Response({
+                'success': True,
+                'message': f'Product {product_id} unpublished successfully',
+                'product_id': product_id
+            })
+        except PrintifyError as e:
+            logger.error(f"Failed to unpublish Printify product {product_id}: {e}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error unpublishing Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to unpublish product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyProductsView(PrintifyAdminView):
+    """
+    List all Printify products (for admin dashboard).
+
+    GET /api/payments/admin/printify/products/
+    """
+
+    def get(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            products = client.get_products()
+            # Return simplified product list
+            simplified = [{
+                'id': p.get('id'),
+                'title': p.get('title'),
+                'is_locked': p.get('is_locked', False),
+                'visible': p.get('visible', False),
+                'created_at': p.get('created_at'),
+                'images': p.get('images', [])[:1],  # Just first image
+            } for p in products]
+            return Response({'products': simplified})
+        except PrintifyError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class PrintifySyncView(PrintifyAdminView):
+    """
+    Manually sync a Printify product to local database.
+
+    POST /api/payments/admin/printify/sync/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        from .services.printify_sync import sync_product_variants
+
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Fetch product from Printify
+            printify_data = client.get_product(product_id)
+
+            # Use the webhook handler logic to create/update the product
+            import html
+            import re
+            from django.utils.text import slugify
+
+            title = printify_data.get('title', f'Product {product_id}')
+            description = printify_data.get('description', '')
+
+            if description:
+                description = re.sub(r'<[^>]+>', '', description)
+                description = html.unescape(description)
+
+            base_slug = slugify(title)
+            slug = base_slug
+            counter = 1
+            while Product.objects.filter(slug=slug).exclude(printify_product_id=product_id).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            variants = printify_data.get('variants', [])
+            base_price = 0
+            for v in variants:
+                if v.get('is_enabled') and v.get('price'):
+                    base_price = v['price'] / 100
+                    break
+
+            tags = printify_data.get('tags', [])
+            category = _detect_category_from_tags(tags)
+
+            product, created = Product.objects.update_or_create(
+                printify_product_id=product_id,
+                defaults={
+                    'name': title,
+                    'slug': slug,
+                    'description': description,
+                    'price': base_price,
+                    'fulfillment_type': 'pod',
+                    'manage_inventory': False,
+                    'is_active': True,
+                    'category': category,
+                }
+            )
+
+            sync_stats = sync_product_variants(product)
+
+            return Response({
+                'success': True,
+                'created': created,
+                'product': {
+                    'id': product.id,
+                    'name': product.name,
+                    'slug': product.slug,
+                    'category': product.category,
+                },
+                'sync_stats': sync_stats
+            })
+
+        except PrintifyError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error syncing Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to sync product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

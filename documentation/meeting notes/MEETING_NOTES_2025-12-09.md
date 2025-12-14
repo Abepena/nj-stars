@@ -18,36 +18,47 @@ This meeting focused on monetization and revenue sharing for the platform. Kenny
 
 Kenny has agreed to share **20% of all revenue** generated through the NJ Stars website with the developer. This applies to:
 
-| Revenue Source | Platform Fee |
-|----------------|--------------|
-| Event registrations (camps, tournaments, tryouts) | 20% |
-| Merch sales | 20% |
-| Open gym fees | 20% |
-| Team dues | 20% |
-| Subscription payments | 20% |
+| Revenue Source                                    | Platform Fee |
+| ------------------------------------------------- | ------------ |
+| Event registrations (camps, tournaments, tryouts) | 20%          |
+| Merch sales                                       | 20%          |
+| Open gym fees                                     | 20%          |
+| Team dues                                         | 20%          |
+| Subscription payments                             | 20%          |
 
 **Exclusions:**
+
 - Individual coaches' private lessons/clinics (separate agreement needed)
 - Cash/Venmo/Zelle transactions outside the platform
 
 ### Coach Private Training Revenue (TBD)
 
 For private training sessions booked through the platform, we need to establish a fair split that:
+
 1. Incentivizes coaches to use the platform instead of cash/Venmo/Zelle
 2. Provides value to coaches (payment processing, scheduling, legitimacy)
 3. Compensates the platform fairly for the infrastructure
 
 **Proposed Options:**
 
-| Option | Platform Fee | Coach Receives | Rationale |
-|--------|--------------|----------------|-----------|
-| **A: Low Fee** | 5% | 95% | Encourages adoption, minimal friction |
-| **B: Standard** | 10% | 90% | Covers processing + platform costs |
-| **C: Full Service** | 15% | 85% | Includes scheduling, reminders, admin |
+| Option              | Platform Fee | Stripe Fee   | Coach Net | Rationale                             |
+| ------------------- | ------------ | ------------ | --------- | ------------------------------------- |
+| **A: Low Fee**      | 5%           | 2.9% + $0.30 | ~92%      | Encourages adoption, minimal friction |
+| **B: Standard**     | 10%          | 2.9% + $0.30 | ~87%      | Covers processing + platform costs    |
+| **C: Full Service** | 15%          | 2.9% + $0.30 | ~82%      | Includes scheduling, reminders, admin |
+
+> ⚠️ **Note:** Platform fee is charged ON TOP OF Stripe's transaction fees (2.9% + $0.30). The coach receives their percentage after both fees are deducted.
+
+**Example (Option A - $100 session):**
+
+- Stripe takes: $3.20 (2.9% + $0.30)
+- Platform takes: $5.00 (5%)
+- Coach receives: $91.80
 
 **Recommendation:** Start with **Option A (5%)** to encourage platform adoption. Coaches currently use DMs, Cash App, Venmo, Zelle - we need to offer a compelling reason to switch. Once volume increases, can revisit.
 
 **Benefits for Coaches Using Platform:**
+
 - Professional invoicing with NJ Stars branding
 - Automatic payment tracking for taxes
 - Client management and history
@@ -63,12 +74,14 @@ For private training sessions booked through the platform, we need to establish 
 
 **Use Case:**
 A client wants something specific (custom training package, specialty clinic, extra sessions). Instead of handling payment through DMs/Cash App, the coach can:
+
 1. Create a custom product/invoice on the platform
 2. Share a link with the client
 3. Client pays via Stripe
 4. Coach gets paid through the platform's payout system
 
 **Example Flow:**
+
 ```
 1. Client DMs coach: "Can you do 5 private sessions for my son?"
 2. Coach logs into platform → Creates custom service:
@@ -153,17 +166,18 @@ class CustomProductPayment(models.Model):
 
 **API Endpoints:**
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/custom-products/` | POST | Create custom product (coach only) |
-| `/api/custom-products/` | GET | List coach's custom products |
-| `/api/custom-products/{slug}/` | GET | Get public invoice page data |
-| `/api/custom-products/{slug}/checkout/` | POST | Create Stripe checkout session |
-| `/api/custom-products/{slug}/cancel/` | POST | Cancel custom product |
+| Endpoint                                | Method | Description                        |
+| --------------------------------------- | ------ | ---------------------------------- |
+| `/api/custom-products/`                 | POST   | Create custom product (coach only) |
+| `/api/custom-products/`                 | GET    | List coach's custom products       |
+| `/api/custom-products/{slug}/`          | GET    | Get public invoice page data       |
+| `/api/custom-products/{slug}/checkout/` | POST   | Create Stripe checkout session     |
+| `/api/custom-products/{slug}/cancel/`   | POST   | Cancel custom product              |
 
 **Frontend Requirements:**
 
 1. **Coach Dashboard (Future):**
+
    - "Create Custom Invoice" button
    - Form: title, description, price, optional recipient email
    - List of created invoices with status
@@ -178,6 +192,7 @@ class CustomProductPayment(models.Model):
    - Success/cancelled pages
 
 **UI Mockup - Invoice Page:**
+
 ```
 ┌─────────────────────────────────────────────┐
 │            NJ Stars Elite                   │
@@ -215,19 +230,25 @@ Building on Dec 8 requirements, we now have clarity on revenue splits:
 
 **Platform Fee Structure:**
 
-| Source | Total | Platform | Coach |
-|--------|-------|----------|-------|
-| Custom products/private training | 100% | 5% | 95% |
-| Coach-led events/clinics | 100% | 20% | 80% |
-| Team events (camps, tournaments) | 100% | 20% | 0% (team) |
-| Merch sales | 100% | 20% | N/A |
+> ⚠️ **Note:** All percentages are applied AFTER Stripe's transaction fee (2.9% + $0.30) is deducted.
+>
+> **Merch/POD products use PROFIT basis** (after Printify + shipping costs) due to low margins.
+
+| Source                           | Stripe Fee   | Platform Fee | Applied To    | Recipient Net |
+| -------------------------------- | ------------ | ------------ | ------------- | ------------- |
+| Custom products/private training | 2.9% + $0.30 | 5%           | Gross revenue | Coach: ~92%   |
+| Coach-led events/clinics         | 2.9% + $0.30 | 20%          | Gross revenue | Coach: ~77%   |
+| Team events (camps, tournaments) | 2.9% + $0.30 | 20%          | Gross revenue | Team: ~77%    |
+| Merch / POD sales                | 2.9% + $0.30 | 20%          | **Profit**    | Varies        |
 
 **Stripe Connect Setup:**
+
 - Each coach needs a Stripe Connect Express account
 - Platform fee deducted automatically on payout
 - Weekly or bi-weekly payouts (configurable)
 
 **Implementation Priority:**
+
 1. First: Get custom products working with manual payouts
 2. Second: Integrate Stripe Connect for automated payouts
 3. Third: Build coach dashboard with earnings tracking
@@ -240,6 +261,7 @@ Building on Dec 8 requirements, we now have clarity on revenue splits:
 
 **⚠️ IMPORTANT: API Deprecation Notice**
 The Instagram Basic Display API was **deprecated on December 4, 2024**. As of 2025, all Instagram integrations must use the **Instagram Graph API**, which requires:
+
 - Business or Creator account (not personal)
 - Connected Facebook Page
 - Facebook Developer App approval
@@ -259,11 +281,11 @@ The Instagram Basic Display API was **deprecated on December 4, 2024**. As of 20
 
 **API Options (2025):**
 
-| API | Access Level | Requirements |
-|-----|--------------|--------------|
+| API                     | Access Level              | Requirements                           |
+| ----------------------- | ------------------------- | -------------------------------------- |
 | **Instagram Graph API** | Business/Creator accounts | Facebook Page connection, App approval |
-| **oEmbed** | Public posts only | Just a URL, limited data (embeds only) |
-| ~~Basic Display API~~ | ~~Deprecated~~ | ~~No longer available~~ |
+| **oEmbed**              | Public posts only         | Just a URL, limited data (embeds only) |
+| ~~Basic Display API~~   | ~~Deprecated~~            | ~~No longer available~~                |
 
 **Recommended Approach:**
 
@@ -276,6 +298,7 @@ The Instagram Basic Display API was **deprecated on December 4, 2024**. As of 20
 3. **Ongoing:** Auto-refresh tokens (60-day expiry)
 
 **Instagram Graph API Setup Steps:**
+
 1. Go to [Facebook Developers](https://developers.facebook.com)
 2. Create new app → Select "Business" type
 3. Add "Instagram Graph API" product
@@ -286,12 +309,14 @@ The Instagram Basic Display API was **deprecated on December 4, 2024**. As of 20
 6. Test with Graph API Explorer
 
 **API Endpoints:**
+
 ```
 GET /me/media - List user's media
 GET /{media-id}?fields=id,media_type,media_url,thumbnail_url,caption,timestamp
 ```
 
 **oEmbed Fallback (No Auth):**
+
 ```javascript
 // For embedding public posts only
 const response = await fetch(
@@ -301,6 +326,7 @@ const response = await fetch(
 ```
 
 **Resources:**
+
 - [Instagram Graph API Guide 2025](https://elfsight.com/blog/instagram-graph-api-complete-developer-guide-for-2025/)
 - [Meta Developer Docs](https://developers.facebook.com/docs/instagram-api/)
 
@@ -360,4 +386,4 @@ const response = await fetch(
 
 ---
 
-*Next meeting: TBD - Review custom products implementation progress*
+_Next meeting: TBD - Review custom products implementation progress_

@@ -22,6 +22,7 @@ db.sqlite3-journal
 # Environment
 .env
 .env.local
+.env.backend.*
 
 # IDE
 .vscode/

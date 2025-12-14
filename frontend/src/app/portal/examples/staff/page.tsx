@@ -1,5 +1,21 @@
 "use client"
 
+/**
+ * Staff/Coach Dashboard Example
+ *
+ * #TODO: Fetch staff stats from /api/portal/staff/stats/
+ * #TODO: Implement check-in management with QR scanning
+ * #TODO: Fetch today's events from /api/events/?date=today
+ * #TODO: Fetch pending check-ins from /api/portal/check-ins/?status=pending
+ * #TODO: Implement check-in/check-out API calls
+ * #TODO: Fetch full roster from /api/portal/players/
+ * #TODO: Implement roster search/filter
+ * #TODO: Fetch recent registrations from /api/registrations/
+ * #TODO: Implement pending dues report
+ * #TODO: Add attendance export functionality (CSV/PDF)
+ * #TODO: Implement event creation for staff with permissions
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -31,14 +47,14 @@ const mockStaffData = {
     check_ins_today: 24,
   },
   pending_check_ins: [
-    { id: 1, participant_name: "Marcus Johnson", event_title: "Practice - U15 Elite", event_date: "2025-12-09T18:00:00Z" },
-    { id: 2, participant_name: "Tyler Smith", event_title: "Practice - U15 Elite", event_date: "2025-12-09T18:00:00Z" },
-    { id: 3, participant_name: "Jaylen Johnson", event_title: "Practice - U12 Select", event_date: "2025-12-09T17:00:00Z" },
-    { id: 4, participant_name: "Devon Brown", event_title: "Practice - U15 Elite", event_date: "2025-12-09T18:00:00Z" },
+    { id: 1, participant_name: "Marcus Johnson", event_title: "Practice - 8th Grade Elite", event_date: "2025-12-09T18:00:00Z" },
+    { id: 2, participant_name: "Tyler Smith", event_title: "Practice - 8th Grade Elite", event_date: "2025-12-09T18:00:00Z" },
+    { id: 3, participant_name: "Jaylen Johnson", event_title: "Practice - 6th Grade Select", event_date: "2025-12-09T17:00:00Z" },
+    { id: 4, participant_name: "Devon Brown", event_title: "Practice - 8th Grade Elite", event_date: "2025-12-09T18:00:00Z" },
   ],
   active_check_ins: [
-    { id: 5, participant_name: "Chris Lee", event_title: "Practice - U15 Elite", checked_in_at: "2025-12-09T17:55:00Z" },
-    { id: 6, participant_name: "Jordan Davis", event_title: "Practice - U15 Elite", checked_in_at: "2025-12-09T17:58:00Z" },
+    { id: 5, participant_name: "Chris Lee", event_title: "Practice - 8th Grade Elite", checked_in_at: "2025-12-09T17:55:00Z" },
+    { id: 6, participant_name: "Jordan Davis", event_title: "Practice - 8th Grade Elite", checked_in_at: "2025-12-09T17:58:00Z" },
   ],
   recent_registrations: [
     { id: 1, participant_first_name: "Emma", participant_last_name: "Wilson", event_title: "Holiday Classic", registered_at: "2025-12-09T14:30:00Z" },
@@ -46,8 +62,8 @@ const mockStaffData = {
     { id: 3, participant_first_name: "Sophia", participant_last_name: "Martinez", event_title: "Holiday Classic", registered_at: "2025-12-09T10:45:00Z" },
   ],
   todays_events: [
-    { id: 1, title: "Practice - U12 Select", time: "5:00 PM", location: "Court A", registered: 12, checked_in: 8 },
-    { id: 2, title: "Practice - U15 Elite", time: "6:00 PM", location: "Court A", registered: 14, checked_in: 6 },
+    { id: 1, title: "Practice - 6th Grade Select", time: "5:00 PM", location: "Court A", registered: 12, checked_in: 8 },
+    { id: 2, title: "Practice - 8th Grade Elite", time: "6:00 PM", location: "Court A", registered: 14, checked_in: 6 },
     { id: 3, title: "Open Gym", time: "7:30 PM", location: "Court B", registered: 8, checked_in: 0 },
   ],
 }
@@ -60,8 +76,8 @@ export default function StaffExamplePage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Role Badge */}
-      <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
-        <Shield className="h-3 w-3 mr-1" />
+      <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
+        <Shield className="h-3 w-3 mr-1 text-muted-foreground" />
         Staff View — Coach Mike Thompson
       </Badge>
 
@@ -97,13 +113,13 @@ export default function StaffExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/50">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Pending Dues</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{staff.admin_stats.pending_payments}</div>
+            <div className="text-2xl font-semibold">{staff.admin_stats.pending_payments}</div>
             <p className="text-xs text-muted-foreground">Accounts with balance</p>
           </CardContent>
         </Card>
@@ -114,7 +130,7 @@ export default function StaffExamplePage() {
             <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{staff.admin_stats.check_ins_today}</div>
+            <div className="text-2xl font-semibold">{staff.admin_stats.check_ins_today}</div>
             <p className="text-xs text-muted-foreground">Completed</p>
           </CardContent>
         </Card>
@@ -122,10 +138,10 @@ export default function StaffExamplePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <ClipboardCheck className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
+              <ClipboardCheck className="h-6 w-6 text-primary/80" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">Manage Check-Ins</h3>
@@ -137,10 +153,10 @@ export default function StaffExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Users className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
+              <Users className="h-6 w-6 text-primary/80" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">View Roster</h3>
@@ -157,7 +173,7 @@ export default function StaffExamplePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <Calendar className="h-5 w-5 text-muted-foreground" />
             Today's Events
           </CardTitle>
           <CardDescription>
@@ -172,8 +188,8 @@ export default function StaffExamplePage() {
                 className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Calendar className="h-6 w-6 text-primary" />
+                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center border border-border">
+                    <Calendar className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-medium">{event.title}</p>
@@ -184,10 +200,10 @@ export default function StaffExamplePage() {
                 </div>
                 <div className="text-right">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge variant="outline" className="border-primary/30 text-primary/80 bg-primary/5">
                       {event.checked_in} checked in
                     </Badge>
-                    <Badge variant="secondary">
+                    <Badge variant="outline" className="border-border text-muted-foreground">
                       {event.registered} registered
                     </Badge>
                   </div>
@@ -205,7 +221,7 @@ export default function StaffExamplePage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-amber-500" />
+                  <Clock className="h-5 w-5 text-muted-foreground" />
                   Pending Check-Ins
                 </CardTitle>
                 <CardDescription>
@@ -223,16 +239,16 @@ export default function StaffExamplePage() {
                   className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
-                      <Clock className="h-4 w-4" />
+                    <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center border border-border">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="font-medium text-sm">{ci.participant_name}</p>
                       <p className="text-xs text-muted-foreground">{ci.event_title}</p>
                     </div>
                   </div>
-                  <Button size="sm" className="gap-1">
-                    <CheckCircle className="h-3 w-3" />
+                  <Button size="sm" variant="secondary" className="gap-1">
+                    <CheckCircle className="h-3 w-3 text-muted-foreground" />
                     Check In
                   </Button>
                 </div>
@@ -245,7 +261,7 @@ export default function StaffExamplePage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success/80" />
               Currently Checked In
             </CardTitle>
             <CardDescription>
@@ -257,11 +273,11 @@ export default function StaffExamplePage() {
               {staff.active_check_ins.map((ci) => (
                 <div
                   key={ci.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-green-50/50 dark:bg-green-950/20"
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
-                      <CheckCircle className="h-4 w-4" />
+                    <div className="h-8 w-8 rounded-full bg-success/10 text-success/80 flex items-center justify-center border border-success/30">
+                      <CheckCircle className="h-4 w-4 text-success/80" />
                     </div>
                     <div>
                       <p className="font-medium text-sm">{ci.participant_name}</p>
@@ -273,7 +289,7 @@ export default function StaffExamplePage() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="secondary" size="sm" className="text-success/90 border-success/40 hover:bg-success/10">
                     Check Out
                   </Button>
                 </div>
@@ -287,7 +303,7 @@ export default function StaffExamplePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+            <TrendingUp className="h-5 w-5 text-muted-foreground" />
             Recent Registrations
           </CardTitle>
           <CardDescription>
@@ -302,8 +318,8 @@ export default function StaffExamplePage() {
                 className="flex items-center justify-between p-3 rounded-lg border"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-primary" />
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">

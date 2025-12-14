@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Printify Admin Examples</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#c72f7c',
+              50: '#fff0f7',
+              100: '#ffd8ec',
+              200: '#fda6d4',
+              300: '#f872b9',
+              400: '#ec479d',
+              500: '#c72f7c',
+              600: '#b0236b',
+              700: '#921a58',
+              800: '#771646',
+              900: '#611437',
+            },
+            surface: '#f3f0eb',
+            card: '#f9f6f1',
+            muted: '#e8e3dc',
+            border: '#d7d1c8',
+            text: '#1b1612',
+            mutedText: '#4b453e',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: var(--bg, #f3f0eb); color: #1b1612; }
+    .shadow-card { box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-5xl mx-auto px-4 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div>
+        <p class="text-sm uppercase tracking-wide text-mutedText">Printify Admin Helpers</p>
+        <h1 class="text-3xl font-bold">Live Reference Examples</h1>
+        <p class="text-mutedText">Same layout as /portal/admin/printify — uses your existing session cookies.</p>
+      </div>
+      <a href="/portal/admin/printify" class="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-white hover:bg-muted text-sm font-medium">Open Admin</a>
+    </div>
+
+    <!-- Config Card -->
+    <div class="bg-card border border-border rounded-lg shadow-card p-5 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h2 class="text-lg font-semibold">Config</h2>
+          <p class="text-sm text-mutedText">Set the API base. Requires an authenticated (superuser) session cookie.</p>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 items-center">
+        <input id="apiBase" type="text" value="http://localhost:8000" class="w-full sm:flex-1 rounded-md border border-border bg-white px-3 py-2 text-sm" />
+        <button id="saveBase" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90">Save</button>
+      </div>
+      <p class="text-xs text-mutedText mt-2">Tip: run this file from http://localhost (not file://) so cookies are sent.</p>
+    </div>
+
+    <!-- Actions grid -->
+    <div class="grid gap-6 md:grid-cols-2">
+      <!-- List Products -->
+      <div class="bg-card border border-border rounded-lg shadow-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">List Printify Products</h3>
+          <button data-action="listProducts" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90">Run</button>
+        </div>
+        <p class="text-sm text-mutedText mb-4">GET /api/payments/admin/printify/products/</p>
+        <pre class="bg-muted text-sm rounded-md p-3 code overflow-x-auto" id="listProductsOutput">{ "products": [] }</pre>
+      </div>
+
+      <!-- Publish / Unpublish -->
+      <div class="bg-card border border-border rounded-lg shadow-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Publish / Unpublish</h3>
+          <div class="flex gap-2">
+            <button data-action="publish" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90">Publish</button>
+            <button data-action="unpublish" class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border text-sm font-medium hover:bg-muted">Unpublish</button>
+          </div>
+        </div>
+        <p class="text-sm text-mutedText">POST /api/payments/admin/printify/publish/ or /unpublish/</p>
+        <input id="publishProductId" type="text" placeholder="Printify product ID" class="w-full rounded-md border border-border bg-white px-3 py-2 text-sm mb-3" />
+        <pre class="bg-muted text-sm rounded-md p-3 code overflow-x-auto" id="publishOutput">{}</pre>
+      </div>
+
+      <!-- Sync Product -->
+      <div class="bg-card border border-border rounded-lg shadow-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Sync Product to Shop</h3>
+          <button data-action="sync" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90">Sync</button>
+        </div>
+        <p class="text-sm text-mutedText">POST /api/payments/admin/printify/sync/</p>
+        <input id="syncProductId" type="text" placeholder="Printify product ID" class="w-full rounded-md border border-border bg-white px-3 py-2 text-sm mb-3" />
+        <pre class="bg-muted text-sm rounded-md p-3 code overflow-x-auto" id="syncOutput">{}</pre>
+      </div>
+
+      <!-- Order Lookup -->
+      <div class="bg-card border border-border rounded-lg shadow-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Lookup Order</h3>
+          <button data-action="orderLookup" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90">Fetch</button>
+        </div>
+        <p class="text-sm text-mutedText">GET /api/payments/orders/&lt;order_number&gt;/ (works with non-admin orders too)</p>
+        <input id="orderNumber" type="text" placeholder="Order number (e.g., NJS-ABC123)" class="w-full rounded-md border border-border bg-white px-3 py-2 text-sm mb-3" />
+        <pre class="bg-muted text-sm rounded-md p-3 code overflow-x-auto" id="orderOutput">{}</pre>
+      </div>
+    </div>
+
+    <!-- Ideas not yet implemented -->
+    <div class="bg-card border border-border rounded-lg shadow-card p-5 mt-8">
+      <h3 class="text-lg font-semibold mb-3">Ideas to Extend</h3>
+      <ul class="list-disc pl-5 text-sm text-mutedText space-y-2">
+        <li>Add an endpoint to send orders to production or cancel (wrap <code class="code">send_to_production</code>/<code class="code">cancel_order</code> in a staff-only view).</li>
+        <li>Expose shipping method selection (standard vs express) by passing <code class="code">shipping_method</code> into <code class="code">create_order</code>.</li>
+        <li>Surface Printify cost/provider data from <code class="code">get_order</code> for margin analytics.</li>
+        <li>Nightly catalog sync using <code class="code">list_products</code> + <code class="code">get_product</code> (auto-create or deactivate products).</li>
+        <li>Mockup refresh: periodically call <code class="code">sync_product_images</code> to pull new previews.</li>
+      </ul>
+    </div>
+
+    <p class="text-xs text-mutedText mt-6">This page is static. It relies on your browser session cookies. Keep devtools open to watch network calls.</p>
+  </div>
+
+  <script>
+    const state = {
+      apiBase: localStorage.getItem('printifyApiBase') || document.getElementById('apiBase').value
+    }
+    document.getElementById('apiBase').value = state.apiBase
+
+    function setOutput(id, data) {
+      const el = document.getElementById(id)
+      if (el) {
+        el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+      }
+    }
+
+    async function request(path, options = {}) {
+      const url = `${state.apiBase}${path}`
+      const config = {
+        method: options.method || 'GET',
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        credentials: 'include',
+      }
+      if (options.body) config.body = JSON.stringify(options.body)
+      const res = await fetch(url, config)
+      let payload
+      try { payload = await res.json() } catch { payload = { raw: await res.text() } }
+      if (!res.ok) throw { status: res.status, payload }
+      return payload
+    }
+
+    document.getElementById('saveBase').addEventListener('click', () => {
+      state.apiBase = document.getElementById('apiBase').value.trim().replace(/\/$/, '')
+      localStorage.setItem('printifyApiBase', state.apiBase)
+    })
+
+    document.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const action = btn.dataset.action
+        btn.disabled = true
+        btn.textContent = 'Working...'
+        try {
+          if (action === 'listProducts') {
+            const data = await request('/api/payments/admin/printify/products/')
+            setOutput('listProductsOutput', data)
+          }
+          if (action === 'publish' || action === 'unpublish') {
+            const productId = document.getElementById('publishProductId').value.trim()
+            if (!productId) throw { payload: { error: 'Enter a product ID' } }
+            const endpoint = action === 'publish' ? 'publish' : 'unpublish'
+            const data = await request(`/api/payments/admin/printify/${endpoint}/`, {
+              method: 'POST',
+              body: { product_id: productId }
+            })
+            setOutput('publishOutput', data)
+          }
+          if (action === 'sync') {
+            const productId = document.getElementById('syncProductId').value.trim()
+            if (!productId) throw { payload: { error: 'Enter a product ID' } }
+            const data = await request('/api/payments/admin/printify/sync/', {
+              method: 'POST',
+              body: { product_id: productId }
+            })
+            setOutput('syncOutput', data)
+          }
+          if (action === 'orderLookup') {
+            const orderNum = document.getElementById('orderNumber').value.trim()
+            if (!orderNum) throw { payload: { error: 'Enter an order number' } }
+            const data = await request(`/api/payments/orders/${encodeURIComponent(orderNum)}/`)
+            setOutput('orderOutput', data)
+          }
+        } catch (err) {
+          const payload = err?.payload || { error: err?.message || 'Request failed' }
+          if (action === 'listProducts') setOutput('listProductsOutput', payload)
+          if (action === 'publish' || action === 'unpublish') setOutput('publishOutput', payload)
+          if (action === 'sync') setOutput('syncOutput', payload)
+          if (action === 'orderLookup') setOutput('orderOutput', payload)
+        } finally {
+          btn.disabled = false
+          btn.textContent = btn.dataset.action === 'listProducts'
+            ? 'Run'
+            : btn.dataset.action === 'orderLookup'
+              ? 'Fetch'
+              : btn.dataset.action === 'sync'
+                ? 'Sync'
+                : btn.dataset.action === 'publish'
+                  ? 'Publish'
+                  : btn.dataset.action === 'unpublish'
+                    ? 'Unpublish'
+                    : 'Run'
+        }
+      })
+    })
+  </script>
+</body>
+</html>

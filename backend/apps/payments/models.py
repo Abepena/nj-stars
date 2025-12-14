@@ -217,14 +217,23 @@ class Product(models.Model):
     stock_quantity = models.IntegerField(default=0)
 
     # Categorization
+    CATEGORY_CHOICES = [
+        ('jersey', 'Jersey'),
+        ('hoodie', 'Hoodie'),
+        ('tee', 'T-Shirt'),
+        ('longsleeve', 'Long Sleeve'),
+        ('sweater', 'Sweater'),
+        ('shorts', 'Shorts'),
+        ('hat', 'Hat'),
+        ('bag', 'Bag'),
+        ('accessories', 'Accessories'),
+        ('equipment', 'Equipment'),
+        ('apparel', 'Apparel'),  # Fallback for uncategorized apparel
+    ]
     category = models.CharField(
         max_length=50,
-        choices=[
-            ('jersey', 'Jersey'),
-            ('apparel', 'Apparel'),
-            ('accessories', 'Accessories'),
-            ('equipment', 'Equipment'),
-        ]
+        choices=CATEGORY_CHOICES,
+        default='apparel'
     )
 
     # Media (legacy single image - kept for backwards compatibility)
@@ -256,6 +265,10 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
+
+        # POD products should never track inventory (they're made to order)
+        if self.fulfillment_type == 'pod':
+            self.manage_inventory = False
 
         # Auto-create Stripe product/price for local products
         if self.is_local and self.is_active and self.price:
@@ -680,6 +693,37 @@ class OrderItem(models.Model):
         max_length=100,
         blank=True,
         help_text="Printify Line Item ID for POD products"
+    )
+
+    # Local delivery handoff tracking (for coach in-person delivery)
+    HANDOFF_STATUS_CHOICES = [
+        ('pending', 'Pending Pickup'),
+        ('ready', 'Ready for Pickup'),
+        ('delivered', 'Delivered'),
+    ]
+    handoff_status = models.CharField(
+        max_length=20,
+        choices=HANDOFF_STATUS_CHOICES,
+        default='pending',
+        blank=True,
+        help_text="Status for local product handoffs"
+    )
+    handoff_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the handoff was completed"
+    )
+    handoff_completed_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='completed_handoffs',
+        help_text="Staff member who completed the handoff"
+    )
+    handoff_notes = models.TextField(
+        blank=True,
+        help_text="Notes about the handoff (e.g., who picked it up)"
     )
 
     class Meta:

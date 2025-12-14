@@ -1,5 +1,20 @@
 "use client"
 
+/**
+ * Parent Dashboard Example
+ *
+ * #TODO: Fetch real dashboard data from /api/portal/dashboard/
+ * #TODO: Fetch children list from /api/portal/players/
+ * #TODO: Fetch upcoming events from /api/portal/registrations/
+ * #TODO: Fetch dues balance from /api/portal/dues/
+ * #TODO: Implement add child flow (/portal/children/add)
+ * #TODO: Implement payment methods management (/portal/billing/payment-methods)
+ * #TODO: Implement orders history (/portal/orders)
+ * #TODO: Implement profile completion flow
+ * #TODO: Fetch and display promo credits from /api/portal/credits/
+ * #TODO: Real-time check-in status updates via WebSocket or polling
+ */
+
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,7 +50,7 @@ const mockParentData = {
       first_name: "Marcus",
       last_name: "Johnson",
       age: 14,
-      team_name: "U15 Elite",
+      team_name: "8th Grade Elite",
       primary_photo_url: null,
       is_active: true,
     },
@@ -44,15 +59,15 @@ const mockParentData = {
       first_name: "Jaylen",
       last_name: "Johnson",
       age: 11,
-      team_name: "U12 Select",
+      team_name: "6th Grade Select",
       primary_photo_url: null,
       is_active: true,
     }
   ],
-  total_balance: "175.00",
+  total_balance: "50.00",
   upcoming_events: [
-    { player_name: "Marcus Johnson", event_title: "Practice - U15 Elite", event_date: "2025-12-11T18:00:00Z", registration_id: 101 },
-    { player_name: "Jaylen Johnson", event_title: "Practice - U12 Select", event_date: "2025-12-11T17:00:00Z", registration_id: 102 },
+    { player_name: "Marcus Johnson", event_title: "Practice - 8th Grade Elite", event_date: "2025-12-11T18:00:00Z", registration_id: 101 },
+    { player_name: "Jaylen Johnson", event_title: "Practice - 6th Grade Select", event_date: "2025-12-11T17:00:00Z", registration_id: 102 },
     { player_name: "Marcus Johnson", event_title: "Tournament - Holiday Classic", event_date: "2025-12-14T09:00:00Z", registration_id: 103 },
     { player_name: "Jaylen Johnson", event_title: "Skills Clinic", event_date: "2025-12-15T10:00:00Z", registration_id: 104 },
   ],
@@ -61,7 +76,7 @@ const mockParentData = {
   ],
   promo_credit_total: "25.00",
   active_check_ins: [
-    { player_name: "Marcus Johnson", event_title: "Practice - U15 Elite", checked_in_at: "2025-12-09T18:05:00Z" }
+    { player_name: "Marcus Johnson", event_title: "Practice - 8th Grade Elite", checked_in_at: "2025-12-09T18:05:00Z" }
   ],
 }
 
@@ -75,8 +90,8 @@ export default function ParentExamplePage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Role Badge */}
-      <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
-        👨‍👩‍👧‍👦 Parent View — Sarah Johnson
+      <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
+        Parent View — Sarah Johnson
       </Badge>
 
       {/* Welcome Header */}
@@ -90,11 +105,11 @@ export default function ParentExamplePage() {
       </div>
 
       {/* Profile Completion Nudge */}
-      <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+      <Card className="border border-dashed border-border bg-muted/40">
         <CardContent className="flex items-center justify-between py-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-              <AlertCircle className="h-5 w-5 text-amber-600" />
+            <div className="h-10 w-10 rounded-full bg-background border border-border flex items-center justify-center">
+              <AlertCircle className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
               <p className="font-medium">Complete your profile</p>
@@ -103,7 +118,9 @@ export default function ParentExamplePage() {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm">Complete</Button>
+          <Button variant="default" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/85">
+            Complete
+          </Button>
         </CardContent>
       </Card>
 
@@ -135,13 +152,13 @@ export default function ParentExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/50">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Balance</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">
+            <div className="text-2xl font-semibold">
               ${balance.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">Due</p>
@@ -154,29 +171,29 @@ export default function ParentExamplePage() {
             <Gift className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">${promoCredits.toFixed(2)}</div>
+            <div className="text-2xl font-semibold">${promoCredits.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Available</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Active Check-Ins Alert */}
-      <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
+      <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-            <CheckCircle className="h-5 w-5" />
-            Active Check-Ins
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-success/80" />
+            <span className="font-semibold">Active Check-Ins</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             {dashboard.active_check_ins.map((ci, idx) => (
-              <div key={idx} className="flex items-center justify-between py-1">
+              <div key={idx} className="flex items-center justify-between py-2">
                 <div>
                   <span className="font-medium">{ci.player_name}</span>
                   <span className="text-muted-foreground"> — {ci.event_title}</span>
                 </div>
-                <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 border-green-300">
+                <Badge variant="outline" className="border-success/30 text-success/80 bg-success/10">
                   Checked In
                 </Badge>
               </div>
@@ -210,11 +227,11 @@ export default function ParentExamplePage() {
             <TabsContent value="all">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {dashboard.children.map((child) => (
-                  <Card key={child.id} className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <Card key={child.id} className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-lg font-bold text-primary">
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border">
+                          <span className="text-lg font-semibold text-foreground">
                             {child.first_name[0]}{child.last_name[0]}
                           </span>
                         </div>
@@ -261,7 +278,9 @@ export default function ParentExamplePage() {
                     })}
                   </p>
                 </div>
-                <Badge className="ml-2 shrink-0">Registered</Badge>
+                <Badge variant="outline" className="ml-2 shrink-0 border-primary/30 text-primary/80 bg-primary/5">
+                  Registered
+                </Badge>
               </div>
             ))}
           </div>
@@ -270,10 +289,10 @@ export default function ParentExamplePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <CreditCard className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
+              <CreditCard className="h-6 w-6 text-primary/80" />
             </div>
             <div>
               <h3 className="font-medium">Make a Payment</h3>
@@ -282,10 +301,10 @@ export default function ParentExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <ShoppingBag className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
+              <ShoppingBag className="h-6 w-6 text-primary/80" />
             </div>
             <div>
               <h3 className="font-medium">View Orders</h3>
@@ -296,10 +315,10 @@ export default function ParentExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <CreditCard className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
+              <CreditCard className="h-6 w-6 text-primary/80" />
             </div>
             <div>
               <h3 className="font-medium">Payment Methods</h3>

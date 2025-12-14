@@ -15,19 +15,25 @@ User = get_user_model()
 
 class CustomRegisterSerializer(RegisterSerializer):
     """
-    Extended registration serializer with first/last name.
+    Extended registration serializer with first/last name and role selection.
 
     Creates a User and the UserProfile signal handles creating the profile.
     """
     first_name = serializers.CharField(max_length=150, required=True)
     last_name = serializers.CharField(max_length=150, required=True)
     phone = serializers.CharField(max_length=20, required=True, allow_blank=False)
+    role = serializers.ChoiceField(
+        choices=[('parent', 'Parent/Guardian'), ('player', 'Player (13+)')],
+        default='parent',
+        required=False
+    )
 
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
         data['first_name'] = self.validated_data.get('first_name', '')
         data['last_name'] = self.validated_data.get('last_name', '')
         data['phone'] = self.validated_data.get('phone', '')
+        data['role'] = self.validated_data.get('role', 'parent')
         # Set username to email address for consistency
         data['username'] = self.validated_data.get('email', '')
         return data
@@ -40,10 +46,13 @@ class CustomRegisterSerializer(RegisterSerializer):
         user.username = user.email
         user.save()
 
-        # Update phone on profile if provided
-        phone = self.validated_data.get('phone', '')
-        if phone and hasattr(user, 'profile'):
-            user.profile.phone = phone
+        # Update profile with phone and role
+        if hasattr(user, 'profile'):
+            phone = self.validated_data.get('phone', '')
+            role = self.validated_data.get('role', 'parent')
+            if phone:
+                user.profile.phone = phone
+            user.profile.role = role
             user.profile.save()
 
         return user
@@ -64,9 +73,10 @@ class UserDetailsSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'pk', 'email', 'first_name', 'last_name',
-            'role', 'phone', 'has_signed_waiver', 'profile_completeness'
+            'role', 'phone', 'has_signed_waiver', 'profile_completeness',
+            'is_superuser', 'is_staff'
         ]
-        read_only_fields = ['pk', 'email']
+        read_only_fields = ['pk', 'email', 'is_superuser', 'is_staff']
 
 
 class CustomPasswordResetSerializer(PasswordResetSerializer):

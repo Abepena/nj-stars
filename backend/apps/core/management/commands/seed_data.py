@@ -87,6 +87,11 @@ class Command(BaseCommand):
 
         now = timezone.now()
 
+        # NJ Venue coordinates for map display
+        # Bergen County Sports Complex: Hackensack, NJ
+        # NJ Stars Practice Facility: Paramus, NJ
+        # Newark Sports Arena: Newark, NJ
+
         events = [
             {
                 'title': '2025 Spring Tryouts - U14',
@@ -96,6 +101,8 @@ class Command(BaseCommand):
                 'start_datetime': now + timedelta(days=14),
                 'end_datetime': now + timedelta(days=14, hours=2),
                 'location': 'Bergen County Sports Complex - Court 1',
+                'latitude': Decimal('40.917600'),
+                'longitude': Decimal('-74.058800'),
                 'max_participants': 50,
                 'registration_deadline': now + timedelta(days=13),
                 'requires_payment': True,
@@ -110,6 +117,8 @@ class Command(BaseCommand):
                 'start_datetime': now + timedelta(days=15),
                 'end_datetime': now + timedelta(days=15, hours=2),
                 'location': 'Bergen County Sports Complex - Court 1',
+                'latitude': Decimal('40.917600'),
+                'longitude': Decimal('-74.058800'),
                 'max_participants': 40,
                 'registration_deadline': now + timedelta(days=14),
                 'requires_payment': True,
@@ -124,6 +133,8 @@ class Command(BaseCommand):
                 'start_datetime': now + timedelta(days=5),
                 'end_datetime': now + timedelta(days=5, hours=2),
                 'location': 'NJ Stars Practice Facility',
+                'latitude': Decimal('40.944800'),
+                'longitude': Decimal('-74.075200'),
                 'max_participants': 30,
                 'registration_deadline': now + timedelta(days=4),
                 'requires_payment': True,
@@ -138,6 +149,8 @@ class Command(BaseCommand):
                 'start_datetime': now + timedelta(days=21),
                 'end_datetime': now + timedelta(days=23),
                 'location': 'Bergen County Sports Complex - All Courts',
+                'latitude': Decimal('40.917600'),
+                'longitude': Decimal('-74.058800'),
                 'max_participants': 200,
                 'registration_deadline': now + timedelta(days=14),
                 'requires_payment': True,
@@ -152,6 +165,8 @@ class Command(BaseCommand):
                 'start_datetime': now + timedelta(days=35),
                 'end_datetime': now + timedelta(days=37),
                 'location': 'NJ Stars Training Center',
+                'latitude': Decimal('40.889800'),
+                'longitude': Decimal('-74.041300'),
                 'max_participants': 60,
                 'registration_deadline': now + timedelta(days=28),
                 'requires_payment': True,
@@ -166,6 +181,8 @@ class Command(BaseCommand):
                 'start_datetime': now + timedelta(days=3),
                 'end_datetime': now + timedelta(days=3, hours=1.5),
                 'location': 'NJ Stars Practice Facility',
+                'latitude': Decimal('40.944800'),
+                'longitude': Decimal('-74.075200'),
                 'max_participants': 15,
                 'registration_deadline': now + timedelta(days=2),
                 'requires_payment': False,
@@ -180,6 +197,8 @@ class Command(BaseCommand):
                 'start_datetime': now + timedelta(days=10),
                 'end_datetime': now + timedelta(days=10, hours=2),
                 'location': 'Newark Sports Arena',
+                'latitude': Decimal('40.735700'),
+                'longitude': Decimal('-74.172400'),
                 'max_participants': 20,
                 'registration_deadline': now + timedelta(days=9),
                 'requires_payment': False,

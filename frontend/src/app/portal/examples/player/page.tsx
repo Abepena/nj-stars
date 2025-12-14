@@ -1,5 +1,18 @@
 "use client"
 
+/**
+ * Player Dashboard Example
+ *
+ * #TODO: Fetch real player profile data from /api/portal/profile/
+ * #TODO: Fetch player's schedule from /api/events/ filtered by player registrations
+ * #TODO: Fetch attendance/stats from /api/portal/attendance/ or similar
+ * #TODO: Implement QR code check-in functionality
+ * #TODO: Fetch team roster from /api/portal/team/ or /api/portal/players/
+ * #TODO: Implement dues payment functionality
+ * #TODO: Add profile edit modal/page
+ * #TODO: Implement push notifications for upcoming events
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,7 +38,7 @@ const mockPlayerData = {
     last_name: "Johnson",
     age: 14,
     email: "marcus.j@email.com",
-    team_name: "U15 Elite",
+    team_name: "8th Grade Elite",
     jersey_number: "23",
     position: "Point Guard",
     photo_url: null,
@@ -39,15 +52,15 @@ const mockPlayerData = {
   dues_balance: "75.00",
   is_checked_in: true,
   current_event: {
-    title: "Practice - U15 Elite",
+    title: "Practice - 8th Grade Elite",
     location: "NJ Stars Training Center",
     checked_in_at: "2025-12-09T18:05:00Z",
   },
   upcoming_events: [
-    { id: 1, title: "Practice - U15 Elite", date: "2025-12-11T18:00:00Z", location: "NJ Stars Training Center", type: "practice" },
+    { id: 1, title: "Practice - 8th Grade Elite", date: "2025-12-11T18:00:00Z", location: "NJ Stars Training Center", type: "practice" },
     { id: 2, title: "Holiday Classic - Day 1", date: "2025-12-14T09:00:00Z", location: "Rutgers Athletic Center", type: "tournament" },
     { id: 3, title: "Holiday Classic - Day 2", date: "2025-12-15T09:00:00Z", location: "Rutgers Athletic Center", type: "tournament" },
-    { id: 4, title: "Practice - U15 Elite", date: "2025-12-18T18:00:00Z", location: "NJ Stars Training Center", type: "practice" },
+    { id: 4, title: "Practice - 8th Grade Elite", date: "2025-12-18T18:00:00Z", location: "NJ Stars Training Center", type: "practice" },
   ],
   teammates: [
     { name: "Tyler Smith", number: "11", position: "SG" },
@@ -67,14 +80,14 @@ export default function PlayerExamplePage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Role Badge */}
-      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">
-        🏀 Player View — Marcus Johnson (13+)
+      <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
+        Player View — Marcus Johnson (13+)
       </Badge>
 
       {/* Profile Header */}
       <div className="flex flex-col sm:flex-row gap-6 items-start">
-        <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mx-auto sm:mx-0">
-          <span className="text-3xl font-bold text-primary">MJ</span>
+        <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center shrink-0 mx-auto sm:mx-0 border border-border">
+          <span className="text-3xl font-bold text-foreground">MJ</span>
         </div>
         <div className="flex-1 text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-bold">
@@ -86,8 +99,8 @@ export default function PlayerExamplePage() {
 
           {/* Current Check-in Status */}
           {player.is_checked_in && (
-            <Badge className="mt-3 bg-green-100 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-400 gap-1">
-              <CheckCircle className="h-3 w-3" />
+            <Badge variant="outline" className="mt-3 border-dashed border-border text-muted-foreground gap-1 bg-transparent">
+              <CheckCircle className="h-3 w-3 text-muted-foreground" />
               Checked in at {player.current_event.title}
             </Badge>
           )}
@@ -132,17 +145,17 @@ export default function PlayerExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className={balance > 0 ? "border-amber-500/50" : ""}>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Dues</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${balance > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+            <div className="text-2xl font-semibold">
               ${balance.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {balance > 0 ? 'Balance due' : 'Paid up!'}
+              {balance > 0 ? 'Balance due' : 'Paid up'}
             </p>
           </CardContent>
         </Card>
@@ -150,10 +163,10 @@ export default function PlayerExamplePage() {
 
       {/* Current Event */}
       {player.is_checked_in && (
-        <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-              <CheckCircle className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-success/80" />
               Currently Checked In
             </CardTitle>
           </CardHeader>
@@ -163,11 +176,11 @@ export default function PlayerExamplePage() {
                 <p className="font-medium text-lg">{player.current_event.title}</p>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                   <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
                     {player.current_event.location}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+                    <Clock className="h-4 w-4 text-muted-foreground" />
                     Since {new Date(player.current_event.checked_in_at).toLocaleTimeString('en-US', {
                       hour: 'numeric',
                       minute: '2-digit'
@@ -197,16 +210,8 @@ export default function PlayerExamplePage() {
                   key={event.id}
                   className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    event.type === 'tournament'
-                      ? 'bg-amber-100 text-amber-600'
-                      : 'bg-primary/10 text-primary'
-                  }`}>
-                    {event.type === 'tournament' ? (
-                      <Trophy className="h-5 w-5" />
-                    ) : (
-                      <Calendar className="h-5 w-5" />
-                    )}
+                  <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-primary/5 text-primary/80 border border-primary/20">
+                    {event.type === 'tournament' ? <Trophy className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{event.title}</p>
@@ -224,7 +229,7 @@ export default function PlayerExamplePage() {
                       {event.location}
                     </p>
                   </div>
-                  <Badge variant="outline" className="shrink-0">
+                  <Badge variant="outline" className="shrink-0 border-primary/30 text-primary/80 bg-primary/5">
                     {event.type === 'tournament' ? 'Tournament' : 'Practice'}
                   </Badge>
                 </div>
@@ -246,8 +251,8 @@ export default function PlayerExamplePage() {
             <div className="space-y-3">
               {/* Current player highlighted */}
               <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="font-bold text-primary">
+                <div className="h-10 w-10 rounded-full bg-primary/5 flex items-center justify-center border border-primary/20">
+                  <span className="font-bold text-primary/80">
                     {player.profile.jersey_number}
                   </span>
                 </div>
@@ -255,7 +260,7 @@ export default function PlayerExamplePage() {
                   <p className="font-medium">{player.profile.first_name} {player.profile.last_name}</p>
                   <p className="text-sm text-muted-foreground">{player.profile.position}</p>
                 </div>
-                <Badge>You</Badge>
+                <Badge variant="outline" className="border-primary/30 text-primary/80 bg-primary/5">You</Badge>
               </div>
 
               {player.teammates.map((teammate, idx) => (
@@ -281,10 +286,10 @@ export default function PlayerExamplePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <User className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
+              <User className="h-6 w-6 text-primary/80" />
             </div>
             <div className="flex-1">
               <h3 className="font-medium">Edit My Profile</h3>
@@ -294,10 +299,10 @@ export default function PlayerExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <DollarSign className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
+              <DollarSign className="h-6 w-6 text-primary/80" />
             </div>
             <div className="flex-1">
               <h3 className="font-medium">View Dues History</h3>

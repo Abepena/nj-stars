@@ -1,0 +1,8 @@
+{% with widget.attrs.list as list_id %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}{% if widget.value != None %} value="{{ widget.value|stringformat:'s' }}"{% endif %} />
+<datalist id="{{ list_id }}">
+  {% for size in widget.sizes %}
+    <option value="{{ size }}"></option>
+  {% endfor %}
+</datalist>
+{% endwith %}

@@ -3,7 +3,6 @@ import { Hero } from "@/components/hero";
 import { LayoutShell } from "@/components/layout-shell";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { FeaturedMerch } from "@/components/featured-merch";
-import { CoachesSection } from "@/components/coaches-section";
 import { FadeInSection } from "@/components/fade-in-section";
 
 export default function Home() {
@@ -11,13 +10,8 @@ export default function Home() {
     <LayoutShell>
       <Hero />
 
-      {/* Meet Our Coaches */}
-      <FadeInSection direction="up" delay={0}>
-        <CoachesSection />
-      </FadeInSection>
-
       {/* The Locker Room - Featured Merch Section */}
-      <FadeInSection direction="up" delay={100}>
+      <FadeInSection direction="up" delay={0}>
         <FeaturedMerch limit={6} showSeeMore wrapInSection />
       </FadeInSection>
 

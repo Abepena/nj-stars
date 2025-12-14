@@ -12,6 +12,7 @@ import { FilterSidebar, type FilterCategory, type FilterTag, type FilterColor, t
 import { Button } from "@/components/ui/button"
 import { getCategoryColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
+import { normalizeColors, productMatchesColorFilter, getColorHex } from "@/lib/color-utils"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -149,7 +150,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
               <span
                 key={color.name}
                 className="w-4 h-4 rounded-full border border-border"
-                style={{ backgroundColor: color.hex }}
+                style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                 title={color.name}
               />
             ))}
@@ -203,7 +204,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
         </div>
 
         {/* Product name */}
-        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={product.name}>
           {product.name}
         </h3>
 
@@ -311,6 +312,13 @@ export default function ShopPage() {
       )
     }
 
+    // Filter by colors (handles color grouping like "Pigment Black" → "Black")
+    if (selectedColors.length > 0) {
+      filtered = filtered.filter(product =>
+        productMatchesColorFilter(product.available_colors || [], selectedColors)
+      )
+    }
+
     // Sort products
     switch (sortBy) {
       case "featured":
@@ -333,7 +341,7 @@ export default function ShopPage() {
     }
 
     setFilteredProducts(filtered)
-  }, [searchQuery, selectedCategories, selectedTags, sortBy, products])
+  }, [searchQuery, selectedCategories, selectedTags, selectedColors, sortBy, products])
 
   // Calculate category counts
   const getCategoryCounts = () => {
@@ -360,12 +368,30 @@ export default function ShopPage() {
   const categoryCounts = getCategoryCounts()
   const tagCounts = getTagCounts()
 
-  const categories: FilterCategory[] = [
-    { value: "jersey", label: "Jerseys", count: categoryCounts["jersey"] || 0 },
-    { value: "apparel", label: "Apparel", count: categoryCounts["apparel"] || 0 },
-    { value: "accessories", label: "Accessories", count: categoryCounts["accessories"] || 0 },
-    { value: "equipment", label: "Equipment", count: categoryCounts["equipment"] || 0 },
-  ]
+  // Category labels map
+  const categoryLabels: Record<string, string> = {
+    jersey: "Jerseys",
+    hoodie: "Hoodies",
+    tee: "T-Shirts",
+    longsleeve: "Long Sleeves",
+    sweater: "Sweaters",
+    shorts: "Shorts",
+    hat: "Hats",
+    bag: "Bags",
+    accessories: "Accessories",
+    equipment: "Equipment",
+    apparel: "Apparel",
+  }
+
+  // Dynamically generate categories based on products
+  const categories: FilterCategory[] = Object.entries(categoryCounts)
+    .filter(([_, count]) => count > 0)
+    .map(([value, count]) => ({
+      value,
+      label: categoryLabels[value] || value.charAt(0).toUpperCase() + value.slice(1),
+      count,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 
   const tags: FilterTag[] = [
     { value: "featured", label: "Featured", count: tagCounts.featured },
@@ -373,21 +399,18 @@ export default function ShopPage() {
     { value: "on_sale", label: "Sale", count: tagCounts.on_sale },
   ]
 
-  // Available colors for filtering
-  const filterColors: FilterColor[] = [
-    { name: "Black", hex: "#1a1a1a" },
-    { name: "Blue", hex: "#2563eb" },
-    { name: "Brown", hex: "#92400e" },
-    { name: "Green", hex: "#16a34a" },
-    { name: "Grey", hex: "#6b7280" },
-    { name: "Navy", hex: "#1e3a5f" },
-    { name: "Orange", hex: "#ea580c" },
-    { name: "Pink", hex: "#ec4899" },
-    { name: "Purple", hex: "#9333ea" },
-    { name: "Red", hex: "#dc2626" },
-    { name: "White", hex: "#ffffff" },
-    { name: "Yellow", hex: "#eab308" },
-  ]
+  // Extract unique colors from products (normalized and grouped)
+  const getAvailableColors = (): FilterColor[] => {
+    const allColors: { name: string; hex: string }[] = []
+    products.forEach(product => {
+      product.available_colors?.forEach(color => {
+        allColors.push(color)
+      })
+    })
+    return normalizeColors(allColors)
+  }
+
+  const filterColors: FilterColor[] = getAvailableColors()
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>

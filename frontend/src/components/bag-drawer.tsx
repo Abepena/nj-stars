@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useBag } from '@/lib/bag'
+import { useBag, BagItem } from '@/lib/bag'
+import { shouldSkipImageOptimization } from '@/lib/utils'
 import {
   Sheet,
   SheetContent,
@@ -27,6 +28,36 @@ import {
 interface BagDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+/**
+ * Get the best image URL for a bag item based on selected color variant.
+ * Falls back to primary_image_url or image_url if no variant match found.
+ */
+function getItemImageUrl(item: BagItem): string | null {
+  const { product, selected_color } = item
+
+  // If color is selected, try to find a variant-specific image
+  if (selected_color && product.images?.length > 0 && product.variants?.length > 0) {
+    // Find variant IDs for the selected color
+    const colorVariantIds = product.variants
+      .filter(v => v.color === selected_color)
+      .map(v => v.printify_variant_id)
+      .filter((id): id is number => id !== null)
+
+    if (colorVariantIds.length > 0) {
+      // Find an image that matches any of the variant IDs
+      const variantImage = product.images.find(img =>
+        img.printify_variant_ids?.some(id => colorVariantIds.includes(id))
+      )
+      if (variantImage?.url) {
+        return variantImage.url
+      }
+    }
+  }
+
+  // Fallback: primary_image_url > first image > legacy image_url
+  return product.primary_image_url || product.images?.[0]?.url || product.image_url || null
 }
 
 export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
@@ -196,18 +227,22 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
 
                       {/* Product Image */}
                       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        {item.product.image_url ? (
-                          <Image
-                            src={item.product.image_url}
-                            alt={item.product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center">
-                            <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />
-                          </div>
-                        )}
+                        {(() => {
+                          const imageUrl = getItemImageUrl(item)
+                          return imageUrl ? (
+                            <Image
+                              src={imageUrl}
+                              alt={item.product.name}
+                              fill
+                              className="object-contain"
+                              unoptimized={shouldSkipImageOptimization(imageUrl)}
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center">
+                              <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />
+                            </div>
+                          )
+                        })()}
                       </div>
 
                       {/* Product Details */}

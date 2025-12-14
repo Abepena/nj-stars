@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet"
 
 const navLinks = [
+  { href: "/about", label: "About" },
   { href: "/news", label: "News" },
   { href: "/shop", label: "Shop" },
   { href: "/events", label: "Events" },
@@ -65,6 +66,13 @@ export function MobileNav() {
     await signOut({ callbackUrl: "/" })
   }
 
+  // Break up email to prevent mobile browser auto-linking
+  // Inserts zero-width non-joiner after @ to break pattern detection
+  const formatEmailForDisplay = (email: string | null | undefined) => {
+    if (!email) return null
+    return email.replace("@", "@\u200C")
+  }
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -77,8 +85,8 @@ export function MobileNav() {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm">
-        <SheetHeader className="border-b border-border pb-4">
+      <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm flex flex-col">
+        <SheetHeader className="border-b border-border pb-4 flex-shrink-0">
           <div className="flex justify-center" onClick={() => setOpen(false)}>
             <ThemeLogo width={160} height={50} />
           </div>
@@ -86,7 +94,7 @@ export function MobileNav() {
 
         {/* User Profile Section (if authenticated) */}
         {session && (
-          <div className="py-4 border-b border-border">
+          <div className="py-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
                 <AvatarImage
@@ -101,15 +109,16 @@ export function MobileNav() {
                 <span className="text-sm font-medium text-foreground">
                   {session.user?.name || "User"}
                 </span>
+                {/* Prevent mobile browsers from auto-linking email as mailto */}
                 <span className="text-xs text-muted-foreground">
-                  {session.user?.email}
+                  {formatEmailForDisplay(session.user?.email)}
                 </span>
               </div>
             </div>
           </div>
         )}
 
-        <nav className="flex flex-col gap-2 mt-6">
+        <nav className="flex flex-col gap-2 mt-6 flex-1 overflow-y-auto min-h-0">
           {/* Main Navigation Links */}
           {navLinks.map((link) => {
             const isActive = pathname === link.href
@@ -169,34 +178,35 @@ export function MobileNav() {
             )}
           </button>
 
-          {/* Auth Section */}
-          <div className="pt-4 border-t border-border mt-2">
-            {status === "loading" ? (
-              <div className="h-10 bg-muted animate-pulse rounded-md" />
-            ) : session ? (
+        </nav>
+
+        {/* Auth Section - Fixed at bottom */}
+        <div className="pt-4 border-t border-border mt-auto flex-shrink-0">
+          {status === "loading" ? (
+            <div className="h-10 bg-muted animate-pulse rounded-md" />
+          ) : session ? (
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="mr-2 h-5 w-5" />
+              Sign Out
+            </Button>
+          ) : (
+            <Link
+              href={`/portal/login?next=${encodeURIComponent(pathname || "/")}`}
+              onClick={() => setOpen(false)}
+            >
               <Button
                 variant="ghost"
-                onClick={handleSignOut}
-                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="w-full text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out"
               >
-                <LogOut className="mr-2 h-5 w-5" />
-                Sign Out
+                Sign In
               </Button>
-            ) : (
-              <Link
-                href={`/portal/login?next=${encodeURIComponent(pathname || "/")}`}
-                onClick={() => setOpen(false)}
-              >
-                <Button
-                  variant="ghost"
-                  className="w-full text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out"
-                >
-                  Sign In
-                </Button>
-              </Link>
-            )}
-          </div>
-        </nav>
+            </Link>
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   )

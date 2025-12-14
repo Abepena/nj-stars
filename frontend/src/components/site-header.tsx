@@ -1,15 +1,14 @@
-"use client"
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
-import { Button } from "@/components/ui/button"
-import { MobileNav } from "@/components/mobile-nav"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { ThemeLogo } from "@/components/ui/theme-logo"
-import { BagDrawer } from "@/components/bag-drawer"
-import { useBag } from "@/lib/bag"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { MobileNav } from "@/components/mobile-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeLogo } from "@/components/ui/theme-logo";
+import { BagDrawer } from "@/components/bag-drawer";
+import { useBag } from "@/lib/bag";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +16,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   ShoppingBag,
   User,
@@ -27,14 +26,15 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  Calendar
-} from "lucide-react"
+  Calendar,
+} from "lucide-react";
 
 const links = [
+  { href: "/about", label: "About" },
   { href: "/news", label: "News" },
   { href: "/shop", label: "Shop" },
   { href: "/events", label: "Events" },
-]
+];
 
 // User dropdown menu items
 const userMenuItems = [
@@ -43,35 +43,36 @@ const userMenuItems = [
   { href: "/portal/billing", label: "Billing & Orders", icon: CreditCard },
   { href: "#TODO-registrations", label: "My Registrations", icon: Calendar },
   { href: "#TODO-settings", label: "Settings", icon: Settings },
-]
+];
 
 export function SiteHeader() {
-  const pathname = usePathname()
-  const { data: session, status } = useSession()
-  const { bag } = useBag()
-  const [bagOpen, setBagOpen] = useState(false)
+  const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const { bag, isBagOpen, setIsBagOpen } = useBag();
 
-  const itemCount = bag?.item_count || 0
+  const itemCount = bag?.item_count || 0;
 
   const linkClasses = (href: string) =>
     [
       "text-foreground hover:text-foreground/80 transition-colors ease-in-out font-medium",
       pathname === href ? "border-b-2 border-primary" : "",
-    ].join(" ").trim()
+    ]
+      .join(" ")
+      .trim();
 
   // Get user initials for avatar fallback
   const getUserInitials = () => {
-    if (!session?.user?.name) return "U"
-    const names = session.user.name.split(" ")
+    if (!session?.user?.name) return "U";
+    const names = session.user.name.split(" ");
     if (names.length >= 2) {
-      return `${names[0][0]}${names[1][0]}`.toUpperCase()
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
     }
-    return names[0][0].toUpperCase()
-  }
+    return names[0][0].toUpperCase();
+  };
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" })
-  }
+    await signOut({ callbackUrl: "/" });
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -88,7 +89,11 @@ export function SiteHeader() {
         {/* Desktop Navigation - hidden on mobile */}
         <div className="hidden md:flex gap-6 items-center absolute right-4 top-1/2 -translate-y-1/2">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className={linkClasses(link.href)}>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={linkClasses(link.href)}
+            >
               {link.label}
             </Link>
           ))}
@@ -101,12 +106,12 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             className="group relative h-9 w-9"
-            onClick={() => setBagOpen(true)}
+            onClick={() => setIsBagOpen(true)}
           >
             <ShoppingBag className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-                {itemCount > 99 ? '99+' : itemCount}
+                {itemCount > 99 ? "99+" : itemCount}
               </span>
             )}
           </Button>
@@ -147,7 +152,10 @@ export function SiteHeader() {
                 <DropdownMenuSeparator />
                 {userMenuItems.map((item) => (
                   <DropdownMenuItem key={item.href} asChild>
-                    <Link href={item.href} className="flex items-center cursor-pointer">
+                    <Link
+                      href={item.href}
+                      className="flex items-center cursor-pointer"
+                    >
                       <item.icon className="mr-2 h-4 w-4" />
                       <span>{item.label}</span>
                     </Link>
@@ -164,8 +172,14 @@ export function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href={`/portal/login?next=${encodeURIComponent(pathname || "/")}`}>
-              <Button variant="ghost" size="sm" className="text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out">
+            <Link
+              href={`/portal/login?next=${encodeURIComponent(pathname || "/")}`}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-sm font-medium text-primary hover:text-primary-foreground hover:bg-primary hover:shadow-md hover:shadow-primary/25 transition-all duration-200 ease-in-out"
+              >
                 Sign In
               </Button>
             </Link>
@@ -179,12 +193,12 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             className="group relative h-9 w-9"
-            onClick={() => setBagOpen(true)}
+            onClick={() => setIsBagOpen(true)}
           >
             <ShoppingBag className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-                {itemCount > 99 ? '99+' : itemCount}
+                {itemCount > 99 ? "99+" : itemCount}
               </span>
             )}
           </Button>
@@ -195,7 +209,7 @@ export function SiteHeader() {
       </div>
 
       {/* Bag Drawer */}
-      <BagDrawer open={bagOpen} onOpenChange={setBagOpen} />
+      <BagDrawer open={isBagOpen} onOpenChange={setIsBagOpen} />
     </nav>
-  )
+  );
 }

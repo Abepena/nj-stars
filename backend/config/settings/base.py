@@ -196,6 +196,8 @@ STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 PRINTIFY_API_KEY = config('PRINTIFY_API_KEY', default='')
 PRINTIFY_SHOP_ID = config('PRINTIFY_SHOP_ID', default='')
 PRINTIFY_WEBHOOK_SECRET = config('PRINTIFY_WEBHOOK_SECRET', default='')
+# Set to True in development to skip actual Printify API calls (generates mock order IDs)
+PRINTIFY_DRY_RUN = config('PRINTIFY_DRY_RUN', default=False, cast=bool)
 
 
 # Instagram Graph API

@@ -15,6 +15,12 @@ from .views import (
     get_order,
     get_user_orders,
     calculate_shipping,
+    HandoffListView,
+    HandoffUpdateView,
+    PrintifyPublishView,
+    PrintifyUnpublishView,
+    PrintifyProductsView,
+    PrintifySyncView,
 )
 
 router = DefaultRouter()
@@ -39,4 +45,12 @@ urlpatterns = [
     # Order endpoints
     path('orders/', get_user_orders, name='user-orders'),
     path('orders/<str:order_number>/', get_order, name='order-detail'),
+    # Handoff management (staff only)
+    path('handoffs/', HandoffListView.as_view(), name='handoff-list'),
+    path('handoffs/<int:item_id>/', HandoffUpdateView.as_view(), name='handoff-update'),
+    # Printify admin (superuser only)
+    path('admin/printify/products/', PrintifyProductsView.as_view(), name='printify-products'),
+    path('admin/printify/publish/', PrintifyPublishView.as_view(), name='printify-publish'),
+    path('admin/printify/unpublish/', PrintifyUnpublishView.as_view(), name='printify-unpublish'),
+    path('admin/printify/sync/', PrintifySyncView.as_view(), name='printify-sync'),
 ]

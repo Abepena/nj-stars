@@ -92,8 +92,8 @@ export function FeaturedMerch({
         setLoading(true)
         setError(null)
 
-        // Fetch featured products (or any that have tags)
-        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true`, {
+        // Fetch featured products, filling up to limit with random products if needed
+        const response = await fetch(`${API_BASE}/api/payments/products/?featured=true&fill_to=${limit}`, {
           cache: 'no-store'
         })
 
@@ -317,11 +317,14 @@ function ProductCard({ product, onClick }: ProductCardProps) {
           </div>
         )}
 
-        {/* Hover overlay with price and add to bag button */}
+        {/* Hover overlay with scrim, price and add to bag button */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
+          {/* Scrim overlay for contrast on light images */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-black/20 rounded-lg" />
+
           {/* Price badge - bottom left */}
           <div className="absolute bottom-3 left-3">
-            <span className="bg-white text-black text-sm font-semibold px-3 py-1.5 rounded-full shadow-lg">
+            <span className="bg-white/95 backdrop-blur-sm text-black text-sm font-semibold px-3 py-1.5 rounded-full shadow-lg ring-1 ring-black/5">
               ${parseFloat(product.price).toFixed(2)}
               {product.compare_at_price && (
                 <span className="ml-1.5 text-muted-foreground line-through text-xs">
@@ -335,10 +338,10 @@ function ProductCard({ product, onClick }: ProductCardProps) {
           <button
             onClick={handleAddToBag}
             disabled={!product.in_stock || isAdding}
-            className={`absolute top-3 right-3 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 disabled:opacity-50 ${
+            className={`absolute top-3 right-3 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 disabled:opacity-50 ring-1 ring-black/5 ${
               showSuccess
                 ? 'bg-green-500 scale-110 animate-success-pulse'
-                : 'bg-white hover:bg-gray-100'
+                : 'bg-white/95 backdrop-blur-sm hover:bg-white'
             }`}
             aria-label={showSuccess ? "Added to bag" : "Add to bag"}
           >
@@ -361,7 +364,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
       {/* Content - flat layout */}
       <div className="flex flex-col pt-3 space-y-1">
         {/* Product name */}
-        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={product.name}>
           {product.name}
         </h3>
 

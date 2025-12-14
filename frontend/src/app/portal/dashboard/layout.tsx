@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { ThemeLogo } from "@/components/ui/theme-logo"
 import {
   Home,
   Users,
@@ -15,6 +16,7 @@ import {
   LogOut,
   Shield,
   ClipboardList,
+  Package,
   Menu,
   X,
   ChevronLeft
@@ -36,6 +38,7 @@ const parentNavItems = [
 
 const staffNavItems = [
   { href: "/portal/admin", label: "Admin Dashboard", icon: Shield },
+  { href: "/portal/deliveries", label: "Deliveries", icon: Package },
   { href: "/portal/admin/check-ins", label: "Check-Ins", icon: ClipboardList },
   { href: "/portal/admin/roster", label: "Roster", icon: Users },
 ]
@@ -66,9 +69,10 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
       <Link
         href={item.href}
         className={cn(
-          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-          "hover:bg-muted",
-          isActive && "bg-primary/10 text-primary font-medium"
+          "flex items-center gap-3 px-4 py-3 rounded-md transition-colors border",
+          isActive
+            ? "bg-muted text-foreground font-medium border-border"
+            : "text-muted-foreground border-transparent hover:bg-muted/50 hover:text-foreground"
         )}
         onClick={() => setMobileNavOpen(false)}
       >
@@ -85,7 +89,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         <div className="flex items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xl font-bold text-primary">NJ Stars</span>
+            <ThemeLogo width={100} height={32} linkTo={null} />
           </Link>
           <Button
             variant="ghost"
@@ -139,9 +143,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
             <div className="p-6 border-b">
               <Link href="/" className="flex items-center gap-2 group">
                 <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                <span className="text-2xl font-bold text-primary">NJ Stars</span>
+                <ThemeLogo width={148} height={46} linkTo={null} />
               </Link>
-              <p className="text-sm text-muted-foreground mt-1">Member Portal</p>
             </div>
 
             {/* User Info */}

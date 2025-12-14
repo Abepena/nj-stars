@@ -21,7 +21,10 @@ import {
   SheetClose
 } from "@/components/ui/sheet"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfWeek, endOfWeek, addMonths, subMonths } from "date-fns"
-import { Calendar, List, SlidersHorizontal, ChevronLeft, ChevronRight, Check, X, ChevronDown, User, Download, ExternalLink, CalendarPlus } from "lucide-react"
+import { Calendar, List, SlidersHorizontal, ChevronLeft, ChevronRight, Check, X, ChevronDown, User, Download, ExternalLink, CalendarPlus, MapPin } from "lucide-react"
+import { EventMap } from "@/components/event-map"
+import { Switch } from "@/components/ui/switch"
+import { EventCardHorizontal } from "@/components/event-card-horizontal"
 
 // Brand icons as inline SVGs
 const GoogleCalendarIcon = ({ className }: { className?: string }) => (
@@ -53,6 +56,8 @@ interface Event {
   start_datetime: string
   end_datetime: string
   location: string
+  latitude?: number
+  longitude?: number
   max_participants?: number
   price: string
   requires_payment: boolean
@@ -184,11 +189,14 @@ export default function EventsPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<SortOption>("date_asc")
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("upcoming")
-  const [viewMode, setViewMode] = useState<ViewMode>("list")
+  const [viewMode, setViewMode] = useState<ViewMode>("calendar")
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [initialFilterSet, setInitialFilterSet] = useState(false)
   const [selectedEventForRegistration, setSelectedEventForRegistration] = useState<Event | null>(null)
+  const [showMap, setShowMap] = useState(false)
+  const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null)
+  const [mobileMapOpen, setMobileMapOpen] = useState(false)
 
   // Set default filter to "My Events" for authenticated users
   useEffect(() => {
@@ -564,6 +572,32 @@ export default function EventsPage() {
                 {filteredEvents.length} events
               </p>
 
+              {/* Map button (mobile) */}
+              <Sheet open={mobileMapOpen} onOpenChange={setMobileMapOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <MapPin className="w-4 h-4" />
+                    Map
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh] p-0">
+                  <SheetHeader className="p-4 border-b">
+                    <SheetTitle>Event Locations</SheetTitle>
+                  </SheetHeader>
+                  <div className="h-[calc(80vh-60px)]">
+                    <EventMap
+                      events={filteredEvents}
+                      selectedEventId={highlightedEventId}
+                      onEventSelect={(id) => {
+                        setHighlightedEventId(id)
+                        setMobileMapOpen(false)
+                      }}
+                      className="h-full rounded-none border-0"
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+
               {/* Filter button */}
               <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
                 <SheetTrigger asChild>
@@ -630,6 +664,18 @@ export default function EventsPage() {
                   </div>
                 </div>
 
+                {/* Map toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Show Map</span>
+                  </div>
+                  <Switch
+                    checked={showMap}
+                    onCheckedChange={setShowMap}
+                  />
+                </div>
+
                 <FilterContent isMobile={false} />
 
                 {/* Calendar Sync - Only show for My Events */}
@@ -679,67 +725,98 @@ export default function EventsPage() {
               </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1">
-              {error && (
-                <div className="mb-8">
-                  <ErrorMessage error={error} />
-                </div>
-              )}
+            {/* Main Content + Map */}
+            <div className={cn("flex-1 flex gap-6", showMap && "lg:flex-row")}>
+              {/* Main Content */}
+              <main className={cn("flex-1 min-w-0", showMap && "lg:w-3/5")}>
+                {error && (
+                  <div className="mb-8">
+                    <ErrorMessage error={error} />
+                  </div>
+                )}
 
-              {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {[1, 2, 3, 4].map((i) => (
-                    <EventCardSkeleton key={i} />
-                  ))}
-                </div>
-              ) : viewMode === "calendar" ? (
-                <CalendarView
-                  events={eventsForMonth}
-                  currentMonth={currentMonth}
-                  onMonthChange={setCurrentMonth}
-                  onRegisterClick={handleRegisterClick}
-                  myEventIds={myEventIds}
-                />
-              ) : !error && filteredEvents.length === 0 ? (
-                <div className="text-center py-16">
-                  {timeFilter === "my_events" ? (
-                    <>
-                      <User className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <p className="text-lg text-muted-foreground mb-2">
-                        You haven't registered for any upcoming events yet.
+                {loading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    {[1, 2, 3, 4].map((i) => (
+                      <EventCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : viewMode === "calendar" ? (
+                  <CalendarView
+                    events={eventsForMonth}
+                    currentMonth={currentMonth}
+                    onMonthChange={setCurrentMonth}
+                    onRegisterClick={handleRegisterClick}
+                    myEventIds={myEventIds}
+                  />
+                ) : !error && filteredEvents.length === 0 ? (
+                  <div className="text-center py-16">
+                    {timeFilter === "my_events" ? (
+                      <>
+                        <User className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                        <p className="text-lg text-muted-foreground mb-2">
+                          You haven't registered for any upcoming events yet.
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-6">
+                          Browse all events to find your next training session, game, or tryout.
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => setTimeFilter("upcoming")}
+                        >
+                          Browse All Events
+                        </Button>
+                      </>
+                    ) : (
+                      <p className="text-lg text-muted-foreground mb-4">
+                        {hasActiveFilters
+                          ? "No events match your filters."
+                          : "No upcoming events scheduled. Check back soon!"}
                       </p>
-                      <p className="text-sm text-muted-foreground mb-6">
-                        Browse all events to find your next training session, game, or tryout.
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={() => setTimeFilter("upcoming")}
-                      >
-                        Browse All Events
-                      </Button>
-                    </>
-                  ) : (
-                    <p className="text-lg text-muted-foreground mb-4">
-                      {hasActiveFilters
-                        ? "No events match your filters."
-                        : "No upcoming events scheduled. Check back soon!"}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {filteredEvents.map((event) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      onRegisterClick={() => handleRegisterClick(event)}
-                      isRegistered={myEventIds.includes(event.id)}
-                    />
-                  ))}
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {filteredEvents.map((event) => {
+                      const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || {
+                        label: event.event_type,
+                        className: 'text-muted-foreground',
+                        bgClassName: 'bg-muted'
+                      }
+                      return (
+                        <EventCardHorizontal
+                          key={event.id}
+                          event={event}
+                          typeConfig={typeConfig}
+                          onRegisterClick={() => handleRegisterClick(event)}
+                          isRegistered={myEventIds.includes(event.id)}
+                          isHighlighted={highlightedEventId === event.id}
+                          onMouseEnter={() => setHighlightedEventId(event.id)}
+                          onMouseLeave={() => setHighlightedEventId(null)}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
+              </main>
+
+              {/* Map Sidebar (Desktop) */}
+              {showMap && (
+                <aside className="hidden lg:block lg:w-2/5 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)]">
+                  <EventMap
+                    events={filteredEvents}
+                    selectedEventId={highlightedEventId}
+                    onEventSelect={(id) => {
+                      setHighlightedEventId(id)
+                      // Scroll to the event card
+                      const element = document.getElementById(`event-card-${id}`)
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }}
+                    className="h-full"
+                  />
+                </aside>
               )}
-            </main>
+            </div>
           </div>
         </div>
       </section>
@@ -1101,10 +1178,16 @@ function EventCard({
   event,
   onRegisterClick,
   isRegistered,
+  isHighlighted,
+  onMouseEnter,
+  onMouseLeave,
 }: {
   event: Event
   onRegisterClick: () => void
   isRegistered?: boolean
+  isHighlighted?: boolean
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
 }) {
   const [calendarMenuOpen, setCalendarMenuOpen] = useState(false)
   const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || { label: event.event_type, className: 'text-muted-foreground' }
@@ -1139,7 +1222,15 @@ function EventCard({
   }
 
   return (
-    <article className="flex flex-col cursor-pointer group">
+    <article
+      id={`event-card-${event.id}`}
+      className={cn(
+        "flex flex-col cursor-pointer group transition-all duration-200",
+        isHighlighted && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg"
+      )}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       {/* Image - rounded corners, no card border */}
       <div className="relative w-full aspect-[16/9] overflow-hidden rounded-lg bg-muted">
         {event.image_url ? (

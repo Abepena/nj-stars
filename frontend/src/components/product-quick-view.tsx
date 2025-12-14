@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
 import { shouldSkipImageOptimization } from "@/lib/utils"
+import { getColorHex } from "@/lib/color-utils"
 
 interface ColorOption {
   name: string
@@ -95,10 +96,39 @@ const SIZE_ORDER: Record<string, number> = {
   'ONE SIZE': 50,
 }
 
+const SIZE_ALIASES: Record<string, string> = {
+  SM: 'S',
+  SMALL: 'S',
+  SML: 'S',
+  MD: 'M',
+  MED: 'M',
+  MEDIUM: 'M',
+  LG: 'L',
+  LARGE: 'L',
+  XXL: '2XL',
+  XXXL: '3XL',
+  XXXXL: '4XL',
+  XXXXXL: '5XL',
+  '2X': '2XL',
+  '3X': '3XL',
+  '4X': '4XL',
+  '5X': '5XL',
+}
+
+function normalizeSize(size: string): string {
+  const key = size.toUpperCase().trim()
+  return SIZE_ALIASES[key] || key
+}
+
+function getSizeOrder(size: string): number {
+  const normalized = normalizeSize(size)
+  return SIZE_ORDER[normalized] ?? 100
+}
+
 function sortSizes(sizes: string[]): string[] {
   return [...sizes].sort((a, b) => {
-    const orderA = SIZE_ORDER[a.toUpperCase().trim()] ?? 100
-    const orderB = SIZE_ORDER[b.toUpperCase().trim()] ?? 100
+    const orderA = getSizeOrder(a)
+    const orderB = getSizeOrder(b)
     return orderA - orderB
   })
 }
@@ -151,11 +181,13 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   const isAvailable = product.is_pod || product.stock_quantity > 0
 
   // Reset selections when modal opens
-  // Auto-select first color (primary image's color, now leftmost), but NOT size
+  // Auto-select first color (primary image's color, now leftmost)
+  // Auto-select size if there's only one option
   useEffect(() => {
     if (open) {
       // Get colors fresh to avoid stale closure
       const freshColors = product.available_colors || []
+      const freshSizes = product.available_sizes || []
       const freshPrimaryColor = (() => {
         if (!product.images?.length || !product.variants?.length) return null
         const primaryImage = product.images.find(img => img.is_primary) || product.images[0]
@@ -172,11 +204,12 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
         : freshColors
 
       setSelectedColor(orderedColors.length > 0 ? orderedColors[0].name : "")
-      setSelectedSize("")  // User must select size
+      // Auto-select size if only one option, otherwise user must select
+      setSelectedSize(freshSizes.length === 1 ? freshSizes[0] : "")
       setQuantity(1)
       setCurrentImageIndex(0)
     }
-  }, [open, product.id, product.images, product.variants, product.available_colors])
+  }, [open, product.id, product.images, product.variants, product.available_colors, product.available_sizes])
 
   // Reset image index when color changes
   useEffect(() => {
@@ -345,7 +378,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                             ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent"
                             : "border-border hover:border-muted-foreground"
                         }`}
-                        style={{ backgroundColor: color.hex || '#808080' }}
+                        style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                         title={color.name}
                         aria-label={`Select ${color.name}`}
                       />

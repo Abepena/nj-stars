@@ -79,6 +79,22 @@ class Event(models.Model):
     end_datetime = models.DateTimeField()
     location = models.CharField(max_length=255)
 
+    # Geolocation (for map display)
+    latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        help_text="Latitude coordinate for map display"
+    )
+    longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        help_text="Longitude coordinate for map display"
+    )
+
     # Payment settings
     requires_payment = models.BooleanField(default=False)
     price = models.DecimalField(

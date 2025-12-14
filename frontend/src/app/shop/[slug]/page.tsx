@@ -14,6 +14,7 @@ import { ProductDetailSkeleton } from "@/components/skeletons/product-detail-ske
 import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
+import { getColorHex } from "@/lib/color-utils"
 
 interface ProductImage {
   id: number
@@ -95,10 +96,39 @@ const SIZE_ORDER: Record<string, number> = {
   'ONE SIZE': 50,
 }
 
+const SIZE_ALIASES: Record<string, string> = {
+  SM: 'S',
+  SMALL: 'S',
+  SML: 'S',
+  MD: 'M',
+  MED: 'M',
+  MEDIUM: 'M',
+  LG: 'L',
+  LARGE: 'L',
+  XXL: '2XL',
+  XXXL: '3XL',
+  XXXXL: '4XL',
+  XXXXXL: '5XL',
+  '2X': '2XL',
+  '3X': '3XL',
+  '4X': '4XL',
+  '5X': '5XL',
+}
+
+function normalizeSize(size: string): string {
+  const key = size.toUpperCase().trim()
+  return SIZE_ALIASES[key] || key
+}
+
+function getSizeOrder(size: string): number {
+  const normalized = normalizeSize(size)
+  return SIZE_ORDER[normalized] ?? 100
+}
+
 function sortSizes(sizes: string[]): string[] {
   return [...sizes].sort((a, b) => {
-    const orderA = SIZE_ORDER[a.toUpperCase().trim()] ?? 100
-    const orderB = SIZE_ORDER[b.toUpperCase().trim()] ?? 100
+    const orderA = getSizeOrder(a)
+    const orderB = getSizeOrder(b)
     return orderA - orderB
   })
 }
@@ -518,7 +548,7 @@ export default function ProductDetailPage() {
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
                           : "hover:scale-110"
                       }`}
-                      style={{ backgroundColor: color.hex || '#808080' }}
+                      style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                       aria-label={color.name}
                       aria-pressed={selectedColor === color.name}
                       title={color.name}
@@ -529,7 +559,7 @@ export default function ProductDetailPage() {
                       {selectedColor === color.name && (
                         <Check
                           className={`absolute inset-0 m-auto w-5 h-5 ${
-                            color.hex === "#ffffff" || color.hex === "#6b7280"
+                            getColorHex(color.name, color.hex) === "#ffffff" || getColorHex(color.name, color.hex) === "#9ca3af"
                               ? "text-gray-800"
                               : "text-white"
                           }`}
