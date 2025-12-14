@@ -38,21 +38,28 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <Link href="/" className="text-2xl font-bold text-primary">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-2">
+          <div className="flex-shrink-0">
+            <Link href="/" className="text-xl md:text-2xl font-bold text-primary">
               NJ Stars
             </Link>
-            <p className="text-sm text-muted-foreground">Portal Dashboard</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Portal Dashboard</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium">{session.user?.name || session.user?.email}</p>
+          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+            <div className="text-right hidden md:block">
+              <p className="text-sm font-medium select-none" style={{ pointerEvents: 'none' }}>
+                {session.user?.name || session.user?.email}
+              </p>
               <p className="text-xs text-muted-foreground capitalize">
                 {session.user?.role || "member"}
               </p>
             </div>
-            <Button onClick={() => signOut({ callbackUrl: "/" })} variant="outline">
+            <Button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              variant="outline"
+              size="sm"
+              className="md:size-default"
+            >
               Sign Out
             </Button>
           </div>
