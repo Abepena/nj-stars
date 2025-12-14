@@ -55,8 +55,17 @@ class NewsletterSubscribeSerializer(serializers.Serializer):
     source = serializers.CharField(max_length=50, required=False, default='website')
 
     def validate_email(self, value):
-        """Normalize email to lowercase"""
-        return value.lower().strip()
+        """Normalize email to lowercase and check for duplicates"""
+        normalized = value.lower().strip()
+
+        # Check if email already exists and is active
+        existing = NewsletterSubscriber.objects.filter(email=normalized).first()
+        if existing and existing.status == 'active':
+            raise serializers.ValidationError(
+                "This email is already subscribed to our newsletter."
+            )
+
+        return normalized
 
     def create(self, validated_data):
         """Create or reactivate subscription"""

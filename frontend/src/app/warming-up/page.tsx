@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { NewsletterSignup } from "@/components/newsletter-signup";
+import { LaunchNotificationForm } from "@/components/launch-notification-form";
 
 export default function UnderConstructionPage() {
   const [mounted, setMounted] = useState(false);
@@ -134,12 +134,7 @@ export default function UnderConstructionPage() {
 
         {/* Email Capture Form */}
         <div className="w-full max-w-md mb-8">
-          <NewsletterSignup
-            heading="Get Notified When We Launch"
-            subheading="Be the first to know about tryouts, camps, and the 2026 season"
-            source="warming-up"
-            show={true}
-          />
+          <LaunchNotificationForm />
         </div>
 
         {/* Contact links */}
