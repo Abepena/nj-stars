@@ -714,11 +714,23 @@ def bag_checkout(request):
                 ).first()
             return None
 
+        def _make_absolute_url(url):
+            """Convert relative URL to absolute URL for Stripe."""
+            if not url:
+                return None
+            # Already absolute
+            if url.startswith('http://') or url.startswith('https://'):
+                return url
+            # Relative URL - prepend backend URL
+            backend_url = getattr(settings, 'BACKEND_URL', 'http://localhost:8000').rstrip('/')
+            return f"{backend_url}{url}"
+
         def _image_for_item(item):
             """
             Choose the most accurate image for Stripe:
             - If variant has Printify variant ID, use the first image that contains that ID.
             - Fallback to product primary image.
+            Returns absolute URL (Stripe requires absolute URLs).
             """
             variant = _variant_for_item(item)
             if variant and variant.printify_variant_id:
@@ -726,8 +738,8 @@ def bag_checkout(request):
                     printify_variant_ids__contains=[variant.printify_variant_id]
                 ).first()
                 if variant_image and variant_image.url:
-                    return variant_image.url
-            return item.product.primary_image_url
+                    return _make_absolute_url(variant_image.url)
+            return _make_absolute_url(item.product.primary_image_url)
 
         # Build line items from bag
         line_items = []

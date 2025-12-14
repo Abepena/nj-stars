@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 const links = [
+  { href: "/about", label: "About" },
   { href: "/news", label: "News" },
   { href: "/shop", label: "Shop" },
   { href: "/events", label: "Events" },
