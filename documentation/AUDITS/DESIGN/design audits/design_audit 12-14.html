@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NJ Stars Elite Basketball - UI/UX Design Audit Report</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // NJ Stars palette (dark theme)
+            'nj-bg-primary': 'hsl(20, 13%, 9%)',
+            'nj-bg-secondary': 'hsl(20, 9.4%, 12.5%)',
+            'nj-bg-tertiary': 'hsl(20, 7.1%, 16.5%)',
+            'nj-text-primary': 'hsl(26.7, 16.4%, 89.2%)',
+            'nj-text-secondary': 'hsl(38.8, 6.8%, 65%)',
+            'nj-text-tertiary': 'hsl(38.8, 6.8%, 55%)',
+            'nj-primary': 'hsl(331.7, 73.9%, 53.3%)',
+            'nj-secondary': 'hsl(188.7, 94.5%, 42.7%)',
+            'nj-accent': 'hsl(353.4, 55%, 48.8%)',
+            'nj-tertiary': 'hsl(37.7, 92.1%, 50.2%)',
+            'nj-success': 'hsl(154.8, 38%, 48%)',
+            'nj-warning': 'hsl(33.3, 59.8%, 58%)',
+            'nj-info': 'hsl(214.2, 28.3%, 49.8%)',
+            'nj-border': 'hsl(27.3, 8%, 26.9%)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: hsl(20, 13%, 9%);
+      color: hsl(26.7, 16.4%, 89.2%);
+    }
+    .priority-critical { background: hsl(353.4, 55%, 48.8%); color: white; }
+    .priority-high { background: hsl(33.3, 59.8%, 58%); color: hsl(20, 13%, 9%); }
+    .priority-medium { background: hsl(188.7, 94.5%, 42.7%); color: hsl(20, 13%, 9%); }
+    .priority-low { background: hsl(154.8, 38%, 48%); color: white; }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .before-box {
+      border: 2px solid hsl(353.4, 55%, 48.8%);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      background: hsl(20, 9.4%, 12.5%);
+    }
+
+    .after-box {
+      border: 2px solid hsl(154.8, 38%, 48%);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      background: hsl(20, 9.4%, 12.5%);
+    }
+
+    .issue-card {
+      background: hsl(20, 9.4%, 12.5%);
+      border: 1px solid hsl(27.3, 8%, 26.9%);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .toc-link {
+      color: hsl(188.7, 94.5%, 42.7%);
+      text-decoration: none;
+    }
+    .toc-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Demo button styles matching the project */
+    .demo-btn-default {
+      background: hsl(331.7, 73.9%, 53.3%);
+      color: hsl(26.7, 16.4%, 89.2%);
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+    .demo-btn-default:hover {
+      background: hsl(331.7, 73.9%, 48%);
+    }
+
+    /* Touch target demos */
+    .touch-target-bad {
+      width: 36px;
+      height: 36px;
+      background: hsl(353.4, 55%, 48.8%);
+      border-radius: 0.375rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .touch-target-good {
+      width: 48px;
+      height: 48px;
+      background: hsl(154.8, 38%, 48%);
+      border-radius: 0.375rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* Quantity selector demo */
+    .qty-btn-bad {
+      min-width: 40px;
+      padding: 0.375rem 0.75rem;
+      background: transparent;
+      border: 1px solid hsl(27.3, 8%, 26.9%);
+      color: hsl(26.7, 16.4%, 89.2%);
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .qty-btn-good {
+      min-width: 48px;
+      min-height: 48px;
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: 1px solid hsl(27.3, 8%, 26.9%);
+      color: hsl(26.7, 16.4%, 89.2%);
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    /* Color swatch demo */
+    .color-swatch-bad {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .color-swatch-good {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .color-swatch-good .inner {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    /* Badge count demo */
+    .badge-count {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: hsl(331.7, 73.9%, 53.3%);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    code {
+      background: hsl(20, 7.1%, 16.5%);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    pre {
+      background: hsl(20, 7.1%, 16.5%);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      font-size: 0.875rem;
+    }
+
+    .progress-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .progress-badge.previous {
+      background: hsl(154.8, 38%, 48%);
+      color: white;
+    }
+
+    .progress-badge.new {
+      background: hsl(331.7, 73.9%, 53.3%);
+      color: white;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-nj-border py-6">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-3xl font-bold">NJ Stars Elite Basketball</h1>
+        <span class="progress-badge new">New Audit</span>
+      </div>
+      <p class="text-nj-text-secondary text-lg">UI/UX Design Audit Report - Accessibility Focus</p>
+      <p class="text-nj-text-tertiary text-sm mt-2">Generated: December 14, 2025</p>
+      <p class="text-nj-text-tertiary text-sm">Previous Audit: December 9, 2025 <span class="progress-badge previous ml-2">11/11 Complete</span></p>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Table of Contents -->
+    <nav class="issue-card mb-8" id="toc">
+      <h2 class="text-xl font-bold mb-4">Table of Contents</h2>
+      <ol class="space-y-2 list-decimal list-inside">
+        <li><a href="#executive-summary" class="toc-link">Executive Summary</a></li>
+        <li><a href="#previous-audit" class="toc-link">Previous Audit Status</a></li>
+        <li><a href="#critical-issues" class="toc-link">Critical Accessibility Issues</a></li>
+        <li><a href="#high-priority" class="toc-link">High Priority Issues</a></li>
+        <li><a href="#medium-priority" class="toc-link">Medium Priority Issues</a></li>
+        <li><a href="#low-priority" class="toc-link">Low Priority / Polish</a></li>
+        <li><a href="#roadmap" class="toc-link">Implementation Roadmap</a></li>
+      </ol>
+    </nav>
+
+    <!-- Executive Summary -->
+    <section id="executive-summary" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">1</span>
+        Executive Summary
+      </h2>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Key Focus Areas</h3>
+        <p class="text-nj-text-secondary mb-4">
+          This audit builds on the successful December 9th audit (11/11 tasks completed). The current focus is on <strong>ARIA accessibility</strong>, <strong>screen reader support</strong>, and <strong>touch target compliance</strong> to achieve full WCAG 2.1 AA compliance.
+        </p>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+            <h4 class="font-semibold mt-2">ARIA Labels Missing</h4>
+            <p class="text-sm text-nj-text-secondary mt-1">Quantity buttons, color swatches, and bag count lack proper ARIA labels for screen readers</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+            <h4 class="font-semibold mt-2">Size Buttons Below 44px</h4>
+            <p class="text-sm text-nj-text-secondary mt-1">Product size selector buttons are 40px height - below WCAG minimum touch target</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+            <h4 class="font-semibold mt-2">Focus Management</h4>
+            <p class="text-sm text-nj-text-secondary mt-1">Modal dialogs and mobile nav don't properly trap or manage focus for keyboard users</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Audit Metrics</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-accent">5</span>
+            <p class="text-sm text-nj-text-secondary">Critical</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-warning">8</span>
+            <p class="text-sm text-nj-text-secondary">High</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-secondary">7</span>
+            <p class="text-sm text-nj-text-secondary">Medium</p>
+          </div>
+          <div class="p-4 rounded-lg bg-nj-bg-tertiary">
+            <span class="text-3xl font-bold text-nj-success">5</span>
+            <p class="text-sm text-nj-text-secondary">Low</p>
+          </div>
+        </div>
+        <p class="text-sm text-nj-text-tertiary mt-4">Total: 25 items identified across 15+ components</p>
+      </div>
+    </section>
+
+    <!-- Previous Audit Status -->
+    <section id="previous-audit" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">2</span>
+        Previous Audit Status (Dec 9, 2025)
+      </h2>
+
+      <div class="issue-card" style="border-color: hsl(154.8, 38%, 48%);">
+        <h3 class="font-semibold text-nj-success mb-4">All 11 Tasks Completed</h3>
+        <ul class="space-y-2 text-sm text-nj-text-secondary">
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Mobile nav link underline (text only, not container)</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Mobile Sign In button matches header style</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Skip navigation link added</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Touch targets increased to 44px (quantity buttons, dots)</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> QuickView stock messaging updated</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Empty state enhanced with CTA</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Visible search label option added</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> text-tertiary contrast bumped to 60%</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> getCategoryColor function centralized</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Button variant usage documented</li>
+          <li class="flex items-center gap-2"><span class="text-nj-success">&#10003;</span> Section header component created</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Critical Issues -->
+    <section id="critical-issues" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">3</span>
+        Critical Accessibility Issues
+      </h2>
+
+      <!-- Issue 1: Quantity Buttons -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+          <h3 class="font-semibold">Quantity Selector Buttons Missing ARIA Labels</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The minus and plus buttons use Unicode characters only. Screen readers announce "button minus" instead of "Decrease quantity". No explanation for disabled state.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>product-quick-view.tsx:421-437</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-4">Current (No ARIA Labels)</p>
+            <div class="flex items-center gap-2">
+              <button class="qty-btn-bad" disabled style="opacity: 0.5">-</button>
+              <span class="px-4">1</span>
+              <button class="qty-btn-bad">+</button>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">Screen reader: "button minus" / "button plus"</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-4">Recommended (Proper Labels)</p>
+            <div class="flex items-center gap-2">
+              <button class="qty-btn-good" disabled style="opacity: 0.5" aria-label="Decrease quantity (minimum reached)">-</button>
+              <span class="px-4" aria-live="polite">1</span>
+              <button class="qty-btn-good" aria-label="Increase quantity">+</button>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">Screen reader: "Decrease quantity, minimum reached" / "Increase quantity"</p>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <p class="text-sm font-semibold mb-2">Code Fix:</p>
+          <pre><code>// Add aria-labels
+&lt;button
+  aria-label={quantity <= 1 ? "Decrease quantity (minimum reached)" : "Decrease quantity"}
+  disabled={quantity <= 1}
+&gt;-&lt;/button&gt;
+
+&lt;span aria-live="polite" aria-atomic="true"&gt;{quantity}&lt;/span&gt;
+
+&lt;button aria-label="Increase quantity"&gt;+&lt;/button&gt;</code></pre>
+        </div>
+      </div>
+
+      <!-- Issue 2: Size Buttons Touch Targets -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+          <h3 class="font-semibold">Size Selection Buttons Below Touch Target Minimum</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          Size selector buttons use <code>min-w-[2.5rem] py-1.5</code> (40px) which is below the WCAG 2.5 minimum of 44x44px touch targets.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>product-quick-view.tsx:398-410</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-4">Current (40px height)</p>
+            <div class="flex gap-2">
+              <button class="touch-target-bad">S</button>
+              <button class="touch-target-bad">M</button>
+              <button class="touch-target-bad" style="background: hsl(331.7, 73.9%, 53.3%)">L</button>
+              <button class="touch-target-bad">XL</button>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">36-40px - difficult to tap on mobile</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-4">Recommended (48px minimum)</p>
+            <div class="flex gap-2">
+              <button class="touch-target-good">S</button>
+              <button class="touch-target-good">M</button>
+              <button class="touch-target-good" style="background: hsl(331.7, 73.9%, 53.3%)">L</button>
+              <button class="touch-target-good">XL</button>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">48px - meets WCAG 2.5 touch target guidelines</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 3: Color Swatches -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+          <h3 class="font-semibold">Color Picker Swatches Lack Accessible Labels</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          Color swatches use basic labels like "Select Red" but don't provide hex codes or visual indication of selection state for colorblind users.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>product-quick-view.tsx:372-386</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-4">Current (28px, minimal labels)</p>
+            <div class="flex gap-2">
+              <button class="color-swatch-bad" style="background: #c13847;" aria-label="Select Red"></button>
+              <button class="color-swatch-bad" style="background: #1a1a1a;" aria-label="Select Black"></button>
+              <button class="color-swatch-bad" style="background: #ffffff; border-color: hsl(27.3, 8%, 26.9%);" aria-label="Select White"></button>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">28px swatches, no selection indicator for screen readers</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-4">Recommended (44px hit area, better labels)</p>
+            <div class="flex gap-2">
+              <button class="color-swatch-good" style="border-color: hsl(331.7, 73.9%, 53.3%);" aria-label="Select Red, currently selected" aria-pressed="true">
+                <span class="inner" style="background: #c13847;"></span>
+              </button>
+              <button class="color-swatch-good" aria-label="Select Black (#1a1a1a)">
+                <span class="inner" style="background: #1a1a1a;"></span>
+              </button>
+              <button class="color-swatch-good" style="border-color: hsl(27.3, 8%, 26.9%);" aria-label="Select White (#ffffff)">
+                <span class="inner" style="background: #ffffff;"></span>
+              </button>
+            </div>
+            <p class="text-xs text-nj-text-tertiary mt-3">44px hit area, aria-pressed for selection, hex in label</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 4: Bag Count Badge -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+          <h3 class="font-semibold">Shopping Bag Count Not Announced to Screen Readers</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The bag icon shows a visual badge with item count, but this information is not available to screen reader users. They only hear "Shopping bag button".
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>site-header.tsx:112-116</code>, <code>mobile-nav.tsx</code></p>
+
+        <div class="comparison-grid mt-4">
+          <div class="before-box">
+            <p class="text-sm font-semibold text-nj-accent mb-4">Current (Visual Only)</p>
+            <button class="relative p-2 rounded-lg bg-nj-bg-tertiary">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+              <span class="badge-count">3</span>
+            </button>
+            <p class="text-xs text-nj-text-tertiary mt-3">Screen reader: "Shopping bag button"</p>
+          </div>
+          <div class="after-box">
+            <p class="text-sm font-semibold text-nj-success mb-4">Recommended (Announces Count)</p>
+            <button class="relative p-2 rounded-lg bg-nj-bg-tertiary" aria-label="Shopping bag with 3 items">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+              <span class="badge-count" aria-hidden="true">3</span>
+            </button>
+            <p class="text-xs text-nj-text-tertiary mt-3">Screen reader: "Shopping bag with 3 items"</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue 5: Modal Focus Management -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-critical px-2 py-1 rounded text-xs font-bold">CRITICAL</span>
+          <h3 class="font-semibold">Modal/Sheet Components Missing Focus Management</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-4">
+          The product QuickView modal and mobile navigation sheet don't trap focus or set initial focus to a logical element. Keyboard users can tab outside the modal.
+        </p>
+        <p class="text-sm"><strong>Files:</strong> <code>product-quick-view.tsx:279-286</code>, <code>mobile-nav.tsx:76-212</code></p>
+
+        <div class="mt-4">
+          <p class="text-sm font-semibold mb-2">Required Fixes:</p>
+          <ul class="text-sm text-nj-text-secondary list-disc list-inside space-y-1">
+            <li>Add <code>aria-modal="true"</code> to modal containers</li>
+            <li>Set initial focus to first interactive element (close button or primary action)</li>
+            <li>Implement focus trap to prevent tabbing outside modal</li>
+            <li>Return focus to trigger element on close</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- High Priority Issues -->
+    <section id="high-priority" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">4</span>
+        High Priority Issues
+      </h2>
+
+      <!-- High Priority Cards -->
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Error Messages Missing Alert Role</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          Error containers should use <code>role="alert"</code> to announce errors to screen readers immediately.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>error-message.tsx:21-37</code></p>
+        <pre class="mt-2"><code>&lt;div role="alert" aria-live="assertive"&gt;{errorMessage}&lt;/div&gt;</code></pre>
+      </div>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Filter Count Badge Not Accessible</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          Mobile filter button shows <code>[3]</code> for active filter count but this is visual only. Add to button's aria-label.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>filter-sidebar.tsx:388-395</code></p>
+        <pre class="mt-2"><code>aria-label={`Filters ${activeFilterCount > 0 ? `(${activeFilterCount} active)` : ''}`}</code></pre>
+      </div>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Theme Toggle Missing ARIA Label</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          Theme toggle button shows text but lacks proper ARIA label describing its purpose.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>mobile-nav.tsx:167-179</code></p>
+        <pre class="mt-2"><code>aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}</code></pre>
+      </div>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">External Links Missing Indicator</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          Instagram links and coach social media links open in new tabs with no visual or textual indicator.
+        </p>
+        <p class="text-sm"><strong>Files:</strong> <code>news-feed.tsx:300-305</code>, <code>coaches-section.tsx:306-314</code></p>
+        <pre class="mt-2"><code>&lt;a href="..." target="_blank" rel="noopener noreferrer"
+   title="Opens in new window"&gt;
+  Link &lt;ExternalLinkIcon className="w-3 h-3 ml-1 inline" /&gt;
+&lt;/a&gt;</code></pre>
+      </div>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Category Filter Buttons Below 44px</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          Category filter buttons use <code>px-3 py-2</code> resulting in ~36px height. Should be minimum 44px.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>filter-sidebar.tsx:219-252</code></p>
+      </div>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Product Badge Click Areas Too Small</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          Featured/Sale/Best Seller badges on product cards are clickable but have minimal padding, resulting in &lt;40px touch targets.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>shop/page.tsx:166-200</code></p>
+      </div>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Hero Video Lacks Accessible Fallback</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          Background video has no fallback image if video fails to load, and no transcript for hearing-impaired users.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>hero.tsx:28-43</code></p>
+      </div>
+
+      <div class="issue-card">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="priority-high px-2 py-1 rounded text-xs font-bold">HIGH</span>
+          <h3 class="font-semibold">Dialog Initial Focus Not Set</h3>
+        </div>
+        <p class="text-nj-text-secondary mb-2">
+          QuickView dialog doesn't set initial focus. Should focus close button or first interactive element.
+        </p>
+        <p class="text-sm"><strong>File:</strong> <code>product-quick-view.tsx:279-286</code></p>
+      </div>
+    </section>
+
+    <!-- Medium Priority Issues -->
+    <section id="medium-priority" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">5</span>
+        Medium Priority Issues
+      </h2>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="issue-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+            <h4 class="font-semibold text-sm">Skeleton Loaders Not Announced</h4>
+          </div>
+          <p class="text-sm text-nj-text-secondary">Add <code>role="status"</code> and <code>aria-label="Loading..."</code> to skeleton containers.</p>
+          <p class="text-xs text-nj-text-tertiary mt-1">Files: shop/page.tsx, featured-merch.tsx</p>
+        </div>
+
+        <div class="issue-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+            <h4 class="font-semibold text-sm">Form Labels Hidden on Desktop</h4>
+          </div>
+          <p class="text-sm text-nj-text-secondary">Search input label is sr-only. Consider making it visible on all viewports.</p>
+          <p class="text-xs text-nj-text-tertiary mt-1">File: filter-sidebar.tsx:196-209</p>
+        </div>
+
+        <div class="issue-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+            <h4 class="font-semibold text-sm">Newsletter Error State</h4>
+          </div>
+          <p class="text-sm text-nj-text-secondary">Error messages should use <code>role="alert"</code> for immediate announcement.</p>
+          <p class="text-xs text-nj-text-tertiary mt-1">File: newsletter-signup.tsx:83-90</p>
+        </div>
+
+        <div class="issue-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+            <h4 class="font-semibold text-sm">ProductCard Duplication</h4>
+          </div>
+          <p class="text-sm text-nj-text-secondary">Nearly identical ProductCard in featured-merch.tsx and shop/page.tsx. Create shared component.</p>
+          <p class="text-xs text-nj-text-tertiary mt-1">DRY principle violation</p>
+        </div>
+
+        <div class="issue-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+            <h4 class="font-semibold text-sm">Hero Gradient Underline</h4>
+          </div>
+          <p class="text-sm text-nj-text-secondary">Pink underline gradient fades to transparent - may be invisible to some users.</p>
+          <p class="text-xs text-nj-text-tertiary mt-1">File: hero.tsx:49-58</p>
+        </div>
+
+        <div class="issue-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+            <h4 class="font-semibold text-sm">Empty State Heading Hierarchy</h4>
+          </div>
+          <p class="text-sm text-nj-text-secondary">Empty states use h3 which may skip h2. Ensure proper heading order.</p>
+          <p class="text-xs text-nj-text-tertiary mt-1">File: featured-merch.tsx:153-173</p>
+        </div>
+
+        <div class="issue-card">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="priority-medium px-2 py-1 rounded text-xs font-bold">MEDIUM</span>
+            <h4 class="font-semibold text-sm">Sticky Sidebar No Visual Cue</h4>
+          </div>
+          <p class="text-sm text-nj-text-secondary">Desktop filter sidebar is sticky but no visual indicator when it becomes fixed.</p>
+          <p class="text-xs text-nj-text-tertiary mt-1">File: filter-sidebar.tsx:451</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Low Priority Issues -->
+    <section id="low-priority" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">6</span>
+        Low Priority / Polish
+      </h2>
+
+      <div class="issue-card">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Issue</th>
+              <th class="text-left py-2">Location</th>
+              <th class="text-left py-2">Fix</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add-to-bag state change not announced</td>
+              <td class="py-2">featured-merch.tsx</td>
+              <td class="py-2">Add aria-live to button wrapper</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Inconsistent button sizing (size="lg" vs className)</td>
+              <td class="py-2">Various</td>
+              <td class="py-2">Standardize on size prop</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Hero text-7xl may be too large on wide screens</td>
+              <td class="py-2">hero.tsx</td>
+              <td class="py-2">Consider max constraint</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Filter "Apply" button unclear it closes sheet</td>
+              <td class="py-2">filter-sidebar.tsx</td>
+              <td class="py-2">Change to "Apply & Close"</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">"Almost Gone!" badge uses accent instead of warning</td>
+              <td class="py-2">shop/page.tsx:202</td>
+              <td class="py-2">Change to text-warning</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Implementation Roadmap -->
+    <section id="roadmap" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="w-8 h-8 rounded-full bg-nj-primary flex items-center justify-center text-sm">7</span>
+        Implementation Roadmap
+      </h2>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Week 1: Critical Accessibility Fixes</h3>
+        <p class="text-sm text-nj-text-secondary mb-4">Priority: WCAG 2.1 AA Compliance</p>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Task</th>
+              <th class="text-left py-2">Priority</th>
+              <th class="text-left py-2">Est. Time</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add ARIA labels to quantity buttons</td>
+              <td class="py-2"><span class="priority-critical px-2 py-0.5 rounded text-xs">CRITICAL</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Increase size buttons to 48px</td>
+              <td class="py-2"><span class="priority-critical px-2 py-0.5 rounded text-xs">CRITICAL</span></td>
+              <td class="py-2">20 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Fix color swatch labels and hit areas</td>
+              <td class="py-2"><span class="priority-critical px-2 py-0.5 rounded text-xs">CRITICAL</span></td>
+              <td class="py-2">25 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add bag count to button aria-label</td>
+              <td class="py-2"><span class="priority-critical px-2 py-0.5 rounded text-xs">CRITICAL</span></td>
+              <td class="py-2">10 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Implement modal focus management</td>
+              <td class="py-2"><span class="priority-critical px-2 py-0.5 rounded text-xs">CRITICAL</span></td>
+              <td class="py-2">45 min</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-sm text-nj-text-tertiary mt-3">Total: ~2 hours</p>
+      </div>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Week 2: High Priority UX Improvements</h3>
+        <p class="text-sm text-nj-text-secondary mb-4">Priority: Screen reader support & touch targets</p>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Task</th>
+              <th class="text-left py-2">Priority</th>
+              <th class="text-left py-2">Est. Time</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add role="alert" to error messages</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">10 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Fix filter count badge accessibility</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">10 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add theme toggle aria-label</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">5 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add external link indicators</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">20 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Fix category filter button sizes</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add hero video fallback</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">20 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Fix product badge touch targets</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Set dialog initial focus</td>
+              <td class="py-2"><span class="priority-high px-2 py-0.5 rounded text-xs">HIGH</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-sm text-nj-text-tertiary mt-3">Total: ~1.5 hours</p>
+      </div>
+
+      <div class="issue-card">
+        <h3 class="font-semibold text-lg mb-4">Week 3+: Medium/Low Priority & Code Quality</h3>
+        <p class="text-sm text-nj-text-secondary mb-4">Priority: Polish & maintainability</p>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Task</th>
+              <th class="text-left py-2">Priority</th>
+              <th class="text-left py-2">Est. Time</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add loading state announcements (skeletons)</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">20 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Create shared ProductCard component</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">45 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Fix newsletter error announcements</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">10 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Fix heading hierarchy issues</td>
+              <td class="py-2"><span class="priority-medium px-2 py-0.5 rounded text-xs">MEDIUM</span></td>
+              <td class="py-2">15 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Add aria-live to add-to-bag button</td>
+              <td class="py-2"><span class="priority-low px-2 py-0.5 rounded text-xs">LOW</span></td>
+              <td class="py-2">10 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Standardize button sizing approach</td>
+              <td class="py-2"><span class="priority-low px-2 py-0.5 rounded text-xs">LOW</span></td>
+              <td class="py-2">20 min</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Low priority polish items (5 items)</td>
+              <td class="py-2"><span class="priority-low px-2 py-0.5 rounded text-xs">LOW</span></td>
+              <td class="py-2">30 min</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-sm text-nj-text-tertiary mt-3">Total: ~2.5 hours</p>
+      </div>
+    </section>
+
+    <!-- Summary -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Summary</h2>
+      <div class="issue-card">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-nj-border">
+              <th class="text-left py-2">Phase</th>
+              <th class="text-left py-2">Tasks</th>
+              <th class="text-left py-2">Est. Time</th>
+              <th class="text-left py-2">Impact</th>
+            </tr>
+          </thead>
+          <tbody class="text-nj-text-secondary">
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Week 1: Critical</td>
+              <td class="py-2">5 tasks</td>
+              <td class="py-2">~2 hours</td>
+              <td class="py-2">WCAG 2.1 AA compliance for core interactions</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Week 2: High</td>
+              <td class="py-2">8 tasks</td>
+              <td class="py-2">~1.5 hours</td>
+              <td class="py-2">Screen reader support, touch targets</td>
+            </tr>
+            <tr class="border-b border-nj-border">
+              <td class="py-2">Week 3+: Medium/Low</td>
+              <td class="py-2">12 tasks</td>
+              <td class="py-2">~2.5 hours</td>
+              <td class="py-2">Polish, DRY code, maintainability</td>
+            </tr>
+            <tr class="font-semibold">
+              <td class="py-2">Total</td>
+              <td class="py-2">25 tasks</td>
+              <td class="py-2">~6 hours</td>
+              <td class="py-2"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-nj-border py-6 mt-8">
+    <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
+      <p class="text-sm text-nj-text-tertiary">
+        Generated by Claude Code - Design Audit v1.1 (Accessibility Focus)
+      </p>
+      <a href="#toc" class="text-sm text-nj-secondary hover:underline">
+        Back to Top
+      </a>
+    </div>
+  </footer>
+</body>
+</html>
