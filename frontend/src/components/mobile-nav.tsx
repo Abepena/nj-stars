@@ -65,6 +65,13 @@ export function MobileNav() {
     await signOut({ callbackUrl: "/" })
   }
 
+  // Break up email to prevent mobile browser auto-linking
+  // Inserts zero-width non-joiner after @ to break pattern detection
+  const formatEmailForDisplay = (email: string | null | undefined) => {
+    if (!email) return null
+    return email.replace("@", "@\u200C")
+  }
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -102,8 +109,8 @@ export function MobileNav() {
                   {session.user?.name || "User"}
                 </span>
                 {/* Prevent mobile browsers from auto-linking email as mailto */}
-                <span className="text-xs text-muted-foreground select-none pointer-events-none">
-                  {session.user?.email}
+                <span className="text-xs text-muted-foreground">
+                  {formatEmailForDisplay(session.user?.email)}
                 </span>
               </div>
             </div>
