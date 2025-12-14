@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 export default function UnderConstructionPage() {
   const [mounted, setMounted] = useState(false);
@@ -129,6 +130,16 @@ export default function UnderConstructionPage() {
               style={{ width: `${progress}%` }}
             />
           </div>
+        </div>
+
+        {/* Email Capture Form */}
+        <div className="w-full max-w-md mb-8">
+          <NewsletterSignup
+            heading="Get Notified When We Launch"
+            subheading="Be the first to know about tryouts, camps, and the 2026 season"
+            source="warming-up"
+            show={true}
+          />
         </div>
 
         {/* Contact links */}

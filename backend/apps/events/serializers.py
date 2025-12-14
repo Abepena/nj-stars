@@ -20,6 +20,8 @@ class EventSerializer(serializers.ModelSerializer):
             'start_datetime',
             'end_datetime',
             'location',
+            'latitude',
+            'longitude',
             'requires_payment',
             'price',
             'max_participants',

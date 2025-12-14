@@ -102,7 +102,8 @@ class EventAdmin(admin.ModelAdmin):
             'fields': ('title', 'slug', 'description', 'event_type')
         }),
         ('Date & Location', {
-            'fields': ('start_datetime', 'end_datetime', 'location')
+            'fields': ('start_datetime', 'end_datetime', 'location', ('latitude', 'longitude')),
+            'description': 'Enter coordinates for map display. Find coordinates at maps.google.com (right-click → "What\'s here?").'
         }),
         ('Registration', {
             'fields': ('registration_open', 'registration_deadline', 'max_participants')
