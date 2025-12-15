@@ -68,9 +68,9 @@ export function MobileNav() {
 
   // Break up email to prevent mobile browser auto-linking
   // Inserts zero-width non-joiner after @ to break pattern detection
-  const formatEmailForDisplay = (email: string | null | undefined) => {
-    if (!email) return null
-    return email.replace("@", "@\u200C")
+  const formatEmailForDisplay = (text: string | null | undefined) => {
+    if (!text || !text.includes("@")) return text
+    return text.replace("@", "@\u200C")
   }
 
   return (
@@ -106,8 +106,9 @@ export function MobileNav() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
+                {/* Apply email formatting to name too in case name is set to email */}
                 <span className="text-sm font-medium text-foreground">
-                  {session.user?.name || "User"}
+                  {formatEmailForDisplay(session.user?.name) || "User"}
                 </span>
                 {/* Prevent mobile browsers from auto-linking email as mailto */}
                 <span className="text-xs text-muted-foreground">
