@@ -66,7 +66,7 @@ class IsPlayerOrGuardian(permissions.BasePermission):
 
 class IsStaffMember(permissions.BasePermission):
     """
-    Only staff members can access.
+    Only staff members or superusers can access.
 
     Use for: Check-in management, roster editing, admin views
     """
@@ -74,6 +74,10 @@ class IsStaffMember(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
+
+        # Superusers always have access
+        if request.user.is_superuser:
+            return True
 
         # Django's is_staff flag
         if request.user.is_staff:

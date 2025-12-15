@@ -13,6 +13,46 @@ import { Loader2, RefreshCw, CheckCircle, Package, Eye, EyeOff } from "lucide-re
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
+/**
+ * Extract Printify product ID from either:
+ * - Raw ID: "693b573a9164dbdf170252cd"
+ * - Full URL: "https://printify.com/app/editor/12345/693b573a9164dbdf170252cd"
+ * - Editor URL: "https://printify.com/app/products/12345/693b573a9164dbdf170252cd"
+ */
+function extractProductId(input: string): string {
+  const trimmed = input.trim()
+
+  // Check if it's a Printify URL
+  if (trimmed.includes('printify.com')) {
+    // URL patterns:
+    // /app/editor/{shop_id}/{product_id}
+    // /app/products/{shop_id}/{product_id}
+    // /app/products/{product_id}
+    const urlPatterns = [
+      /printify\.com\/app\/editor\/\d+\/([a-f0-9]+)/i,
+      /printify\.com\/app\/products\/\d+\/([a-f0-9]+)/i,
+      /printify\.com\/app\/products\/([a-f0-9]+)/i,
+    ]
+
+    for (const pattern of urlPatterns) {
+      const match = trimmed.match(pattern)
+      if (match) {
+        return match[1]
+      }
+    }
+
+    // If URL but no match, try to get the last path segment that looks like an ID
+    const segments = trimmed.split('/').filter(Boolean)
+    const lastSegment = segments[segments.length - 1]
+    if (/^[a-f0-9]{20,}$/i.test(lastSegment)) {
+      return lastSegment
+    }
+  }
+
+  // Assume it's already a raw product ID
+  return trimmed
+}
+
 interface PrintifyProduct {
   id: string
   title: string
@@ -144,9 +184,15 @@ export default function PrintifyAdminPage() {
   }
 
   const handleManualAction = async (action: "publish" | "unpublish" | "sync") => {
-    const productId = manualProductId.trim()
-    if (!productId) {
-      toast.error("Please enter a product ID")
+    const rawInput = manualProductId.trim()
+    if (!rawInput) {
+      toast.error("Please enter a product ID or Printify URL")
+      return
+    }
+
+    const productId = extractProductId(rawInput)
+    if (!productId || !/^[a-f0-9]+$/i.test(productId)) {
+      toast.error("Could not extract valid product ID. Enter a Printify URL or product ID.")
       return
     }
 
@@ -215,13 +261,13 @@ export default function PrintifyAdminPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Manual Product Action</CardTitle>
             <CardDescription>
-              Enter a Printify product ID to publish, unpublish, or sync
+              Paste a Printify product URL or ID to publish, unpublish, or sync
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
               <Input
-                placeholder="Product ID (e.g., 693b573a9164dbdf170252cd)"
+                placeholder="Paste Printify URL or product ID..."
                 value={manualProductId}
                 onChange={(e) => setManualProductId(e.target.value)}
                 className="flex-1 font-mono text-sm"

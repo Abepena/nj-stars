@@ -38,6 +38,7 @@ interface EventCardHorizontalProps {
     label: string
     className: string
     bgClassName: string
+    calendarText?: string
   }
 }
 
@@ -100,8 +101,9 @@ export function EventCardHorizontal({
           <div className="flex-1 min-w-0">
             {/* Type Badge */}
             <span className={cn(
-              "inline-block text-xs font-medium px-2 py-0.5 rounded-full text-white mb-1",
-              typeConfig.bgClassName
+              "inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1",
+              typeConfig.bgClassName,
+              typeConfig.calendarText || "text-white"
             )}>
               {typeConfig.label}
             </span>

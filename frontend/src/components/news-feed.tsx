@@ -216,13 +216,16 @@ export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: 
 
   if (wrapInSection) {
     return (
-      <section className="py-16 md:py-24 bg-background">
+      <section className="py-16 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8 md:mb-12">
-            <h2 className="font-bold tracking-tight text-3xl md:text-4xl">The Huddle</h2>
-            <p className="text-muted-foreground mt-2 md:mt-4 text-lg md:text-xl">
-              Latest news, updates, and highlights from NJ Stars
+          {/* Section Header - matching Programs & Schedule style */}
+          <div className="mb-10">
+            <p className="text-sm font-medium text-tertiary uppercase tracking-wider mb-2">
+              Stay Updated
             </p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              The Huddle
+            </h2>
           </div>
           {content}
         </div>

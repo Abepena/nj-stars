@@ -623,3 +623,5 @@ grep -r "#TODO" backend/apps/
 Search the codebase for `#TODO` to find all pending implementation items. Common patterns:
 - `#TODO-registrations` - Portal registrations page
 - `#TODO-settings` - Portal settings page
+- I like the muted grays on the dashboard UI and want to 
+keep it across the site

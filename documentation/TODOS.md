@@ -7,7 +7,7 @@
 
 ## Event Calendar Features
 - [ ] Add Google Map integration to the event calendar
-- [ ] Make calendar the default view
+- [x] Make calendar the default view ✅ (Already set as default)
 - [ ] Implement list view as horizontal bars (like under the calendar when you click a date)
   - Include event picture in the card header
   - Show location details
@@ -18,7 +18,7 @@
 - [ ] Add an email capture form to start collecting emails to reach out to upon launching the site
 
 ## Audits & Reviews
-- [ ] Design audit and fix
+- [x] Design audit and fix ✅ (Critical items fixed: portal LayoutShell, ErrorMessage CSS vars)
 - [ ] Fullstack implementation audit and fix
 - [ ] Test coverage audit master prompt creation using TESTING.md
 - [ ] Test coverage audit and fix
@@ -47,3 +47,17 @@
 ## Launch Prep
 - [ ] Create MVP comprehensive implementation plan for launch this week
 - [ ] **IMPORTANT:** Evaluate the CTA buttons in the hero that would be most appropriate (or wire the tryouts to the next tryout - dynamic on age/grade)
+
+---
+
+## V2 - Post-Launch Polish
+
+### Design System Refinements
+- [ ] **Filter Standardization**: Refactor Events and News pages to use shared FilterSidebar component
+  - Currently: Shop uses FilterSidebar, Events/News have custom CollapsibleSection implementations
+  - Goal: Unified filter UX across all filterable pages
+  - Files: `/app/events/page.tsx`, `/app/news/page.tsx`, `/components/filter-sidebar.tsx`
+- [ ] Standardize spacing scheme (py-6, py-8, py-12, py-16, py-24) across all sections
+- [ ] Consolidate icon sizing (w-4 h-4 default, w-5 h-5 medium, w-6 h-6 large)
+- [ ] Add consistent loading animations across portal pages
+- [ ] Replace hardcoded colors in billing page with semantic color variables

@@ -117,10 +117,7 @@ export function SiteHeader() {
           </Button>
 
           {/* User Avatar with Dropdown or Sign In */}
-          {status === "loading" ? (
-            // Loading skeleton for auth state
-            <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
-          ) : session ? (
+          {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

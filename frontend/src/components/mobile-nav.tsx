@@ -183,9 +183,7 @@ export function MobileNav() {
 
         {/* Auth Section - Fixed at bottom */}
         <div className="pt-4 border-t border-border mt-auto flex-shrink-0">
-          {status === "loading" ? (
-            <div className="h-10 bg-muted animate-pulse rounded-md" />
-          ) : session ? (
+          {session ? (
             <Button
               variant="ghost"
               onClick={handleSignOut}

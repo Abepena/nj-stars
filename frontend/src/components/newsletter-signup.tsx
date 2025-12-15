@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Mail, CheckCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -11,6 +13,12 @@ interface NewsletterSignupProps {
   subheading?: string;
   show?: boolean;
   source?: string;
+  /**
+   * "section" - Full section with padding and background (default, for homepage)
+   * "inline" - Just the form content, no wrapper (for embedding in other pages)
+   */
+  variant?: "section" | "inline";
+  className?: string;
 }
 
 export function NewsletterSignup({
@@ -18,6 +26,8 @@ export function NewsletterSignup({
   subheading = "Get the latest news, event updates, and exclusive content delivered to your inbox.",
   show = true,
   source = "website",
+  variant = "section",
+  className,
 }: NewsletterSignupProps) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -54,51 +64,92 @@ export function NewsletterSignup({
     }
   };
 
+  // Clear error when user starts typing
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (status === "error") {
+      setStatus("idle");
+      setErrorMessage("");
+    }
+  };
+
+  const formContent = (
+    <>
+      <h2 className={cn(
+        "font-bold mb-2",
+        variant === "section" ? "text-3xl" : "text-xl"
+      )}>
+        {heading}
+      </h2>
+      <p className={cn(
+        "text-muted-foreground",
+        variant === "section" ? "mb-8" : "mb-4 text-sm"
+      )}>
+        {subheading}
+      </p>
+
+      {status === "success" ? (
+        <div className="bg-success/10 text-success rounded-lg p-4 flex items-center justify-center gap-2">
+          <CheckCircle className="h-5 w-5" />
+          <span>Thanks for subscribing! We&apos;ll keep you updated.</span>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+          <div className="flex-1 relative">
+            <label htmlFor="newsletter-email" className="sr-only">
+              Email Address
+            </label>
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+            <Input
+              id="newsletter-email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={handleEmailChange}
+              required
+              className={cn(
+                "w-full pl-12",
+                variant === "section" ? "h-12 text-base" : "h-10"
+              )}
+              disabled={status === "loading"}
+              aria-describedby={status === "error" ? "newsletter-error" : undefined}
+              aria-invalid={status === "error"}
+            />
+            {status === "error" && (
+              <p id="newsletter-error" className="text-destructive text-sm mt-1.5 text-left">
+                {errorMessage || "Please enter a valid email address"}
+              </p>
+            )}
+          </div>
+          <Button
+            type="submit"
+            variant="cta"
+            disabled={status === "loading"}
+            className={cn(
+              "shrink-0",
+              variant === "section" ? "h-12 px-8 text-base" : "h-10 px-6"
+            )}
+          >
+            {status === "loading" ? "Subscribing..." : "Subscribe"}
+          </Button>
+        </form>
+      )}
+    </>
+  );
+
+  if (variant === "inline") {
+    return (
+      <div className={cn("text-center", className)}>
+        {formContent}
+      </div>
+    );
+  }
+
   return (
-    <section className="py-16 bg-card border-t border-border">
+    <section className={cn("py-16 bg-card border-t border-border", className)}>
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">{heading}</h2>
-          <p className="text-muted-foreground mb-8">{subheading}</p>
-
-          {status === "success" ? (
-            <div className="bg-primary/10 text-primary rounded-md p-4">
-              Thanks for subscribing! We&apos;ll keep you updated.
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <div className="flex-1">
-                <label htmlFor="newsletter-email" className="sr-only">
-                  Email Address
-                </label>
-                <Input
-                  id="newsletter-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full"
-                  disabled={status === "loading"}
-                  aria-describedby={status === "error" ? "newsletter-error" : undefined}
-                  aria-invalid={status === "error"}
-                />
-                {status === "error" && (
-                  <p id="newsletter-error" className="text-destructive text-sm mt-1">
-                    {errorMessage || "Please enter a valid email address"}
-                  </p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                variant="cta"
-                size="lg"
-                disabled={status === "loading"}
-              >
-                {status === "loading" ? "Subscribing..." : "Subscribe"}
-              </Button>
-            </form>
-          )}
+          {formContent}
         </div>
       </div>
     </section>

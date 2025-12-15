@@ -10,16 +10,22 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
     """
     API endpoint for event registrations.
 
-    - POST /api/events/registrations/ - Create a new registration
-    - GET /api/events/registrations/ - List user's registrations
-    - GET /api/events/registrations/{id}/ - Get specific registration
-    - DELETE /api/events/registrations/{id}/ - Cancel registration (if allowed)
+    - POST /api/events/registrations/ - Create a new registration (guests allowed)
+    - GET /api/events/registrations/ - List user's registrations (auth required)
+    - GET /api/events/registrations/{id}/ - Get specific registration (auth required)
+    - DELETE /api/events/registrations/{id}/ - Cancel registration (auth required)
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    def get_permissions(self):
+        """Allow guest registration for create action only"""
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         """Return only the authenticated user's registrations"""
+        if not self.request.user.is_authenticated:
+            return EventRegistration.objects.none()
         return EventRegistration.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):

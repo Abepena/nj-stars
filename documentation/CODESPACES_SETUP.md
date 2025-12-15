@@ -277,4 +277,3 @@ claude auth
 
 - [Development Commands](../CLAUDE.md#development-commands)
 - [Docker Setup](./DOCKER.md)
-- [Oracle Cloud Alternative](./ORACLE_CLOUD_DEV_SETUP.md)

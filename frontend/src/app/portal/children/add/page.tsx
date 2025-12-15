@@ -386,7 +386,7 @@ export default function AddChildPage() {
                   id="medical_notes"
                   value={formData.medical_notes}
                   onChange={(e) => handleChange("medical_notes", e.target.value)}
-                  placeholder="Allergies, medications, conditions, etc."
+                  placeholder="Medications, conditions, etc."
                   rows={3}
                 />
               </div>

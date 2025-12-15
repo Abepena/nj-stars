@@ -1,20 +1,20 @@
 interface PageHeaderProps {
   title: string
-  subtitle: string
+  subtitle?: string
 }
 
 export function PageHeader({ title, subtitle }: PageHeaderProps) {
   return (
-    <section className="bg-card border-b border-border py-12">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="max-w-2xl mx-auto md:mx-0 text-center md:text-left">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-            {title}
-          </h1>
-          <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
+    <section className="border-b border-border bg-muted/30">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="mt-1 text-muted-foreground">
             {subtitle}
           </p>
-        </div>
+        )}
       </div>
     </section>
   )

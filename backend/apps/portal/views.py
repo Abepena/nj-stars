@@ -478,6 +478,94 @@ User = get_user_model()
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+def check_email(request):
+    """
+    Check if an email is already registered.
+
+    POST /api/portal/check-email/
+    {
+        "email": "user@example.com"
+    }
+
+    Returns:
+    {
+        "exists": true/false
+    }
+    """
+    email = request.data.get('email', '').lower().strip()
+
+    if not email:
+        return Response(
+            {'error': 'Email is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    exists = User.objects.filter(email__iexact=email).exists()
+
+    return Response({'exists': exists})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsStaffMember])
+def link_registration(request):
+    """
+    Admin endpoint to link/move a registration to a user account.
+
+    POST /api/portal/link-registration/
+    {
+        "registration_id": 123,
+        "user_id": 456  // Optional - if omitted, unlinks (sets to null)
+    }
+
+    Returns the updated registration.
+    """
+    from apps.registrations.models import EventRegistration
+    from apps.registrations.serializers import EventRegistrationListSerializer
+
+    registration_id = request.data.get('registration_id')
+    user_id = request.data.get('user_id')  # Can be null to unlink
+
+    if not registration_id:
+        return Response(
+            {'error': 'registration_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        registration = EventRegistration.objects.select_related('event', 'user').get(id=registration_id)
+    except EventRegistration.DoesNotExist:
+        return Response(
+            {'error': 'Registration not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # If user_id provided, validate the user exists
+    target_user = None
+    if user_id:
+        try:
+            target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    old_user = registration.user
+    registration.user = target_user
+    registration.save()
+
+    action = "unlinked" if target_user is None else f"linked to {target_user.email}"
+
+    return Response({
+        'message': f'Registration {registration_id} {action}',
+        'registration': EventRegistrationListSerializer(registration).data,
+        'previous_user': old_user.email if old_user else None,
+        'new_user': target_user.email if target_user else None,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def social_auth(request):
     """
     Handle social authentication from NextAuth.

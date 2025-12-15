@@ -4,7 +4,7 @@ from .views import (
     UserProfileViewSet, PlayerViewSet, DuesAccountViewSet,
     SavedPaymentMethodViewSet, PromoCreditViewSet, EventCheckInViewSet,
     parent_dashboard, staff_dashboard, waiver_status, sign_waiver,
-    social_auth
+    check_email, link_registration, social_auth
 )
 
 router = DefaultRouter()
@@ -21,5 +21,7 @@ urlpatterns = [
     path('dashboard/staff/', staff_dashboard, name='staff-dashboard'),
     path('waiver/status/', waiver_status, name='waiver-status'),
     path('waiver/sign/', sign_waiver, name='waiver-sign'),
+    path('check-email/', check_email, name='check-email'),
+    path('link-registration/', link_registration, name='link-registration'),
     path('social-auth/', social_auth, name='social-auth'),
 ]

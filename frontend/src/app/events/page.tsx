@@ -1,13 +1,15 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import Image from "next/image"
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/page-header"
 import { LayoutShell } from "@/components/layout-shell"
 import { ErrorMessage } from "@/components/error-message"
 import { EventCardSkeleton } from "@/components/skeletons/event-card-skeleton"
+import { CalendarSkeleton } from "@/components/skeletons/calendar-skeleton"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
@@ -71,14 +73,15 @@ type ViewMode = "list" | "calendar"
 type SortOption = "date_asc" | "date_desc" | "name_asc" | "name_desc"
 type TimeFilter = "all" | "upcoming" | "this_week" | "this_month" | "my_events"
 
-// Event type colors for tags
-const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string; bgClassName: string }> = {
-  open_gym: { label: 'Open Gym', className: 'text-success', bgClassName: 'bg-success' },
-  tryout: { label: 'Tryout', className: 'text-info', bgClassName: 'bg-info' },
-  game: { label: 'Game', className: 'text-accent', bgClassName: 'bg-accent' },
-  practice: { label: 'Practice', className: 'text-warning', bgClassName: 'bg-warning' },
-  tournament: { label: 'Tournament', className: 'text-secondary', bgClassName: 'bg-secondary' },
-  camp: { label: 'Camp', className: 'text-tertiary', bgClassName: 'bg-tertiary' },
+// Event type colors for tags - includes calendarText for readable contrast on calendar items
+const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string; bgClassName: string; calendarText: string }> = {
+  open_gym: { label: 'Open Gym', className: 'text-success', bgClassName: 'bg-success', calendarText: 'text-white' },
+  tryout: { label: 'Tryout', className: 'text-info', bgClassName: 'bg-info', calendarText: 'text-white' },
+  game: { label: 'Game', className: 'text-accent', bgClassName: 'bg-accent', calendarText: 'text-white' },
+  practice: { label: 'Practice', className: 'text-warning', bgClassName: 'bg-warning', calendarText: 'text-gray-900' },
+  tournament: { label: 'Tournament', className: 'text-secondary', bgClassName: 'bg-secondary', calendarText: 'text-white' },
+  camp: { label: 'Camp', className: 'text-tertiary', bgClassName: 'bg-tertiary', calendarText: 'text-gray-900' },
+  skills: { label: 'Skills', className: 'text-primary', bgClassName: 'bg-primary', calendarText: 'text-white' },
 }
 
 // Category filter colors - matches category-colors.ts
@@ -108,6 +111,10 @@ const getEventTypeColor = (type: string, isActive: boolean) => {
       active: "bg-tertiary/30 text-tertiary font-medium border border-tertiary/70",
       inactive: "bg-tertiary/8 text-tertiary/70 border border-tertiary/25 hover:bg-tertiary/12",
     },
+    skills: {
+      active: "bg-primary/30 text-primary font-medium border border-primary/70",
+      inactive: "bg-primary/8 text-primary/70 border border-primary/25 hover:bg-primary/12",
+    },
   }
   const colorSet = colors[type] || {
     active: "bg-muted text-foreground font-medium border border-border",
@@ -134,6 +141,7 @@ const TIME_FILTERS: { value: TimeFilter; label: string; authRequired?: boolean }
 const EVENT_TYPES = [
   { value: "tryout", label: "Tryouts" },
   { value: "open_gym", label: "Open Gym" },
+  { value: "skills", label: "Skills" },
   { value: "tournament", label: "Tournaments" },
   { value: "camp", label: "Camps" },
   { value: "practice", label: "Practice" },
@@ -181,6 +189,7 @@ function CollapsibleSection({
 
 export default function EventsPage() {
   const { data: session, status: authStatus } = useSession()
+  const searchParams = useSearchParams()
   const [events, setEvents] = useState<Event[]>([])
   const [myEventIds, setMyEventIds] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
@@ -197,16 +206,56 @@ export default function EventsPage() {
   const [showMap, setShowMap] = useState(false)
   const [highlightedEventId, setHighlightedEventId] = useState<number | null>(null)
   const [mobileMapOpen, setMobileMapOpen] = useState(false)
+  const [highlightDate, setHighlightDate] = useState<Date | null>(null)
+  const [highlightProcessed, setHighlightProcessed] = useState(false)
 
-  // Set default filter to "My Events" for authenticated users
+  // Stable callback to clear highlight after animation completes
+  const handleHighlightComplete = useCallback(() => {
+    setHighlightDate(null)
+  }, [])
+
+  // Initialize filters from URL query parameters
+  useEffect(() => {
+    if (!searchParams) return
+    const eventType = searchParams.get('event_type')
+    if (eventType && EVENT_TYPES.some(t => t.value === eventType)) {
+      setSelectedTypes([eventType])
+      setTimeFilter("upcoming") // Show upcoming events when filtering by type
+      setInitialFilterSet(true)
+    }
+  }, [searchParams])
+
+  // Handle highlight param to focus on a specific event with animation (runs only once)
+  useEffect(() => {
+    if (!searchParams || highlightProcessed) return
+    const highlightSlug = searchParams.get('highlight')
+    if (highlightSlug && events.length > 0) {
+      const eventToHighlight = events.find(e => e.slug === highlightSlug)
+      if (eventToHighlight) {
+        const eventDate = new Date(eventToHighlight.start_datetime)
+        setHighlightedEventId(eventToHighlight.id)
+        setSelectedTypes([eventToHighlight.event_type])
+        setTimeFilter("upcoming")
+        setInitialFilterSet(true)
+        setHighlightProcessed(true) // Mark as processed to prevent re-triggering
+        // Trigger the animation by setting highlightDate
+        // The CalendarView will handle animating to this date
+        setTimeout(() => {
+          setHighlightDate(eventDate)
+        }, 300) // Small delay to let the page render first
+      }
+    }
+  }, [searchParams, events, highlightProcessed])
+
+  // Set default filter to "My Events" for authenticated users (only if no URL params)
   useEffect(() => {
     if (!initialFilterSet && authStatus !== 'loading') {
-      if (session) {
+      if (session && !searchParams?.get('event_type')) {
         setTimeFilter("my_events")
       }
       setInitialFilterSet(true)
     }
-  }, [session, authStatus, initialFilterSet])
+  }, [session, authStatus, initialFilterSet, searchParams])
 
   // Fetch events
   useEffect(() => {
@@ -378,9 +427,69 @@ export default function EventsPage() {
     setSelectedEventForRegistration(event)
   }
 
+  // Helper to get the color dot class for event types
+  const getEventTypeDotColor = (type: string) => {
+    const dotColors: Record<string, string> = {
+      open_gym: "bg-success",
+      tryout: "bg-info",
+      game: "bg-accent",
+      practice: "bg-warning",
+      tournament: "bg-secondary",
+      camp: "bg-tertiary",
+      skills: "bg-primary",
+    }
+    return dotColors[type] || "bg-muted-foreground"
+  }
+
   // Filter content for both mobile and desktop
   const FilterContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className={cn("space-y-4", isMobile && "pb-24")}>
+      {/* Event Types - Now at the top */}
+      <CollapsibleSection title="Categories" defaultOpen={true}>
+        <div className={cn(
+          "flex gap-2 pt-2",
+          isMobile ? "flex-col" : "flex-wrap lg:flex-col"
+        )}>
+          {EVENT_TYPES.map((type) => {
+            const isActive = selectedTypes.includes(type.value)
+            return (
+              <button
+                key={type.value}
+                onClick={() => toggleType(type.value)}
+                className={cn(
+                  "flex items-center justify-between py-2 text-sm transition-colors",
+                  isMobile ? "w-full" : "px-3 py-2 rounded-md min-h-[40px]",
+                  isMobile
+                    ? isActive
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                    : getEventTypeColor(type.value, isActive)
+                )}
+              >
+                <span className="flex items-center gap-3">
+                  {isMobile && (
+                    <span className={cn(
+                      "w-5 h-5 rounded border flex items-center justify-center",
+                      isActive ? "bg-foreground border-foreground" : "border-muted-foreground"
+                    )}>
+                      {isActive && <Check className="w-3 h-3 text-background" />}
+                    </span>
+                  )}
+                  {type.label}
+                </span>
+                {/* Color dot on the right */}
+                <span className={cn(
+                  "w-2.5 h-2.5 rounded-full shrink-0",
+                  getEventTypeDotColor(type.value)
+                )} />
+              </button>
+            )
+          })}
+        </div>
+      </CollapsibleSection>
+
+      <Separator />
+
       {/* Sort By */}
       <CollapsibleSection title="Sort By" defaultOpen={isMobile}>
         <div className="space-y-1 pt-2">
@@ -483,53 +592,14 @@ export default function EventsPage() {
           <Separator />
         </>
       )}
-
-      {/* Event Types */}
-      <CollapsibleSection title="Event Type" defaultOpen={true}>
-        <div className={cn(
-          "flex gap-2 pt-2",
-          isMobile ? "flex-col" : "flex-wrap lg:flex-col"
-        )}>
-          {EVENT_TYPES.map((type) => {
-            const isActive = selectedTypes.includes(type.value)
-            return (
-              <button
-                key={type.value}
-                onClick={() => toggleType(type.value)}
-                className={cn(
-                  "flex items-center justify-between py-2 text-sm transition-colors",
-                  isMobile ? "w-full" : "px-3 py-2 rounded-md min-h-[40px]",
-                  isMobile
-                    ? isActive
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground"
-                    : getEventTypeColor(type.value, isActive)
-                )}
-              >
-                <span className="flex items-center gap-3">
-                  {isMobile && (
-                    <span className={cn(
-                      "w-5 h-5 rounded border flex items-center justify-center",
-                      isActive ? "bg-foreground border-foreground" : "border-muted-foreground"
-                    )}>
-                      {isActive && <Check className="w-3 h-3 text-background" />}
-                    </span>
-                  )}
-                  {type.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </CollapsibleSection>
     </div>
   )
 
   return (
     <LayoutShell>
       <PageHeader
-        title="Events"
-        subtitle="Open gyms, tryouts, games, and tournaments for NJ Stars athletes."
+        title="The Schedule"
+        subtitle="Find your next game, tryout, or open gym session."
       />
 
       <section className="py-8">
@@ -736,11 +806,15 @@ export default function EventsPage() {
                 )}
 
                 {loading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    {[1, 2, 3, 4].map((i) => (
-                      <EventCardSkeleton key={i} />
-                    ))}
-                  </div>
+                  viewMode === "calendar" ? (
+                    <CalendarSkeleton />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      {[1, 2, 3, 4].map((i) => (
+                        <EventCardSkeleton key={i} />
+                      ))}
+                    </div>
+                  )
                 ) : viewMode === "calendar" ? (
                   <CalendarView
                     events={eventsForMonth}
@@ -748,6 +822,8 @@ export default function EventsPage() {
                     onMonthChange={setCurrentMonth}
                     onRegisterClick={handleRegisterClick}
                     myEventIds={myEventIds}
+                    highlightDate={highlightDate}
+                    onHighlightComplete={handleHighlightComplete}
                   />
                 ) : !error && filteredEvents.length === 0 ? (
                   <div className="text-center py-16">
@@ -781,7 +857,8 @@ export default function EventsPage() {
                       const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || {
                         label: event.event_type,
                         className: 'text-muted-foreground',
-                        bgClassName: 'bg-muted'
+                        bgClassName: 'bg-muted',
+                        calendarText: 'text-foreground'
                       }
                       return (
                         <EventCardHorizontal
@@ -843,15 +920,107 @@ function CalendarView({
   onMonthChange,
   onRegisterClick,
   myEventIds = [],
+  highlightDate,
+  onHighlightComplete,
 }: {
   events: Event[]
   currentMonth: Date
   onMonthChange: (date: Date) => void
   onRegisterClick: (event: Event) => void
   myEventIds?: number[]
+  highlightDate?: Date | null
+  onHighlightComplete?: () => void
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showSyncMenu, setShowSyncMenu] = useState(false)
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [pulsingDate, setPulsingDate] = useState<Date | null>(null)
+  const [pendingHighlight, setPendingHighlight] = useState<Date | null>(null)
+
+  // Handle highlight date animation sequence (only runs once when highlightDate is first set)
+  useEffect(() => {
+    if (!highlightDate || pendingHighlight) return // Skip if already animating
+
+    const highlightMonth = startOfMonth(highlightDate)
+    const current = startOfMonth(currentMonth)
+
+    // If highlight date is in a different month, we need to animate to it
+    if (!isSameMonth(highlightDate, currentMonth)) {
+      // Determine direction and start the animation sequence
+      const monthsDiff = (highlightMonth.getFullYear() - current.getFullYear()) * 12 +
+                        (highlightMonth.getMonth() - current.getMonth())
+
+      if (monthsDiff !== 0) {
+        setPendingHighlight(highlightDate)
+        // Navigate one month at a time with animation
+        const direction = monthsDiff > 0 ? 'left' : 'right'
+        setSlideDirection(direction)
+        setIsAnimating(true)
+
+        // After animation, move to next month
+        setTimeout(() => {
+          const nextMonth = monthsDiff > 0
+            ? addMonths(currentMonth, 1)
+            : subMonths(currentMonth, 1)
+          onMonthChange(nextMonth)
+          setIsAnimating(false)
+          setSlideDirection(null)
+        }, 350) // Match transition duration
+      }
+    } else {
+      // Same month - just pulse and select the date
+      setPulsingDate(highlightDate)
+      setTimeout(() => {
+        setSelectedDate(highlightDate)
+        setTimeout(() => {
+          setPulsingDate(null)
+          onHighlightComplete?.() // Clear parent's highlightDate
+        }, 600)
+      }, 200)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightDate]) // Only trigger on initial highlightDate set, callback is stable
+
+  // Continue animation if we have a pending highlight and reached a new month
+  useEffect(() => {
+    if (!pendingHighlight || isAnimating) return
+
+    if (isSameMonth(pendingHighlight, currentMonth)) {
+      // Reached the target month - pulse and select
+      setTimeout(() => {
+        setPulsingDate(pendingHighlight)
+        setTimeout(() => {
+          setSelectedDate(pendingHighlight)
+          setTimeout(() => {
+            setPulsingDate(null)
+            setPendingHighlight(null)
+            onHighlightComplete?.() // Clear parent's highlightDate
+          }, 600)
+        }, 200)
+      }, 100)
+    } else {
+      // Need to continue animating
+      const highlightMonth = startOfMonth(pendingHighlight)
+      const current = startOfMonth(currentMonth)
+      const monthsDiff = (highlightMonth.getFullYear() - current.getFullYear()) * 12 +
+                        (highlightMonth.getMonth() - current.getMonth())
+
+      const direction = monthsDiff > 0 ? 'left' : 'right'
+      setSlideDirection(direction)
+      setIsAnimating(true)
+
+      setTimeout(() => {
+        const nextMonth = monthsDiff > 0
+          ? addMonths(currentMonth, 1)
+          : subMonths(currentMonth, 1)
+        onMonthChange(nextMonth)
+        setIsAnimating(false)
+        setSlideDirection(null)
+      }, 350)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingHighlight, currentMonth, isAnimating]) // onMonthChange and onHighlightComplete are stable
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -873,14 +1042,28 @@ function CalendarView({
     }
   }
 
+  // Animated month navigation
+  const handleMonthNav = (direction: 'prev' | 'next') => {
+    if (isAnimating) return
+    setSlideDirection(direction === 'next' ? 'left' : 'right')
+    setIsAnimating(true)
+
+    setTimeout(() => {
+      onMonthChange(direction === 'next' ? addMonths(currentMonth, 1) : subMonths(currentMonth, 1))
+      setIsAnimating(false)
+      setSlideDirection(null)
+    }, 350)
+  }
+
   return (
     <div className="space-y-4">
       <div className="bg-card rounded-lg border border-border overflow-hidden">
         {/* Calendar Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <button
-            onClick={() => onMonthChange(subMonths(currentMonth, 1))}
-            className="p-2 hover:bg-muted rounded-md transition-colors"
+            onClick={() => handleMonthNav('prev')}
+            disabled={isAnimating}
+            className="p-2 hover:bg-muted rounded-md transition-colors disabled:opacity-50"
             aria-label="Previous month"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -945,8 +1128,9 @@ function CalendarView({
             </div>
           </div>
           <button
-            onClick={() => onMonthChange(addMonths(currentMonth, 1))}
-            className="p-2 hover:bg-muted rounded-md transition-colors"
+            onClick={() => handleMonthNav('next')}
+            disabled={isAnimating}
+            className="p-2 hover:bg-muted rounded-md transition-colors disabled:opacity-50"
             aria-label="Next month"
           >
             <ChevronRight className="w-5 h-5" />
@@ -963,13 +1147,20 @@ function CalendarView({
         </div>
 
         {/* Calendar grid - cleaner with dots instead of full titles */}
-        <div className="grid grid-cols-7">
+        <div
+          className={cn(
+            "grid grid-cols-7 transition-all duration-300 ease-out",
+            slideDirection === 'left' && "animate-slide-out-left",
+            slideDirection === 'right' && "animate-slide-out-right"
+          )}
+        >
           {days.map((day, i) => {
             const dayEvents = getEventsForDay(day)
             const isCurrentMonth = isSameMonth(day, currentMonth)
             const isTodayDate = isToday(day)
             const isSelected = selectedDate && isSameDay(day, selectedDate)
             const hasEvents = dayEvents.length > 0
+            const isPulsing = pulsingDate && isSameDay(day, pulsingDate)
 
             // Group events by type for color dots
             const eventTypeGroups = dayEvents.reduce((acc, event) => {
@@ -985,17 +1176,18 @@ function CalendarView({
                 onClick={() => handleDayClick(day, dayEvents)}
                 disabled={!hasEvents}
                 className={cn(
-                  "min-h-[60px] md:min-h-[80px] p-1.5 border-b border-r border-border text-left transition-colors relative",
+                  "min-h-[60px] md:min-h-[80px] p-1.5 border-b border-r border-border text-left transition-all relative",
                   !isCurrentMonth && "bg-muted/30",
                   i % 7 === 6 && "border-r-0",
                   hasEvents && "cursor-pointer hover:bg-muted/50",
                   isSelected && "bg-primary/10 ring-2 ring-primary ring-inset",
-                  !hasEvents && "cursor-default"
+                  !hasEvents && "cursor-default",
+                  isPulsing && "animate-pulse-highlight"
                 )}
               >
                 {/* Date number */}
                 <div className={cn(
-                  "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full mx-auto md:mx-0",
+                  "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full mx-auto md:mx-0 transition-all",
                   isTodayDate && "bg-primary text-primary-foreground",
                   !isCurrentMonth && "text-muted-foreground"
                 )}>
@@ -1028,13 +1220,14 @@ function CalendarView({
                     {/* Desktop: compact event preview */}
                     <div className="hidden md:block space-y-0.5">
                       {dayEvents.slice(0, 2).map((event) => {
-                        const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || { bgClassName: 'bg-muted' }
+                        const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || { bgClassName: 'bg-muted', calendarText: 'text-foreground' }
                         return (
                           <div
                             key={event.id}
                             className={cn(
-                              "text-[10px] px-1 py-0.5 rounded truncate text-white",
-                              typeConfig.bgClassName
+                              "text-[10px] px-1 py-0.5 rounded truncate font-medium",
+                              typeConfig.bgClassName,
+                              typeConfig.calendarText
                             )}
                           >
                             {format(new Date(event.start_datetime), "h:mm")} {event.title.substring(0, 12)}
@@ -1084,7 +1277,8 @@ function CalendarView({
                 const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || {
                   label: event.event_type,
                   className: 'text-muted-foreground',
-                  bgClassName: 'bg-muted'
+                  bgClassName: 'bg-muted',
+                  calendarText: 'text-foreground'
                 }
                 const startTime = format(new Date(event.start_datetime), "h:mm a")
                 const endTime = format(new Date(event.end_datetime), "h:mm a")
@@ -1103,8 +1297,9 @@ function CalendarView({
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <span className={cn(
-                              "inline-block text-xs font-medium px-2 py-0.5 rounded-full text-white mb-1",
-                              typeConfig.bgClassName
+                              "inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1",
+                              typeConfig.bgClassName,
+                              typeConfig.calendarText
                             )}>
                               {typeConfig.label}
                             </span>

@@ -9,7 +9,14 @@ class EventRegistration(models.Model):
     """Enhanced event registration with participant details"""
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='registrations')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_registrations')
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='event_registrations',
+        null=True,
+        blank=True,
+        help_text="Null for guest registrations"
+    )
 
     # Participant info (may differ from user for parent registering child)
     participant_first_name = models.CharField(max_length=100)
@@ -26,8 +33,14 @@ class EventRegistration(models.Model):
     # Medical info (optional)
     medical_notes = models.TextField(
         blank=True,
-        help_text="Allergies, conditions, medications, etc."
+        help_text="Conditions, medications, etc."
     )
+
+    # Waiver acknowledgment (stored per-registration for guests and logged-in users)
+    waiver_signed = models.BooleanField(default=False)
+    waiver_signer_name = models.CharField(max_length=200, blank=True)
+    waiver_signed_at = models.DateTimeField(null=True, blank=True)
+    waiver_version = models.CharField(max_length=20, default='2024.1')
 
     # Payment tracking
     payment_status = models.CharField(
@@ -48,11 +61,12 @@ class EventRegistration(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['event', 'user', 'participant_email']
         ordering = ['-registered_at']
         indexes = [
             models.Index(fields=['event', 'payment_status']),
         ]
+        # Note: unique_together removed to allow guest registrations
+        # Uniqueness validated in serializer based on event + email
 
     def __str__(self):
         return f"{self.participant_first_name} {self.participant_last_name} - {self.event.title}"

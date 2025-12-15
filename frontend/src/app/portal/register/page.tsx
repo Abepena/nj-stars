@@ -1,15 +1,39 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { ShootingStars } from "@/components/ui/shooting-stars"
 import { ThemeLogo } from "@/components/ui/theme-logo"
-import { Mail, Lock, Eye, EyeOff, User, Phone, CheckCircle, Users, UserCircle, ArrowLeft } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, User, Phone, CheckCircle, Users, UserCircle, ArrowLeft, Check, X, AlertCircle } from "lucide-react"
 
 type Role = "parent" | "player" | null
+
+// Format phone number as user types: (XXX) XXX-XXXX
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 10)
+  if (digits.length === 0) return ""
+  if (digits.length <= 3) return `(${digits}`
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+// Password strength calculation
+function getPasswordStrength(password: string): { score: number; label: string; color: string } {
+  let score = 0
+  if (password.length >= 8) score++
+  if (password.length >= 12) score++
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++
+  if (/\d/.test(password)) score++
+  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++
+
+  if (score <= 1) return { score, label: "Weak", color: "bg-destructive" }
+  if (score <= 2) return { score, label: "Fair", color: "bg-tertiary" }
+  if (score <= 3) return { score, label: "Good", color: "bg-secondary" }
+  return { score, label: "Strong", color: "bg-success" }
+}
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -30,11 +54,66 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [emailExists, setEmailExists] = useState(false)
+  const [checkingEmail, setCheckingEmail] = useState(false)
+  const emailCheckTimeout = useRef<NodeJS.Timeout | null>(null)
+
+  // Check if email exists (debounced)
+  const checkEmailExists = useCallback(async (email: string) => {
+    if (!email || !email.includes('@')) {
+      setEmailExists(false)
+      return
+    }
+
+    setCheckingEmail(true)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/portal/check-email/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setEmailExists(data.exists)
+      }
+    } catch {
+      // Silently fail - don't block registration
+      setEmailExists(false)
+    } finally {
+      setCheckingEmail(false)
+    }
+  }, [])
+
+  // Password strength memoization
+  const passwordStrength = useMemo(() => getPasswordStrength(formData.password), [formData.password])
+  const passwordsMatch = formData.password && formData.confirmPassword && formData.password === formData.confirmPassword
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+
+    // Auto-format phone numbers
+    if (name === "phone") {
+      setFormData((prev) => ({
+        ...prev,
+        phone: formatPhoneNumber(value),
+      }))
+      return
+    }
+
+    // Debounced email check
+    if (name === "email") {
+      setEmailExists(false) // Reset while typing
+      if (emailCheckTimeout.current) {
+        clearTimeout(emailCheckTimeout.current)
+      }
+      emailCheckTimeout.current = setTimeout(() => {
+        checkEmailExists(value)
+      }, 500) // Check 500ms after user stops typing
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }))
   }
 
@@ -79,7 +158,7 @@ export default function RegisterPage() {
           password2: formData.confirmPassword,
           first_name: formData.firstName,
           last_name: formData.lastName,
-          phone: formData.phone,
+          phone: formData.phone.replace(/\D/g, ""), // Send raw digits
           role: selectedRole,
         }),
       })
@@ -333,17 +412,51 @@ export default function RegisterPage() {
                     </div>
 
                     {/* Email Input */}
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[hsl(var(--text-tertiary))]" />
-                      <input
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
-                        placeholder="Email address"
-                      />
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors ${
+                          emailExists ? "text-tertiary" : "text-[hsl(var(--text-tertiary))]"
+                        }`} />
+                        <input
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                          className={`w-full pl-12 pr-10 py-3 bg-[hsl(var(--bg-tertiary))] border rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 transition-all text-sm ${
+                            emailExists
+                              ? "border-tertiary focus:ring-tertiary/50 focus:border-tertiary"
+                              : "border-[hsl(var(--bg-tertiary))] focus:ring-primary/50 focus:border-primary"
+                          }`}
+                          placeholder="Email address"
+                        />
+                        {checkingEmail && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <div className="h-4 w-4 border-2 border-[hsl(var(--text-tertiary))] border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                        {emailExists && !checkingEmail && (
+                          <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-tertiary" />
+                        )}
+                      </div>
+                      {/* Email exists warning */}
+                      {emailExists && (
+                        <div className="bg-tertiary/10 border border-tertiary/30 rounded-lg p-3">
+                          <p className="text-sm text-tertiary flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <span>
+                              An account with this email already exists.{" "}
+                              <Link
+                                href={`/portal/login${callbackUrl !== "/portal/dashboard" ? `?next=${encodeURIComponent(callbackUrl)}` : ""}`}
+                                className="font-semibold underline underline-offset-2 hover:text-tertiary/80 transition-colors"
+                              >
+                                Sign in
+                              </Link>{" "}
+                              to link this registration to your account.
+                            </span>
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Phone Input (Required) */}
@@ -356,52 +469,97 @@ export default function RegisterPage() {
                         onChange={handleChange}
                         required
                         className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
-                        placeholder="Phone number"
+                        placeholder="(201) 555-1234"
                       />
                     </div>
 
                     {/* Password Input */}
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[hsl(var(--text-tertiary))]" />
-                      <input
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        minLength={8}
-                        className="w-full pl-12 pr-12 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
-                        placeholder="Password (8+ characters)"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[hsl(var(--text-tertiary))] hover:text-[hsl(var(--text-secondary))] transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[hsl(var(--text-tertiary))]" />
+                        <input
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          value={formData.password}
+                          onChange={handleChange}
+                          required
+                          minLength={8}
+                          className="w-full pl-12 pr-12 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
+                          placeholder="Password (8+ characters)"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-[hsl(var(--text-tertiary))] hover:text-[hsl(var(--text-secondary))] transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      {/* Password Strength Indicator */}
+                      {formData.password && (
+                        <div className="space-y-1.5">
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((level) => (
+                              <div
+                                key={level}
+                                className={`h-1 flex-1 rounded-full transition-colors ${
+                                  level <= passwordStrength.score
+                                    ? passwordStrength.color
+                                    : "bg-[hsl(var(--bg-tertiary))]"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <p className={`text-xs ${
+                            passwordStrength.score <= 1 ? "text-destructive" :
+                            passwordStrength.score <= 2 ? "text-tertiary" :
+                            passwordStrength.score <= 3 ? "text-secondary" :
+                            "text-success"
+                          }`}>
+                            {passwordStrength.label} password
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Confirm Password */}
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[hsl(var(--text-tertiary))]" />
-                      <input
-                        name="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        required
-                        minLength={8}
-                        className="w-full pl-12 pr-12 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
-                        placeholder="Confirm password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[hsl(var(--text-tertiary))] hover:text-[hsl(var(--text-secondary))] transition-colors"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
+                    <div className="space-y-1.5">
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[hsl(var(--text-tertiary))]" />
+                        <input
+                          name="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          required
+                          minLength={8}
+                          className="w-full pl-12 pr-12 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
+                          placeholder="Confirm password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-[hsl(var(--text-tertiary))] hover:text-[hsl(var(--text-secondary))] transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      {/* Password match indicator */}
+                      {formData.confirmPassword && (
+                        <div className="flex items-center gap-1.5">
+                          {passwordsMatch ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-success" />
+                              <span className="text-xs text-success">Passwords match</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="h-3.5 w-3.5 text-destructive" />
+                              <span className="text-xs text-destructive">Passwords don't match</span>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {error && (

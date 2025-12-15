@@ -582,7 +582,7 @@ function EditProfileForm({
             <Textarea
               value={data.medical_notes || ""}
               onChange={(e) => onChange("medical_notes", e.target.value)}
-              placeholder="Allergies, medications, conditions, etc."
+              placeholder="Medications, conditions, etc."
               rows={4}
             />
           </CardContent>

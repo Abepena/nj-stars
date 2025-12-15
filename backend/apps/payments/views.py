@@ -195,9 +195,9 @@ def create_product_checkout(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def create_event_checkout(request):
-    """Create Stripe checkout session for event registration"""
+    """Create Stripe checkout session for event registration (supports guests)"""
     try:
         from apps.events.models import Event
         from apps.registrations.models import EventRegistration
@@ -210,6 +210,7 @@ def create_event_checkout(request):
 
         event_slug = request.data.get('event_slug')
         registration_id = request.data.get('registration_id')
+        participant_email = request.data.get('participant_email')  # For guest verification
         success_url = request.data.get('success_url')
         cancel_url = request.data.get('cancel_url')
 
@@ -222,20 +223,42 @@ def create_event_checkout(request):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # If registration_id provided, verify it belongs to the user and event
-        if registration_id:
-            try:
+        # Registration is required for checkout
+        if not registration_id:
+            return Response(
+                {'error': 'Registration ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify registration - different logic for authenticated vs guest
+        try:
+            if request.user.is_authenticated:
+                # Authenticated user: verify registration belongs to them
                 registration = EventRegistration.objects.get(
                     id=registration_id,
                     user=request.user,
                     event=event,
                     payment_status='pending'
                 )
-            except EventRegistration.DoesNotExist:
-                return Response(
-                    {'error': 'Registration not found or already paid'},
-                    status=status.HTTP_404_NOT_FOUND
+            else:
+                # Guest user: verify registration by ID + email match
+                if not participant_email:
+                    return Response(
+                        {'error': 'Email is required for guest checkout'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                registration = EventRegistration.objects.get(
+                    id=registration_id,
+                    user__isnull=True,  # Must be a guest registration
+                    event=event,
+                    participant_email=participant_email,
+                    payment_status='pending'
                 )
+        except EventRegistration.DoesNotExist:
+            return Response(
+                {'error': 'Registration not found or already paid'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         # Check if registration is open
         if not event.is_registration_open:
@@ -254,16 +277,22 @@ def create_event_checkout(request):
         # Build metadata
         metadata = {
             'event_id': str(event.id),
-            'user_id': str(request.user.id),
             'type': 'event_registration',
+            'registration_id': str(registration_id),
         }
-        if registration_id:
-            metadata['registration_id'] = str(registration_id)
+        if request.user.is_authenticated:
+            metadata['user_id'] = str(request.user.id)
+
+        # Determine customer email for Stripe
+        customer_email = (
+            request.user.email if request.user.is_authenticated
+            else registration.participant_email
+        )
 
         # Create Stripe checkout session
         # Note: payment_method_types is omitted to use Dashboard-configured methods
         checkout_session = stripe.checkout.Session.create(
-            customer_email=request.user.email,
+            customer_email=customer_email,
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
@@ -278,7 +307,7 @@ def create_event_checkout(request):
             mode='payment',
             success_url=success_url,
             cancel_url=cancel_url,
-            client_reference_id=f"event_{event.id}_reg_{registration_id or 'new'}",
+            client_reference_id=f"event_{event.id}_reg_{registration_id}",
             metadata=metadata
         )
 

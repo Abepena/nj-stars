@@ -19,10 +19,10 @@ export function ErrorMessage({ error, className = '' }: ErrorMessageProps) {
     : undefined
 
   return (
-    <div className={`bg-bg-secondary border border-border rounded-lg p-4 shadow-md border-l-4 border-l-accent flex flex-col gap-1 ${className}`}>
+    <div className={`bg-card border border-border rounded-lg p-4 shadow-md border-l-4 border-l-accent flex flex-col gap-1 ${className}`}>
       <div className="font-bold text-sm text-foreground">{message}</div>
       {fieldErrors && (
-        <div className="text-text-secondary text-sm">
+        <div className="text-muted-foreground text-sm">
           <ul className="list-disc space-y-1 pl-5">
             {Object.entries(fieldErrors).map(([field, errors]) => (
               <li key={field}>

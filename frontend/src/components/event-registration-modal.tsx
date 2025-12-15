@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import {
   Dialog,
@@ -14,18 +13,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, Calendar, MapPin, DollarSign, Users, ArrowRight, Check, FileText, AlertCircle } from "lucide-react"
+import { Loader2, Calendar, MapPin, DollarSign, Users, ArrowRight, Check, FileText, AlertCircle, LogIn } from "lucide-react"
+import Link from "next/link"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-
-interface WaiverStatus {
-  has_signed_waiver: boolean
-  waiver_signed_at: string | null
-  waiver_version: string
-  waiver_signer_name: string
-  current_version: string
-  needs_update: boolean
-}
 
 interface Event {
   id: number
@@ -70,12 +61,9 @@ export function EventRegistrationModal({
   onSuccess,
 }: EventRegistrationModalProps) {
   const { data: session } = useSession()
-  const router = useRouter()
   const [step, setStep] = useState<Step>("confirm")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [waiverStatus, setWaiverStatus] = useState<WaiverStatus | null>(null)
-  const [waiverLoading, setWaiverLoading] = useState(false)
   const [waiverAcknowledged, setWaiverAcknowledged] = useState(false)
   const [waiverSignerName, setWaiverSignerName] = useState("")
   const [registrationId, setRegistrationId] = useState<number | null>(null)
@@ -91,38 +79,6 @@ export function EventRegistrationModal({
     medical_notes: "",
   })
 
-  // Fetch waiver status when modal opens
-  useEffect(() => {
-    async function fetchWaiverStatus() {
-      if (!session || !open) return
-
-      setWaiverLoading(true)
-      try {
-        const accessToken = (session as any)?.accessToken
-        const response = await fetch(`${API_BASE}/api/portal/waiver/status/`, {
-          headers: {
-            Authorization: `Bearer ${accessToken || ""}`,
-          },
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          setWaiverStatus(data)
-          // Pre-fill signer name if they've signed before
-          if (data.waiver_signer_name) {
-            setWaiverSignerName(data.waiver_signer_name)
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch waiver status:", err)
-      } finally {
-        setWaiverLoading(false)
-      }
-    }
-
-    fetchWaiverStatus()
-  }, [session, open])
-
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setError(null)
@@ -130,21 +86,12 @@ export function EventRegistrationModal({
 
   // Determine next step after confirm
   const handleContinueFromConfirm = () => {
-    if (!session) {
-      router.push("/portal/login")
-      return
-    }
-
-    // If user hasn't signed waiver (or needs to update), show waiver step
-    if (!waiverStatus?.has_signed_waiver || waiverStatus?.needs_update) {
-      setStep("waiver")
-    } else {
-      setStep("details")
-    }
+    // Always show waiver step for all registrations
+    setStep("waiver")
   }
 
-  // Sign waiver
-  const handleSignWaiver = async () => {
+  // Validate waiver and continue to details
+  const handleSignWaiver = () => {
     if (!waiverSignerName.trim()) {
       setError("Please enter your name to sign the waiver")
       return
@@ -154,46 +101,9 @@ export function EventRegistrationModal({
       return
     }
 
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      const accessToken = (session as any)?.accessToken
-      const response = await fetch(`${API_BASE}/api/portal/waiver/sign/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken || ""}`,
-        },
-        body: JSON.stringify({
-          signer_name: waiverSignerName,
-          acknowledged: waiverAcknowledged,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to sign waiver")
-      }
-
-      // Update local waiver status
-      const data = await response.json()
-      setWaiverStatus({
-        ...waiverStatus!,
-        has_signed_waiver: true,
-        waiver_signed_at: data.waiver_signed_at,
-        waiver_version: data.waiver_version,
-        waiver_signer_name: data.waiver_signer_name,
-        needs_update: false,
-      })
-
-      // Continue to details
-      setStep("details")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign waiver")
-    } finally {
-      setIsSubmitting(false)
-    }
+    // Waiver is valid, continue to details
+    // The waiver data will be submitted with the registration
+    setStep("details")
   }
 
   const validateForm = (): boolean => {
@@ -209,6 +119,11 @@ export function EventRegistrationModal({
       setError("Please enter a valid age")
       return false
     }
+    // Email required for guest registration
+    if (!session && !formData.participant_email.trim()) {
+      setError("Email is required for registration")
+      return false
+    }
     if (!formData.emergency_contact_name.trim()) {
       setError("Emergency contact name is required")
       return false
@@ -222,22 +137,23 @@ export function EventRegistrationModal({
 
   const handleSubmit = async () => {
     if (!validateForm()) return
-    if (!session) {
-      router.push("/portal/login")
-      return
-    }
 
     setIsSubmitting(true)
     setError(null)
 
     try {
       const accessToken = (session as any)?.accessToken
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      }
+      // Only add auth header if logged in
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`
+      }
+
       const response = await fetch(`${API_BASE}/api/events/registrations/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken || ""}`,
-        },
+        headers,
         body: JSON.stringify({
           event_slug: event.slug,
           participant_first_name: formData.participant_first_name,
@@ -249,13 +165,19 @@ export function EventRegistrationModal({
           emergency_contact_phone: formData.emergency_contact_phone,
           emergency_contact_relationship: formData.emergency_contact_relationship || undefined,
           medical_notes: formData.medical_notes || undefined,
+          // Waiver data
+          waiver_signed: waiverAcknowledged,
+          waiver_signer_name: waiverSignerName,
         }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(
-          errorData.event_slug?.[0] ||
+          errorData.waiver_signed?.[0] ||
+            errorData.waiver_signer_name?.[0] ||
+            errorData.event_slug?.[0] ||
+            errorData.participant_email?.[0] ||
             errorData.detail ||
             errorData.error ||
             "Registration failed"
@@ -287,18 +209,30 @@ export function EventRegistrationModal({
       const accessToken = (session as any)?.accessToken
       const currentUrl = typeof window !== "undefined" ? window.location.origin : ""
 
+      // Build headers - only include auth for logged-in users
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      }
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`
+      }
+
+      // Build request body - include email for guest checkout verification
+      const requestBody: Record<string, unknown> = {
+        event_slug: event.slug,
+        registration_id: registrationId,
+        success_url: `${currentUrl}/events?payment=success&event=${event.slug}`,
+        cancel_url: `${currentUrl}/events?payment=cancelled&event=${event.slug}`,
+      }
+      // For guests, include email for verification
+      if (!session && formData.participant_email) {
+        requestBody.participant_email = formData.participant_email
+      }
+
       const response = await fetch(`${API_BASE}/api/payments/event-checkout/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken || ""}`,
-        },
-        body: JSON.stringify({
-          event_slug: event.slug,
-          registration_id: registrationId,
-          success_url: `${currentUrl}/events?payment=success&event=${event.slug}`,
-          cancel_url: `${currentUrl}/events?payment=cancelled&event=${event.slug}`,
-        }),
+        headers,
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
@@ -385,25 +319,44 @@ export function EventRegistrationModal({
               </div>
             </div>
 
+            {/* Sign in prompt for guests */}
+            {!session && (
+              <>
+                <Separator />
+                <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <LogIn className="w-4 h-4" />
+                    Have an account?
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Sign in to speed up registration with saved info, or continue as a guest.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/portal/login?callbackUrl=${encodeURIComponent(`/events?highlight=${event.slug}`)}`}>
+                        Sign In
+                      </Link>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleContinueFromConfirm}>
+                      Continue as Guest
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+
             <Separator />
 
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button onClick={handleContinueFromConfirm} disabled={waiverLoading}>
-                {waiverLoading ? (
-                  <>
-                    <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </>
-                )}
-              </Button>
+              {session && (
+                <Button onClick={handleContinueFromConfirm}>
+                  Continue
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              )}
             </div>
           </>
         )}
@@ -425,12 +378,6 @@ export function EventRegistrationModal({
                 <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {error}
-                </div>
-              )}
-
-              {waiverStatus?.needs_update && (
-                <div className="text-sm text-warning bg-warning/10 px-3 py-2 rounded-md">
-                  Our waiver has been updated. Please review and sign the new version.
                 </div>
               )}
 
@@ -464,7 +411,7 @@ export function EventRegistrationModal({
                   </li>
                 </ol>
                 <p className="text-xs text-muted-foreground mt-4">
-                  Version {waiverStatus?.current_version || "2024.1"}
+                  Version 2024.1
                 </p>
               </div>
 
@@ -604,7 +551,7 @@ export function EventRegistrationModal({
 
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
-                  Email
+                  Email {!session && "*"}
                 </label>
                 <Input
                   id="email"
@@ -612,7 +559,13 @@ export function EventRegistrationModal({
                   value={formData.participant_email}
                   onChange={(e) => handleInputChange("participant_email", e.target.value)}
                   placeholder="email@example.com"
+                  required={!session}
                 />
+                {!session && (
+                  <p className="text-xs text-muted-foreground">
+                    Required for registration confirmation
+                  </p>
+                )}
               </div>
 
               <Separator />
@@ -665,13 +618,13 @@ export function EventRegistrationModal({
 
               <div className="space-y-2">
                 <label htmlFor="medical" className="text-sm font-medium">
-                  Medical Notes / Allergies
+                  Medical Notes
                 </label>
                 <textarea
                   id="medical"
                   value={formData.medical_notes}
                   onChange={(e) => handleInputChange("medical_notes", e.target.value)}
-                  placeholder="Any medical conditions or allergies we should know about..."
+                  placeholder="Any medical conditions we should know about..."
                   rows={3}
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
