@@ -91,14 +91,14 @@ export function LaunchNotificationForm({
 
   return (
     <div className={cn("w-full max-w-md mx-auto", className)}>
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold mb-2">Get Notified When We Launch</h2>
-        <p className="text-muted-foreground text-sm">
+      <div className="text-center mb-3 md:mb-4">
+        <h2 className="text-lg md:text-xl font-bold mb-1">Get Notified When We Launch</h2>
+        <p className="text-muted-foreground text-xs md:text-sm">
           Be the first to know about tryouts, camps, and the 2026 season
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-2.5 md:space-y-3">
         {/* First Name Field */}
         <div className="space-y-2">
           <Label htmlFor="first-name" className="sr-only">
