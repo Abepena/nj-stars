@@ -345,11 +345,12 @@ function ProductCard({ product, onClick }: ProductCardProps) {
                 : 'bg-white/95 backdrop-blur-sm hover:bg-white'
             }`}
             aria-label={showSuccess ? "Added to bag" : "Add to bag"}
+            aria-live="polite"
           >
             {showSuccess ? (
-              <Check className="w-5 h-5 text-white animate-checkmark" strokeWidth={3} />
+              <Check className="w-5 h-5 text-white animate-checkmark" strokeWidth={3} aria-hidden="true" />
             ) : (
-              <ShoppingBag className="w-5 h-5 text-black" />
+              <ShoppingBag className="w-5 h-5 text-black" aria-hidden="true" />
             )}
           </button>
         </div>

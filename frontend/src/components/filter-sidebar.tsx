@@ -191,24 +191,22 @@ function FilterContent({
       {onSortChange && <Separator />}
 
       {/* Search */}
-      {!isMobile && (
-        <div>
-          <label
-            htmlFor="filter-search"
-            className={showSearchLabel ? "text-sm text-muted-foreground mb-1.5 block" : "sr-only"}
-          >
-            {showSearchLabel ? "Search Products" : searchPlaceholder}
-          </label>
-          <Input
-            id="filter-search"
-            type="text"
-            placeholder={showSearchLabel ? "e.g. Jersey, Hoodie..." : searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full"
-          />
-        </div>
-      )}
+      <div>
+        <label
+          htmlFor={isMobile ? "filter-search-mobile" : "filter-search"}
+          className={isMobile || showSearchLabel ? "text-sm text-muted-foreground mb-1.5 block" : "sr-only"}
+        >
+          {isMobile ? "Search" : showSearchLabel ? "Search Products" : searchPlaceholder}
+        </label>
+        <Input
+          id={isMobile ? "filter-search-mobile" : "filter-search"}
+          type="text"
+          placeholder={isMobile ? "Search products..." : showSearchLabel ? "e.g. Jersey, Hoodie..." : searchPlaceholder}
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="w-full"
+        />
+      </div>
 
       {/* Categories */}
       <CollapsibleSection title="Categories" defaultOpen={true}>
@@ -453,7 +451,7 @@ export function FilterSidebar({
           className
         )}
       >
-        <div className="lg:sticky lg:top-24 space-y-6">
+        <div className="lg:sticky lg:top-24 space-y-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-2 lg:scrollbar-thin">
           {/* Title */}
           {title && (
             <h2 className="text-lg font-semibold">{title}</h2>

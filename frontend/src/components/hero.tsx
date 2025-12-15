@@ -92,12 +92,12 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
           <div className="max-w-4xl">
           <h1 className="text-4xl pb-2 sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
             {/* Pink accent line - gradient matching the bottom bar */}
-            <div className="w-full h-0.5 bg-gradient-to-r from-primary to-primary/0 mb-1 max-w-[200px] md:max-w-[280px] mx-auto md:mx-0" />
+            <div className="w-full h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent mb-1 max-w-[200px] md:max-w-[280px] mx-auto md:mx-0" />
             <span className="block text-white drop-shadow-lg">{heading || defaults.heading}</span>
             <span className="relative inline-block text-3xl sm:text-4xl md:text-4xl lg:text-5xl mt-2 md:mt-3 text-white/90 drop-shadow-lg">
               {tagline || defaults.tagline}
               {/* Pink underline accent */}
-              <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-primary/0" />
+              <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent" />
             </span>
           </h1>
 
