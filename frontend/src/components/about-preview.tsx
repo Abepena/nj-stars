@@ -40,7 +40,7 @@ export function AboutPreview() {
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed text-left">
             Based in Moonachie, NJ, NJ Stars Elite is one of Bergen County&apos;s premier AAU basketball
-            programs. We develop young athletes from grades 2nd through 10th, focusing on fundamentals,
+            programs. We develop young athletes from 2nd through 10th grade, focusing on fundamentals,
             teamwork, and the decision-making skills that translate both on and off the court.
           </p>
         </div>
