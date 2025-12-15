@@ -34,7 +34,9 @@ export default function AboutPage() {
                 quickly become one of the premier AAU basketball programs serving families and players throughout
                 Bergen County. We develop young athletes from grades 2nd through 10th, focusing on mastering
                 fundamental skills while fostering the teamwork and decision-making abilities that translate
-                both on and off the court.
+                both on and off the court. <span className="text-foreground font-medium">We don&apos;t recruit
+                stars—we develop them.</span> Our mission is to grow talent from within our community, turning
+                dedicated young players into elite athletes through hard work and expert coaching.
               </p>
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mt-4">
                 What sets us apart is our commitment to creating a <span className="text-foreground font-medium">family-like atmosphere</span> where
