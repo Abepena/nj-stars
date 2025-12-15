@@ -85,7 +85,7 @@ export function MobileNav() {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm flex flex-col">
+      <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm flex flex-col" aria-modal="true">
         <SheetHeader className="border-b border-border pb-4 flex-shrink-0">
           <div className="flex justify-center" onClick={() => setOpen(false)}>
             <ThemeLogo width={160} height={50} />
@@ -168,6 +168,7 @@ export function MobileNav() {
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="flex items-center justify-between w-full py-2 text-lg font-medium hover:text-primary transition-colors"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             <span>{mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
             {mounted && (

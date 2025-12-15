@@ -19,7 +19,11 @@ export function ErrorMessage({ error, className = '' }: ErrorMessageProps) {
     : undefined
 
   return (
-    <div className={`bg-card border border-border rounded-lg p-4 shadow-md border-l-4 border-l-accent flex flex-col gap-1 ${className}`}>
+    <div
+      role="alert"
+      aria-live="assertive"
+      className={`bg-card border border-border rounded-lg p-4 shadow-md border-l-4 border-l-accent flex flex-col gap-1 ${className}`}
+    >
       <div className="font-bold text-sm text-foreground">{message}</div>
       {fieldErrors && (
         <div className="text-muted-foreground text-sm">

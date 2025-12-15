@@ -224,7 +224,7 @@ function FilterContent({
                 onClick={() => onCategoryToggle(category.value)}
                 className={cn(
                   "flex items-center justify-between py-2 text-sm transition-colors",
-                  isMobile ? "w-full" : "px-3 py-2 rounded-md min-h-[40px]",
+                  isMobile ? "w-full min-h-[44px]" : "px-4 py-3 rounded-md min-h-[44px]",
                   isMobile
                     ? isActive
                       ? "text-foreground font-medium"
@@ -385,11 +385,16 @@ export function FilterSidebar({
         </p>
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              aria-label={activeFilterCount > 0 ? `Filter (${activeFilterCount} active)` : 'Filter'}
+            >
               Filter
               <SlidersHorizontal className="w-4 h-4" />
               {activeFilterCount > 0 && (
-                <span className="ml-1 bg-foreground text-background text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="ml-1 bg-foreground text-background text-xs rounded-full w-5 h-5 flex items-center justify-center" aria-hidden="true">
                   {activeFilterCount}
                 </span>
               )}
@@ -433,7 +438,7 @@ export function FilterSidebar({
               )}
               <SheetClose asChild>
                 <Button className="flex-1">
-                  Apply
+                  Apply & Close
                 </Button>
               </SheetClose>
             </SheetFooter>

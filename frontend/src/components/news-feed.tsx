@@ -159,7 +159,8 @@ export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: 
   // Show skeleton while loading
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div role="status" aria-label="Loading news feed" className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <span className="sr-only">Loading news feed...</span>
         {[1, 2, 3, 4].map((i) => (
           <NewsCardSkeleton key={i} />
         ))}
@@ -302,8 +303,9 @@ function FeedCard({ item }: { item: FeedItem }) {
 
   if (item.type === "instagram" && item.permalink) {
     return (
-      <a href={item.permalink} target="_blank" rel="noopener noreferrer">
+      <a href={item.permalink} target="_blank" rel="noopener noreferrer" title="Opens in new window">
         {cardContent}
+        <span className="sr-only">(opens in new window)</span>
       </a>
     )
   }

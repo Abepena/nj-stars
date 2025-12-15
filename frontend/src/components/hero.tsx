@@ -72,9 +72,13 @@ export function Hero({ heading, tagline, subheading, ctaLabel, ctaUrl }: HeroPro
           muted
           loop
           playsInline
+          preload="metadata"
+          poster="/brand/images/hero-fallback.jpg"
           className="w-full h-full object-cover"
         >
           <source src={HERO_VIDEO_URL} type="video/mp4" />
+          {/* Fallback for browsers without video support */}
+          <img src="/brand/images/hero-fallback.jpg" alt="NJ Stars Elite Basketball" className="w-full h-full object-cover" />
         </video>
         {/* Dark overlay for text contrast */}
         <div className="absolute inset-0 bg-black/50" />

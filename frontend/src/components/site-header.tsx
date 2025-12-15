@@ -107,10 +107,11 @@ export function SiteHeader() {
             size="icon"
             className="group relative h-9 w-9"
             onClick={() => setIsBagOpen(true)}
+            aria-label={itemCount > 0 ? `Shopping bag with ${itemCount} item${itemCount !== 1 ? 's' : ''}` : "Shopping bag (empty)"}
           >
             <ShoppingBag className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground" aria-hidden="true">
                 {itemCount > 99 ? "99+" : itemCount}
               </span>
             )}
@@ -191,10 +192,11 @@ export function SiteHeader() {
             size="icon"
             className="group relative h-9 w-9"
             onClick={() => setIsBagOpen(true)}
+            aria-label={itemCount > 0 ? `Shopping bag with ${itemCount} item${itemCount !== 1 ? 's' : ''}` : "Shopping bag (empty)"}
           >
             <ShoppingBag className="h-5 w-5 text-foreground transition-colors group-hover:text-foreground/80" />
             {itemCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground" aria-hidden="true">
                 {itemCount > 99 ? "99+" : itemCount}
               </span>
             )}

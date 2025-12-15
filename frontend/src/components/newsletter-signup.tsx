@@ -89,8 +89,8 @@ export function NewsletterSignup({
       </p>
 
       {status === "success" ? (
-        <div className="bg-success/10 text-success rounded-lg p-4 flex items-center justify-center gap-2">
-          <CheckCircle className="h-5 w-5" />
+        <div role="status" aria-live="polite" className="bg-success/10 text-success rounded-lg p-4 flex items-center justify-center gap-2">
+          <CheckCircle className="h-5 w-5" aria-hidden="true" />
           <span>Thanks for subscribing! We&apos;ll keep you updated.</span>
         </div>
       ) : (
@@ -116,7 +116,7 @@ export function NewsletterSignup({
               aria-invalid={status === "error"}
             />
             {status === "error" && (
-              <p id="newsletter-error" className="text-destructive text-sm mt-1.5 text-left">
+              <p id="newsletter-error" role="alert" aria-live="assertive" className="text-destructive text-sm mt-1.5 text-left">
                 {errorMessage || "Please enter a valid email address"}
               </p>
             )}

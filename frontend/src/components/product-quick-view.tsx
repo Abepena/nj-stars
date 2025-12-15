@@ -277,7 +277,19 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl max-h-[90vh] md:max-h-[85vh] p-0 overflow-hidden">
+      <DialogContent
+        className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl max-h-[90vh] md:max-h-[85vh] p-0 overflow-hidden"
+        aria-modal="true"
+        onOpenAutoFocus={(e) => {
+          // Prevent default focus behavior and focus the close button for easy dismissal
+          e.preventDefault()
+          // Find the close button (Radix Dialog renders it with this structure)
+          const closeButton = (e.target as HTMLElement)?.querySelector('button:has(.sr-only)')
+          if (closeButton) {
+            (closeButton as HTMLButtonElement).focus()
+          }
+        }}
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{product.name}</DialogTitle>
           <DialogDescription>Quick view of {product.name}</DialogDescription>
@@ -373,15 +385,19 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                       <button
                         key={color.name}
                         onClick={() => setSelectedColor(color.name)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${
                           selectedColor === color.name
-                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent"
-                            : "border-border hover:border-muted-foreground"
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                            : "hover:ring-1 hover:ring-muted-foreground"
                         }`}
-                        style={{ backgroundColor: getColorHex(color.name, color.hex) }}
-                        title={color.name}
-                        aria-label={`Select ${color.name}`}
-                      />
+                        aria-label={`Select ${color.name}${color.hex ? ` (${color.hex})` : ''}`}
+                        aria-pressed={selectedColor === color.name}
+                      >
+                        <span
+                          className="w-7 h-7 rounded-full border border-border"
+                          style={{ backgroundColor: getColorHex(color.name, color.hex) }}
+                        />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -398,7 +414,8 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`min-w-[2.5rem] px-3 py-1.5 border rounded text-sm font-medium transition-colors ${
+                        aria-pressed={selectedSize === size}
+                        className={`min-w-[3rem] min-h-[3rem] px-4 py-2 border rounded text-sm font-medium transition-colors ${
                           selectedSize === size
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-input hover:bg-muted"
@@ -420,18 +437,24 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                   <div className="inline-flex items-center border rounded">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      className="w-11 h-11 flex items-center justify-center hover:bg-muted transition-colors text-lg"
                       disabled={quantity <= 1}
+                      aria-label={quantity <= 1 ? "Decrease quantity (minimum reached)" : "Decrease quantity"}
                     >
                       −
                     </button>
-                    <span className="w-12 h-10 flex items-center justify-center border-x text-center font-medium">
+                    <span
+                      className="w-12 h-11 flex items-center justify-center border-x text-center font-medium"
+                      aria-live="polite"
+                      aria-atomic="true"
+                    >
                       {quantity}
                     </span>
                     <button
                       onClick={() => setQuantity(Math.min(product.is_pod ? 10 : product.stock_quantity, quantity + 1))}
-                      className="w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      className="w-11 h-11 flex items-center justify-center hover:bg-muted transition-colors text-lg"
                       disabled={quantity >= (product.is_pod ? 10 : product.stock_quantity)}
+                      aria-label="Increase quantity"
                     >
                       +
                     </button>

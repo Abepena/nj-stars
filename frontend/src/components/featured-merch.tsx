@@ -124,7 +124,8 @@ export function FeaturedMerch({
   // Show skeleton while loading
   if (loading) {
     return (
-      <div className="space-y-8">
+      <div role="status" aria-label="Loading featured products" className="space-y-8">
+        <span className="sr-only">Loading featured products...</span>
         {/* Mobile/Tablet: Header skeleton */}
         <div className="lg:hidden text-center mb-6">
           <div className="h-8 w-48 bg-muted animate-pulse rounded mx-auto" />

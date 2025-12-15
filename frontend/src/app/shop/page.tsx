@@ -160,12 +160,12 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
           </div>
         )}
 
-        {/* Tag label - Nike style text badges */}
-        <div className="flex flex-wrap gap-1 min-h-[20px]">
+        {/* Tag label - Nike style text badges with accessible touch targets */}
+        <div className="flex flex-wrap gap-1 min-h-[20px] -ml-2">
           {product.featured && (
             <button
               onClick={(e) => handleBadgeClick(e, () => onTagClick('featured'))}
-              className={`text-xs font-medium transition-colors ${
+              className={`text-xs font-medium transition-colors px-2 py-1.5 min-h-[44px] inline-flex items-center ${
                 selectedTags.includes('featured')
                   ? 'text-primary underline'
                   : 'text-primary hover:underline'
@@ -177,7 +177,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
           {product.best_selling && (
             <button
               onClick={(e) => handleBadgeClick(e, () => onTagClick('best_seller'))}
-              className={`text-xs font-medium transition-colors ${
+              className={`text-xs font-medium transition-colors px-2 py-1.5 min-h-[44px] inline-flex items-center ${
                 selectedTags.includes('best_seller')
                   ? 'text-secondary underline'
                   : 'text-secondary hover:underline'
@@ -189,7 +189,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
           {hasDiscount && (
             <button
               onClick={(e) => handleBadgeClick(e, () => onTagClick('on_sale'))}
-              className={`text-xs font-medium transition-colors ${
+              className={`text-xs font-medium transition-colors px-2 py-1.5 min-h-[44px] inline-flex items-center ${
                 selectedTags.includes('on_sale')
                   ? 'text-accent underline'
                   : 'text-accent hover:underline'
@@ -199,7 +199,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
             </button>
           )}
           {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-            <span className="text-xs text-accent font-medium">Almost Gone!</span>
+            <span className="text-xs text-warning font-medium px-2 py-1.5 min-h-[44px] inline-flex items-center">Almost Gone!</span>
           )}
         </div>
 
@@ -493,7 +493,8 @@ export default function ShopPage() {
               )}
 
               {loading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+                <div role="status" aria-label="Loading products" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+                  <span className="sr-only">Loading products...</span>
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <ProductCardSkeleton key={i} />
                   ))}

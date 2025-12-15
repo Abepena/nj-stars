@@ -307,9 +307,11 @@ export function CoachesSection() {
                     href={currentCoach.instagram_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    title="Opens in new window"
                   >
                     <Instagram className="mr-2 h-5 w-5" />
                     @{currentCoach.instagram_handle}
+                    <span className="sr-only">(opens in new window)</span>
                   </a>
                 </Button>
               )}
