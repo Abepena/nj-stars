@@ -1634,6 +1634,8 @@ class PrintifyProductsView(PrintifyAdminView):
     List all Printify products (for admin dashboard).
 
     GET /api/payments/admin/printify/products/
+
+    Returns products with sync status showing if they exist in local DB.
     """
 
     def get(self, request):
@@ -1651,15 +1653,32 @@ class PrintifyProductsView(PrintifyAdminView):
 
         try:
             products = client.get_products()
-            # Return simplified product list
-            simplified = [{
-                'id': p.get('id'),
-                'title': p.get('title'),
-                'is_locked': p.get('is_locked', False),
-                'visible': p.get('visible', False),
-                'created_at': p.get('created_at'),
-                'images': p.get('images', [])[:1],  # Just first image
-            } for p in products]
+
+            # Get all synced Printify product IDs from local DB
+            synced_products = Product.objects.filter(
+                printify_product_id__isnull=False
+            ).values('printify_product_id', 'slug', 'name')
+            synced_map = {
+                p['printify_product_id']: {'slug': p['slug'], 'name': p['name']}
+                for p in synced_products
+            }
+
+            # Return simplified product list with sync status
+            simplified = []
+            for p in products:
+                product_id = p.get('id')
+                local_info = synced_map.get(product_id)
+                simplified.append({
+                    'id': product_id,
+                    'title': p.get('title'),
+                    'is_locked': p.get('is_locked', False),
+                    'visible': p.get('visible', False),
+                    'created_at': p.get('created_at'),
+                    'images': p.get('images', [])[:1],  # Just first image
+                    'synced': local_info is not None,
+                    'local_slug': local_info['slug'] if local_info else None,
+                    'local_name': local_info['name'] if local_info else None,
+                })
             return Response({'products': simplified})
         except PrintifyError as e:
             return Response(
@@ -1768,5 +1787,182 @@ class PrintifySyncView(PrintifyAdminView):
             logger.error(f"Error syncing Printify product: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to sync product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifySyncAndUnpublishView(PrintifyAdminView):
+    """
+    Sync a Printify product to local database AND unpublish from Printify.
+
+    This is useful for products that exist in Printify but aren't yet in our
+    local database. After syncing, the product is unpublished from Printify
+    so it won't be visible until explicitly re-published.
+
+    POST /api/payments/admin/printify/sync-and-unpublish/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        from .services.printify_sync import sync_product_variants
+
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Step 1: Fetch product from Printify
+            printify_data = client.get_product(product_id)
+
+            # Step 2: Sync to local database (same logic as PrintifySyncView)
+            import html
+            import re
+            from django.utils.text import slugify
+
+            title = printify_data.get('title', f'Product {product_id}')
+            description = printify_data.get('description', '')
+
+            if description:
+                description = re.sub(r'<[^>]+>', '', description)
+                description = html.unescape(description)
+
+            base_slug = slugify(title)
+            slug = base_slug
+            counter = 1
+            while Product.objects.filter(slug=slug).exclude(printify_product_id=product_id).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            variants = printify_data.get('variants', [])
+            base_price = 0
+            for v in variants:
+                if v.get('is_enabled') and v.get('price'):
+                    base_price = v['price'] / 100
+                    break
+
+            tags = printify_data.get('tags', [])
+            category = _detect_category_from_tags(tags)
+
+            product, created = Product.objects.update_or_create(
+                printify_product_id=product_id,
+                defaults={
+                    'name': title,
+                    'slug': slug,
+                    'description': description,
+                    'price': base_price,
+                    'fulfillment_type': 'pod',
+                    'manage_inventory': False,
+                    'is_active': True,
+                    'category': category,
+                }
+            )
+
+            sync_stats = sync_product_variants(product)
+
+            # Step 3: Unpublish from Printify
+            unpublish_success = False
+            unpublish_error = None
+            try:
+                client.unpublish_product(product_id)
+                unpublish_success = True
+            except PrintifyError as e:
+                unpublish_error = str(e)
+                logger.warning(f"Failed to unpublish product {product_id} after sync: {e}")
+
+            return Response({
+                'success': True,
+                'created': created,
+                'product': {
+                    'id': product.id,
+                    'name': product.name,
+                    'slug': product.slug,
+                    'category': product.category,
+                },
+                'sync_stats': sync_stats,
+                'unpublished': unpublish_success,
+                'unpublish_error': unpublish_error,
+            })
+
+        except PrintifyError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error in sync-and-unpublish: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to sync and unpublish product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyDeleteLocalView(PrintifyAdminView):
+    """
+    Delete a product from local database that no longer exists in Printify.
+
+    This is a cleanup endpoint for when products are deleted from Printify
+    but still exist in the local database.
+
+    DELETE /api/payments/admin/printify/delete-local/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def delete(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Find the local product
+            product = Product.objects.filter(printify_product_id=product_id).first()
+            if not product:
+                return Response(
+                    {'error': f'No local product found with Printify ID {product_id}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            product_name = product.name
+            product_slug = product.slug
+
+            # Delete the product
+            product.delete()
+
+            return Response({
+                'success': True,
+                'message': f'Product "{product_name}" deleted from local database',
+                'deleted_product': {
+                    'printify_id': product_id,
+                    'name': product_name,
+                    'slug': product_slug,
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"Error deleting local product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to delete product'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

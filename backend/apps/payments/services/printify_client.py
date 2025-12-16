@@ -305,7 +305,7 @@ class PrintifyClient:
         """
         return self._request("GET", f"/products/{product_id}.json")
 
-    def list_products(self, limit: int = 100) -> dict:
+    def list_products(self, limit: int = 50) -> dict:
         """
         List all products in the shop.
 
@@ -324,7 +324,7 @@ class PrintifyClient:
         Returns:
             List of product data
         """
-        result = self.list_products(limit=100)
+        result = self.list_products(limit=50)
         return result.get('data', [])
 
     def publish_product(self, product_id: str) -> dict:

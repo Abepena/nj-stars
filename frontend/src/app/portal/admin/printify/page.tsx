@@ -9,7 +9,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/toast"
-import { Loader2, RefreshCw, CheckCircle, Package, Eye, EyeOff } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Loader2, RefreshCw, CheckCircle, Package, Eye, EyeOff, Download, Trash2, ExternalLink, Database } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -22,12 +32,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 function extractProductId(input: string): string {
   const trimmed = input.trim()
 
-  // Check if it's a Printify URL
   if (trimmed.includes('printify.com')) {
-    // URL patterns:
-    // /app/editor/{shop_id}/{product_id}
-    // /app/products/{shop_id}/{product_id}
-    // /app/products/{product_id}
     const urlPatterns = [
       /printify\.com\/app\/editor\/\d+\/([a-f0-9]+)/i,
       /printify\.com\/app\/products\/\d+\/([a-f0-9]+)/i,
@@ -41,7 +46,6 @@ function extractProductId(input: string): string {
       }
     }
 
-    // If URL but no match, try to get the last path segment that looks like an ID
     const segments = trimmed.split('/').filter(Boolean)
     const lastSegment = segments[segments.length - 1]
     if (/^[a-f0-9]{20,}$/i.test(lastSegment)) {
@@ -49,7 +53,6 @@ function extractProductId(input: string): string {
     }
   }
 
-  // Assume it's already a raw product ID
   return trimmed
 }
 
@@ -60,6 +63,9 @@ interface PrintifyProduct {
   visible: boolean
   created_at: string
   images: { src: string }[]
+  synced: boolean
+  local_slug: string | null
+  local_name: string | null
 }
 
 export default function PrintifyAdminPage() {
@@ -72,9 +78,19 @@ export default function PrintifyAdminPage() {
   const [syncingProductId, setSyncingProductId] = useState<string | null>(null)
   const [manualProductId, setManualProductId] = useState("")
   const [isManualLoading, setIsManualLoading] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<PrintifyProduct | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  // Check if user is superuser
   const isSuperuser = (session?.user as { is_superuser?: boolean })?.is_superuser
+
+  const getAuthHeaders = (): Record<string, string> => {
+    const apiToken = (session as any)?.apiToken
+    return {
+      "Content-Type": "application/json",
+      ...(apiToken && { Authorization: `Token ${apiToken}` }),
+    }
+  }
 
   useEffect(() => {
     if (status === "loading") return
@@ -86,7 +102,6 @@ export default function PrintifyAdminPage() {
       router.push("/portal/dashboard")
       return
     }
-    // Auto-load products on mount
     fetchProducts()
   }, [session, status, isSuperuser, router])
 
@@ -94,7 +109,7 @@ export default function PrintifyAdminPage() {
     setIsLoadingProducts(true)
     try {
       const res = await fetch(`${API_BASE}/api/payments/admin/printify/products/`, {
-        credentials: "include",
+        headers: getAuthHeaders(),
       })
       const data = await res.json()
       if (res.ok) {
@@ -114,14 +129,12 @@ export default function PrintifyAdminPage() {
     try {
       const res = await fetch(`${API_BASE}/api/payments/admin/printify/publish/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: getAuthHeaders(),
         body: JSON.stringify({ product_id: productId }),
       })
       const data = await res.json()
       if (res.ok) {
         toast.success("Product published successfully!")
-        // Update local state
         setProducts(prev =>
           prev.map(p => (p.id === productId ? { ...p, visible: true } : p))
         )
@@ -140,14 +153,12 @@ export default function PrintifyAdminPage() {
     try {
       const res = await fetch(`${API_BASE}/api/payments/admin/printify/unpublish/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: getAuthHeaders(),
         body: JSON.stringify({ product_id: productId }),
       })
       const data = await res.json()
       if (res.ok) {
         toast.success("Product unpublished successfully!")
-        // Update local state
         setProducts(prev =>
           prev.map(p => (p.id === productId ? { ...p, visible: false } : p))
         )
@@ -166,13 +177,20 @@ export default function PrintifyAdminPage() {
     try {
       const res = await fetch(`${API_BASE}/api/payments/admin/printify/sync/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: getAuthHeaders(),
         body: JSON.stringify({ product_id: productId }),
       })
       const data = await res.json()
       if (res.ok) {
         toast.success(`Product "${data.product?.name}" synced to shop!`)
+        setProducts(prev =>
+          prev.map(p => (p.id === productId ? {
+            ...p,
+            synced: true,
+            local_slug: data.product?.slug,
+            local_name: data.product?.name
+          } : p))
+        )
       } else {
         toast.error(data.error || "Failed to sync product")
       }
@@ -180,6 +198,72 @@ export default function PrintifyAdminPage() {
       toast.error("Failed to connect to API")
     } finally {
       setSyncingProductId(null)
+    }
+  }
+
+  const handleSyncAndUnpublish = async (productId: string) => {
+    setSyncingProductId(productId)
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/admin/printify/sync-and-unpublish/`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: productId }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        const unpublishNote = data.unpublished
+          ? " and unpublished from Printify"
+          : " (but couldn't unpublish from Printify)"
+        toast.success(`Product "${data.product?.name}" synced to shop${unpublishNote}!`)
+        setProducts(prev =>
+          prev.map(p => (p.id === productId ? {
+            ...p,
+            synced: true,
+            visible: !data.unpublished,
+            local_slug: data.product?.slug,
+            local_name: data.product?.name
+          } : p))
+        )
+      } else {
+        toast.error(data.error || "Failed to sync product")
+      }
+    } catch {
+      toast.error("Failed to connect to API")
+    } finally {
+      setSyncingProductId(null)
+    }
+  }
+
+  const handleDeleteLocal = async () => {
+    if (!productToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/admin/printify/delete-local/`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: productToDelete.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Product "${data.deleted_product?.name}" removed from local database`)
+        setProducts(prev =>
+          prev.map(p => (p.id === productToDelete.id ? {
+            ...p,
+            synced: false,
+            local_slug: null,
+            local_name: null
+          } : p))
+        )
+      } else {
+        toast.error(data.error || "Failed to delete product")
+      }
+    } catch {
+      toast.error("Failed to connect to API")
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+      setProductToDelete(null)
     }
   }
 
@@ -206,8 +290,7 @@ export default function PrintifyAdminPage() {
 
       const res = await fetch(`${API_BASE}/api/payments/admin/printify/${endpoint}/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: getAuthHeaders(),
         body: JSON.stringify({ product_id: productId }),
       })
       const data = await res.json()
@@ -217,7 +300,7 @@ export default function PrintifyAdminPage() {
           : `Product ${action}ed successfully!`
         toast.success(message)
         setManualProductId("")
-        fetchProducts() // Refresh list
+        fetchProducts()
       } else {
         toast.error(data.error || `Failed to ${action} product`)
       }
@@ -227,6 +310,10 @@ export default function PrintifyAdminPage() {
       setIsManualLoading(false)
     }
   }
+
+  // Separate products into synced and unsynced
+  const unsyncedProducts = products.filter(p => !p.synced)
+  const syncedProducts = products.filter(p => p.synced)
 
   if (status === "loading" || !isSuperuser) {
     return (
@@ -303,27 +390,119 @@ export default function PrintifyAdminPage() {
           </CardContent>
         </Card>
 
-        {/* Products List */}
+        {/* Unsynced Products - Products in Printify but NOT in our database */}
+        {unsyncedProducts.length > 0 && (
+          <Card className="mb-8 border-amber-500/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2 text-amber-500">
+                <Download className="h-5 w-5" />
+                Not in Shop Database ({unsyncedProducts.length})
+              </CardTitle>
+              <CardDescription>
+                These products exist in Printify but haven&apos;t been synced to your shop yet.
+                Click &quot;Sync to Shop&quot; to import them (they&apos;ll be unpublished from Printify after sync).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {unsyncedProducts.map((product) => {
+                  const isLoading = loadingProductId === product.id
+                  const isSyncing = syncingProductId === product.id
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex items-center gap-4 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
+                    >
+                      {/* Thumbnail */}
+                      <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative">
+                        {product.images?.[0]?.src ? (
+                          <Image
+                            src={product.images[0].src}
+                            alt={product.title}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{product.title}</p>
+                        <p className="text-xs text-muted-foreground font-mono truncate">
+                          {product.id}
+                        </p>
+                      </div>
+
+                      {/* Printify Status Badge */}
+                      <div className="flex items-center gap-2">
+                        {product.visible ? (
+                          <span className="flex items-center gap-1.5 text-xs bg-green-500/10 text-green-500 px-2.5 py-1 rounded-full">
+                            <Eye className="h-3 w-3" />
+                            Visible in Printify
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full">
+                            <EyeOff className="h-3 w-3" />
+                            Draft
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <Button
+                        size="sm"
+                        onClick={() => handleSyncAndUnpublish(product.id)}
+                        disabled={isSyncing}
+                        className="min-w-[130px] bg-amber-600 hover:bg-amber-700"
+                      >
+                        {isSyncing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-1.5" />
+                            Sync to Shop
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Synced Products List */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              All Products ({products.length})
+              <Database className="h-5 w-5" />
+              In Shop Database ({syncedProducts.length})
             </CardTitle>
+            <CardDescription>
+              These products are synced to your local database and available in your shop.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoadingProducts && products.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : products.length === 0 ? (
+            ) : syncedProducts.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No products found in Printify</p>
+                <p>No synced products yet</p>
+                <p className="text-sm mt-1">Sync products from the list above</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {products.map((product) => {
+                {syncedProducts.map((product) => {
                   const isLoading = loadingProductId === product.id
                   const isSyncing = syncingProductId === product.id
 
@@ -352,16 +531,33 @@ export default function PrintifyAdminPage() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{product.title}</p>
-                        <p className="text-xs text-muted-foreground font-mono truncate">
-                          {product.id}
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="font-mono truncate">{product.id}</span>
+                          {product.local_slug && (
+                            <>
+                              <span>•</span>
+                              <a
+                                href={`/shop/${product.local_slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline flex items-center gap-1"
+                              >
+                                View in shop <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Status Badge */}
+                      {/* Status Badges */}
                       <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1.5 text-xs bg-blue-500/10 text-blue-500 px-2.5 py-1 rounded-full">
+                          <CheckCircle className="h-3 w-3" />
+                          Synced
+                        </span>
                         {product.visible ? (
                           <span className="flex items-center gap-1.5 text-xs bg-green-500/10 text-green-500 px-2.5 py-1 rounded-full">
-                            <CheckCircle className="h-3 w-3" />
+                            <Eye className="h-3 w-3" />
                             Published
                           </span>
                         ) : (
@@ -413,13 +609,25 @@ export default function PrintifyAdminPage() {
                           variant="ghost"
                           onClick={() => handleSync(product.id)}
                           disabled={isSyncing}
-                          title="Sync to shop database"
+                          title="Re-sync from Printify"
                         >
                           {isSyncing ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <RefreshCw className="h-4 w-4" />
                           )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setProductToDelete(product)
+                            setDeleteDialogOpen(true)
+                          }}
+                          title="Remove from local database"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -430,6 +638,36 @@ export default function PrintifyAdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from Local Database?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove <strong>&quot;{productToDelete?.title}&quot;</strong> from your shop database.
+              The product will still exist in Printify and can be synced again later.
+              <br /><br />
+              <span className="text-amber-500">Note: This does NOT delete the product from Printify.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLocal}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Remove from Database
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </LayoutShell>
   )
 }

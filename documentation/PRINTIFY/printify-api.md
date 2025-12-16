@@ -11,9 +11,10 @@ This documentation is tailored to the NJ Stars codebase with ready-to-use code s
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
-2. [Authentication & Rate Limits](#authentication--rate-limits)
-3. [Integration Architecture](#integration-architecture)
-4. [API Reference](#api-reference)
+2. [Credentials Location](#credentials-location)
+3. [Authentication & Rate Limits](#authentication--rate-limits)
+4. [Integration Architecture](#integration-architecture)
+5. [API Reference](#api-reference)
    - [Orders API](#orders-api)
    - [Products API](#products-api)
    - [Catalog/Blueprints API](#catalogblueprints-api)
@@ -21,9 +22,9 @@ This documentation is tailored to the NJ Stars codebase with ready-to-use code s
    - [Shipping API](#shipping-api)
    - [Shops API](#shops-api)
    - [Webhooks](#webhooks)
-5. [Implemented Flows](#implemented-flows)
-6. [Unimplemented Features](#unimplemented-features-with-examples)
-7. [#TODO: Interactive HTML Reference](#todo-interactive-html-reference)
+6. [Implemented Flows](#implemented-flows)
+7. [Unimplemented Features](#unimplemented-features-with-examples)
+8. [#TODO: Interactive HTML Reference](#todo-interactive-html-reference)
 
 ---
 
@@ -61,6 +62,64 @@ if client.is_configured:
 | Admin Endpoints | `/api/payments/admin/printify/*` |
 | Management Commands | `sync_printify_variants`, `import_printify_products` |
 | Frontend Admin | `frontend/src/app/portal/admin/printify/page.tsx` |
+
+---
+
+## Credentials Location
+
+Your Printify credentials are stored in environment files and loaded via Django settings:
+
+### Environment Files
+
+| File | Purpose |
+|------|---------|
+| `backend/.env` | Local development (contains actual values) |
+| `backend/.env.example` | Template for new developers |
+| Railway Dashboard → Variables | Production/staging deployments |
+
+### Settings Location
+
+**`backend/config/settings/base.py`** (lines 196-198):
+```python
+PRINTIFY_API_KEY = config('PRINTIFY_API_KEY', default='')
+PRINTIFY_SHOP_ID = config('PRINTIFY_SHOP_ID', default='')
+PRINTIFY_WEBHOOK_SECRET = config('PRINTIFY_WEBHOOK_SECRET', default='')
+```
+
+### How to Get Your Credentials
+
+1. **API Key (Personal Access Token):**
+   - Go to [Printify → Settings → Connections](https://printify.com/app/account/connections)
+   - Click "Generate" under Personal Access Tokens
+   - Copy the JWT token (starts with `eyJ0eXA...`)
+
+2. **Shop ID:**
+   - Go to [Printify → My Stores](https://printify.com/app/stores)
+   - Click on your store
+   - The Shop ID is in the URL: `printify.com/app/stores/{SHOP_ID}/...`
+   - Or use the API: `GET /v1/shops.json`
+
+3. **Webhook Secret:**
+   - Generate a secure random string: `openssl rand -hex 32`
+   - Use the same secret when registering webhooks
+
+### Verifying Configuration
+
+```bash
+# Check if Printify is configured in local Docker:
+docker exec njstars-backend python manage.py shell -c "
+from django.conf import settings
+print(f'API Key: {"✓ Set" if settings.PRINTIFY_API_KEY else "✗ Missing"}')
+print(f'Shop ID: {settings.PRINTIFY_SHOP_ID or "✗ Missing"}')
+print(f'Webhook Secret: {"✓ Set" if settings.PRINTIFY_WEBHOOK_SECRET else "✗ Missing"}')
+"
+
+# Or via Railway development:
+./scripts/railway-dev-cmd.sh "python manage.py shell -c \"
+from django.conf import settings
+print(f'Shop ID: {settings.PRINTIFY_SHOP_ID}')
+\""
+```
 
 ---
 

@@ -21,6 +21,8 @@ from .views import (
     PrintifyUnpublishView,
     PrintifyProductsView,
     PrintifySyncView,
+    PrintifySyncAndUnpublishView,
+    PrintifyDeleteLocalView,
 )
 
 router = DefaultRouter()
@@ -53,4 +55,6 @@ urlpatterns = [
     path('admin/printify/publish/', PrintifyPublishView.as_view(), name='printify-publish'),
     path('admin/printify/unpublish/', PrintifyUnpublishView.as_view(), name='printify-unpublish'),
     path('admin/printify/sync/', PrintifySyncView.as_view(), name='printify-sync'),
+    path('admin/printify/sync-and-unpublish/', PrintifySyncAndUnpublishView.as_view(), name='printify-sync-unpublish'),
+    path('admin/printify/delete-local/', PrintifyDeleteLocalView.as_view(), name='printify-delete-local'),
 ]
