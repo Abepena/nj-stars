@@ -330,16 +330,16 @@ export default function PrintifyAdminPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Printify Products</h1>
-            <p className="text-muted-foreground">Manage product publishing and sync to shop</p>
+            <h1 className="text-2xl md:text-3xl font-bold">Printify Products</h1>
+            <p className="text-muted-foreground text-sm md:text-base">Manage product publishing and sync</p>
           </div>
-          <Button variant="outline" onClick={fetchProducts} disabled={isLoadingProducts}>
+          <Button variant="outline" size="sm" onClick={fetchProducts} disabled={isLoadingProducts}>
             {isLoadingProducts ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            <span className="ml-2">Refresh</span>
+            <span className="ml-2 hidden sm:inline">Refresh</span>
           </Button>
         </div>
 
@@ -347,45 +347,50 @@ export default function PrintifyAdminPage() {
         <Card className="mb-8">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Manual Product Action</CardTitle>
-            <CardDescription>
-              Paste a Printify product URL or ID to publish, unpublish, or sync
+            <CardDescription className="text-sm">
+              Paste a Printify product URL or ID
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
-                placeholder="Paste Printify URL or product ID..."
+                placeholder="Printify URL or product ID..."
                 value={manualProductId}
                 onChange={(e) => setManualProductId(e.target.value)}
                 className="flex-1 font-mono text-sm"
                 disabled={isManualLoading}
               />
-              <Button
-                onClick={() => handleManualAction("publish")}
-                disabled={isManualLoading || !manualProductId.trim()}
-                size="sm"
-              >
-                {isManualLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-                <span className="ml-2">Publish</span>
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => handleManualAction("unpublish")}
-                disabled={isManualLoading || !manualProductId.trim()}
-                size="sm"
-              >
-                <EyeOff className="h-4 w-4" />
-                <span className="ml-2">Unpublish</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleManualAction("sync")}
-                disabled={isManualLoading || !manualProductId.trim()}
-                size="sm"
-              >
-                <RefreshCw className="h-4 w-4" />
-                <span className="ml-2">Sync</span>
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleManualAction("publish")}
+                  disabled={isManualLoading || !manualProductId.trim()}
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  {isManualLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                  <span className="ml-2">Publish</span>
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => handleManualAction("unpublish")}
+                  disabled={isManualLoading || !manualProductId.trim()}
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  <EyeOff className="h-4 w-4" />
+                  <span className="ml-2 hidden sm:inline">Unpublish</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleManualAction("sync")}
+                  disabled={isManualLoading || !manualProductId.trim()}
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span className="ml-2 hidden sm:inline">Sync</span>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -398,78 +403,80 @@ export default function PrintifyAdminPage() {
                 <Download className="h-5 w-5" />
                 Not in Shop Database ({unsyncedProducts.length})
               </CardTitle>
-              <CardDescription>
-                These products exist in Printify but haven&apos;t been synced to your shop yet.
-                Click &quot;Sync to Shop&quot; to import them (they&apos;ll be unpublished from Printify after sync).
+              <CardDescription className="text-sm">
+                Products in Printify not yet synced. Click &quot;Sync&quot; to import.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {unsyncedProducts.map((product) => {
-                  const isLoading = loadingProductId === product.id
                   const isSyncing = syncingProductId === product.id
 
                   return (
                     <div
                       key={product.id}
-                      className="flex items-center gap-4 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
+                      className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5"
                     >
-                      {/* Thumbnail */}
-                      <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative">
-                        {product.images?.[0]?.src ? (
-                          <Image
-                            src={product.images[0].src}
-                            alt={product.title}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground" />
+                      {/* Mobile: Stack layout */}
+                      <div className="flex gap-3">
+                        {/* Thumbnail */}
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative">
+                          {product.images?.[0]?.src ? (
+                            <Image
+                              src={product.images[0].src}
+                              alt={product.title}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Info + Badge */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{product.title}</p>
+                          <p className="text-xs text-muted-foreground font-mono truncate">
+                            {product.id}
+                          </p>
+                          {/* Badge inline on mobile */}
+                          <div className="mt-1.5">
+                            {product.visible ? (
+                              <span className="inline-flex items-center gap-1 text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">
+                                <Eye className="h-3 w-3" />
+                                Visible
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                                <EyeOff className="h-3 w-3" />
+                                Draft
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{product.title}</p>
-                        <p className="text-xs text-muted-foreground font-mono truncate">
-                          {product.id}
-                        </p>
+                        {/* Action Button */}
+                        <div className="flex-shrink-0">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSyncAndUnpublish(product.id)}
+                            disabled={isSyncing}
+                            className="bg-amber-600 hover:bg-amber-700 h-8 px-2 md:px-3"
+                          >
+                            {isSyncing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4" />
+                                <span className="ml-1.5 hidden sm:inline">Sync</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
-
-                      {/* Printify Status Badge */}
-                      <div className="flex items-center gap-2">
-                        {product.visible ? (
-                          <span className="flex items-center gap-1.5 text-xs bg-green-500/10 text-green-500 px-2.5 py-1 rounded-full">
-                            <Eye className="h-3 w-3" />
-                            Visible in Printify
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1.5 text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full">
-                            <EyeOff className="h-3 w-3" />
-                            Draft
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <Button
-                        size="sm"
-                        onClick={() => handleSyncAndUnpublish(product.id)}
-                        disabled={isSyncing}
-                        className="min-w-[130px] bg-amber-600 hover:bg-amber-700"
-                      >
-                        {isSyncing ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Download className="h-4 w-4 mr-1.5" />
-                            Sync to Shop
-                          </>
-                        )}
-                      </Button>
                     </div>
                   )
                 })}
@@ -485,8 +492,8 @@ export default function PrintifyAdminPage() {
               <Database className="h-5 w-5" />
               In Shop Database ({syncedProducts.length})
             </CardTitle>
-            <CardDescription>
-              These products are synced to your local database and available in your shop.
+            <CardDescription className="text-sm">
+              Products synced to your local database.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -501,7 +508,7 @@ export default function PrintifyAdminPage() {
                 <p className="text-sm mt-1">Sync products from the list above</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {syncedProducts.map((product) => {
                   const isLoading = loadingProductId === product.id
                   const isSyncing = syncingProductId === product.id
@@ -509,126 +516,212 @@ export default function PrintifyAdminPage() {
                   return (
                     <div
                       key={product.id}
-                      className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                      className="p-3 rounded-lg border bg-card"
                     >
-                      {/* Thumbnail */}
-                      <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative">
-                        {product.images?.[0]?.src ? (
-                          <Image
-                            src={product.images[0].src}
-                            alt={product.title}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{product.title}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="font-mono truncate">{product.id}</span>
-                          {product.local_slug && (
-                            <>
-                              <span>•</span>
-                              <a
-                                href={`/shop/${product.local_slug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline flex items-center gap-1"
-                              >
-                                View in shop <ExternalLink className="h-3 w-3" />
-                              </a>
-                            </>
+                      {/* Row 1: Thumbnail + Info + Actions (desktop) */}
+                      <div className="flex gap-3">
+                        {/* Thumbnail */}
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative">
+                          {product.images?.[0]?.src ? (
+                            <Image
+                              src={product.images[0].src}
+                              alt={product.title}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
                           )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{product.title}</p>
+                          <p className="text-xs text-muted-foreground font-mono truncate hidden sm:block">
+                            {product.id}
+                          </p>
+                          {product.local_slug && (
+                            <a
+                              href={`/shop/${product.local_slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-0.5"
+                            >
+                              View in shop <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Desktop Actions */}
+                        <div className="hidden md:flex items-center gap-2">
+                          {/* Status Badges */}
+                          <span className="flex items-center gap-1 text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded-full">
+                            <CheckCircle className="h-3 w-3" />
+                            Synced
+                          </span>
+                          {product.visible ? (
+                            <span className="flex items-center gap-1 text-xs bg-green-500/10 text-green-500 px-2 py-1 rounded-full">
+                              <Eye className="h-3 w-3" />
+                              Published
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
+                              <EyeOff className="h-3 w-3" />
+                              Draft
+                            </span>
+                          )}
+
+                          {/* Action Buttons */}
+                          {product.visible ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUnpublish(product.id)}
+                              disabled={isLoading}
+                              className="h-8"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <EyeOff className="h-4 w-4 mr-1" />
+                                  Unpublish
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handlePublish(product.id)}
+                              disabled={isLoading}
+                              className="h-8"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Publish
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSync(product.id)}
+                            disabled={isSyncing}
+                            title="Re-sync from Printify"
+                            className="h-8 w-8 p-0"
+                          >
+                            {isSyncing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setProductToDelete(product)
+                              setDeleteDialogOpen(true)
+                            }}
+                            title="Remove from local database"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
 
-                      {/* Status Badges */}
-                      <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1.5 text-xs bg-blue-500/10 text-blue-500 px-2.5 py-1 rounded-full">
-                          <CheckCircle className="h-3 w-3" />
-                          Synced
-                        </span>
-                        {product.visible ? (
-                          <span className="flex items-center gap-1.5 text-xs bg-green-500/10 text-green-500 px-2.5 py-1 rounded-full">
-                            <Eye className="h-3 w-3" />
-                            Published
+                      {/* Row 2: Mobile badges + actions */}
+                      <div className="md:hidden mt-3 pt-3 border-t border-border">
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          <span className="inline-flex items-center gap-1 text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full">
+                            <CheckCircle className="h-3 w-3" />
+                            Synced
                           </span>
-                        ) : (
-                          <span className="flex items-center gap-1.5 text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full">
-                            <EyeOff className="h-3 w-3" />
-                            Draft
-                          </span>
-                        )}
-                      </div>
+                          {product.visible ? (
+                            <span className="inline-flex items-center gap-1 text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">
+                              <Eye className="h-3 w-3" />
+                              Published
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                              <EyeOff className="h-3 w-3" />
+                              Draft
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Actions */}
-                      <div className="flex gap-2">
-                        {product.visible ? (
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          {product.visible ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUnpublish(product.id)}
+                              disabled={isLoading}
+                              className="flex-1 h-9"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <EyeOff className="h-4 w-4 mr-1.5" />
+                                  Unpublish
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handlePublish(product.id)}
+                              disabled={isLoading}
+                              className="flex-1 h-9"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Eye className="h-4 w-4 mr-1.5" />
+                                  Publish
+                                </>
+                              )}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleUnpublish(product.id)}
-                            disabled={isLoading}
-                            className="min-w-[100px]"
+                            onClick={() => handleSync(product.id)}
+                            disabled={isSyncing}
+                            title="Re-sync"
+                            className="h-9 w-9 p-0"
                           >
-                            {isLoading ? (
+                            {isSyncing ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <>
-                                <EyeOff className="h-4 w-4 mr-1.5" />
-                                Unpublish
-                              </>
+                              <RefreshCw className="h-4 w-4" />
                             )}
                           </Button>
-                        ) : (
                           <Button
                             size="sm"
-                            onClick={() => handlePublish(product.id)}
-                            disabled={isLoading}
-                            className="min-w-[100px]"
+                            variant="outline"
+                            onClick={() => {
+                              setProductToDelete(product)
+                              setDeleteDialogOpen(true)
+                            }}
+                            title="Delete"
+                            className="h-9 w-9 p-0 text-destructive border-destructive/30 hover:bg-destructive/10"
                           >
-                            {isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Eye className="h-4 w-4 mr-1.5" />
-                                Publish
-                              </>
-                            )}
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleSync(product.id)}
-                          disabled={isSyncing}
-                          title="Re-sync from Printify"
-                        >
-                          {isSyncing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setProductToDelete(product)
-                            setDeleteDialogOpen(true)
-                          }}
-                          title="Remove from local database"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   )
@@ -641,7 +734,7 @@ export default function PrintifyAdminPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Remove from Local Database?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -651,19 +744,19 @@ export default function PrintifyAdminPage() {
               <span className="text-amber-500">Note: This does NOT delete the product from Printify.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel disabled={isDeleting} className="w-full sm:w-auto">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteLocal}
               disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
+              className="w-full sm:w-auto bg-destructive hover:bg-destructive/90"
             >
               {isDeleting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Trash2 className="h-4 w-4 mr-2" />
               )}
-              Remove from Database
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
