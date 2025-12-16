@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Loader2, RefreshCw, CheckCircle, Package, Eye, EyeOff, Download, Trash2, ExternalLink, Database } from "lucide-react"
+import { Loader2, RefreshCw, CheckCircle, Package, Eye, EyeOff, Download, Trash2, ExternalLink, Database, Lock } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -573,6 +573,12 @@ export default function PrintifyAdminPage() {
                               Draft
                             </span>
                           )}
+                          {product.is_locked && (
+                            <span className="flex items-center gap-1 text-xs bg-amber-500/10 text-amber-500 px-2 py-1 rounded-full" title="Product has active orders - cannot unpublish">
+                              <Lock className="h-3 w-3" />
+                              Locked
+                            </span>
+                          )}
 
                           {/* Action Buttons */}
                           {product.visible ? (
@@ -580,8 +586,9 @@ export default function PrintifyAdminPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleUnpublish(product.id)}
-                              disabled={isLoading}
+                              disabled={isLoading || product.is_locked}
                               className="h-8"
+                              title={product.is_locked ? "Cannot unpublish: product has active orders" : "Unpublish from Printify"}
                             >
                               {isLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -657,6 +664,12 @@ export default function PrintifyAdminPage() {
                               Draft
                             </span>
                           )}
+                          {product.is_locked && (
+                            <span className="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full">
+                              <Lock className="h-3 w-3" />
+                              Locked
+                            </span>
+                          )}
                         </div>
 
                         {/* Action Buttons */}
@@ -666,7 +679,7 @@ export default function PrintifyAdminPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleUnpublish(product.id)}
-                              disabled={isLoading}
+                              disabled={isLoading || product.is_locked}
                               className="flex-1 h-9"
                             >
                               {isLoading ? (
