@@ -171,6 +171,104 @@ export interface Order {
   updated_at: string
 }
 
+// Portal Types
+export interface PlayerSummary {
+  id: number
+  first_name: string
+  last_name: string
+  age: number
+  team_name: string | null
+  primary_photo_url: string | null
+  is_active: boolean
+}
+
+export interface UpcomingEvent {
+  player_name: string
+  event_title: string
+  event_date: string
+  registration_id: number
+}
+
+export interface ActiveCheckIn {
+  player_name: string
+  event_title: string
+  checked_in_at: string
+}
+
+export interface RecentOrder {
+  id: number
+  total: string
+  status: string
+  created_at: string
+}
+
+export interface ParentDashboard {
+  profile: {
+    id: number
+    email: string
+    full_name: string
+    role: string
+    auto_pay_enabled: boolean
+    profile_completeness: number
+  }
+  children: PlayerSummary[]
+  total_balance: string
+  upcoming_events: UpcomingEvent[]
+  recent_orders: RecentOrder[]
+  promo_credit_total: string
+  active_check_ins: ActiveCheckIn[]
+}
+
+export interface AdminStats {
+  total_players: number
+  todays_events: number
+  pending_payments: number
+  check_ins_today: number
+}
+
+export interface PendingCheckIn {
+  id: number
+  participant_name: string
+  event_title: string
+  event_date: string
+}
+
+export interface RecentRegistration {
+  id: number
+  participant_first_name: string
+  participant_last_name: string
+  event_title: string
+  registered_at: string
+}
+
+export interface StaffDashboard extends ParentDashboard {
+  admin_stats: AdminStats
+  pending_check_ins: PendingCheckIn[]
+  recent_registrations: RecentRegistration[]
+}
+
+export interface UserProfile {
+  id: number
+  user: {
+    id: number
+    email: string
+    full_name: string
+  }
+  role: string
+  phone: string | null
+  address_line1: string | null
+  address_line2: string | null
+  city: string | null
+  state: string
+  zip_code: string | null
+  waiver_signed_at: string | null
+  waiver_version: string | null
+  auto_pay_enabled: boolean
+  notification_email: boolean
+  notification_sms: boolean
+  profile_completeness: number
+}
+
 export interface LoginCredentials {
   email: string
   password: string
@@ -436,6 +534,53 @@ class APIClient {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  // ==================== Portal ====================
+
+  /**
+   * Get parent dashboard data
+   */
+  async getDashboard(): Promise<ParentDashboard> {
+    return this.request<ParentDashboard>('/api/portal/dashboard/')
+  }
+
+  /**
+   * Get staff dashboard data (includes admin stats)
+   */
+  async getStaffDashboard(): Promise<StaffDashboard> {
+    return this.request<StaffDashboard>('/api/portal/dashboard/staff/')
+  }
+
+  /**
+   * Get user profile
+   */
+  async getProfile(): Promise<UserProfile> {
+    return this.request<UserProfile>('/api/portal/profile/')
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
+    return this.request<UserProfile>('/api/portal/profile/', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  /**
+   * Get user's children/players
+   */
+  async getPlayers(): Promise<{ results: PlayerSummary[] }> {
+    return this.request<{ results: PlayerSummary[] }>('/api/portal/players/')
+  }
+
+  /**
+   * Get user's orders
+   */
+  async getOrders(): Promise<Order[]> {
+    return this.request<Order[]>('/api/payments/orders/')
   }
 }
 

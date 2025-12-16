@@ -123,7 +123,7 @@ export function FeaturedMerch({
 
   // Show skeleton while loading
   if (loading) {
-    return (
+    const skeletonContent = (
       <div role="status" aria-label="Loading featured products" className="space-y-8">
         <span className="sr-only">Loading featured products...</span>
         {/* Mobile/Tablet: Header skeleton */}
@@ -137,14 +137,33 @@ export function FeaturedMerch({
           <div className="hidden lg:flex lg:col-span-2 flex-col justify-center p-6 lg:p-8">
             <div className="h-10 w-56 bg-muted animate-pulse rounded" />
             <div className="h-5 w-72 bg-muted animate-pulse rounded mt-2" />
-            <div className="h-12 w-32 bg-muted animate-pulse rounded mt-5" />
+            {showSeeMore && <div className="h-12 w-32 bg-muted animate-pulse rounded mt-5" />}
           </div>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3, 4, 5, 6].slice(0, limit).map((i) => (
             <ProductCardSkeleton key={i} />
           ))}
         </div>
+
+        {/* Mobile CTA skeleton */}
+        {showSeeMore && (
+          <div className="flex justify-center lg:hidden">
+            <div className="h-12 w-32 bg-muted animate-pulse rounded" />
+          </div>
+        )}
       </div>
     )
+
+    if (wrapInSection) {
+      return (
+        <section className="py-16 md:py-24 bg-muted/30">
+          <div className="container mx-auto px-4">
+            {skeletonContent}
+          </div>
+        </section>
+      )
+    }
+
+    return skeletonContent
   }
 
   // Show "coming soon" message if no data - but also hide if wrapInSection

@@ -1,30 +1,30 @@
-import Link from "next/link"
 import { Users, Dumbbell, Trophy, Target } from "lucide-react"
+import { IconCard } from "@/components/ui/icon-card"
 
 const programs = [
   {
     icon: Users,
     title: "Team Training",
     description: "Structured practices focused on team play, offensive and defensive systems, and game-speed situations.",
-    href: "/events?event_type=practice+tryouts",
+    href: "/events?event_type=practice+tryouts&view=list",
   },
   {
     icon: Target,
     title: "Skills Development",
     description: "Individual skill sessions covering ball handling, shooting mechanics, footwork, and basketball IQ.",
-    href: "/events?event_type=open_gym",
+    href: "/events?event_type=open_gym&view=list",
   },
   {
     icon: Trophy,
     title: "Competitive Play",
     description: "Local and regional AAU tournaments throughout the season to test skills against top competition.",
-    href: "/events?event_type=tournament+games",
+    href: "/events?event_type=tournament+games&view=list",
   },
   {
     icon: Dumbbell,
     title: "Camps & Conditioning",
     description: "Physical conditioning and skills camps offered during school breaks and the off-season.",
-    href: "/events?event_type=camp",
+    href: "/events?event_type=camp&view=list",
   },
 ]
 
@@ -45,21 +45,14 @@ export function ProgramsSection() {
         {/* Programs Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {programs.map((program) => (
-            <Link
+            <IconCard
               key={program.title}
+              icon={program.icon}
+              title={program.title}
+              description={program.description}
               href={program.href}
-              className="group bg-card border border-border rounded-xl p-6 text-center hover:border-secondary/50 transition-all"
-            >
-              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:bg-secondary/10 transition-colors">
-                <program.icon className="w-6 h-6 text-muted-foreground group-hover:text-secondary transition-colors" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 group-hover:text-secondary transition-colors">
-                {program.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {program.description}
-              </p>
-            </Link>
+              accentColor="secondary"
+            />
           ))}
         </div>
       </div>

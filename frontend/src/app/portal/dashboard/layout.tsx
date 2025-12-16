@@ -19,7 +19,9 @@ import {
   Package,
   Menu,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Crown,
+  LayoutTemplate
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -43,14 +45,20 @@ const staffNavItems = [
   { href: "/portal/admin/roster", label: "Roster", icon: Users },
 ]
 
+const superuserNavItems = [
+  { href: "/portal/examples", label: "Examples", icon: LayoutTemplate },
+]
+
 export default function PortalLayout({ children }: PortalLayoutProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
-  // Check if user is staff
-  const isStaff = session?.user?.role === "staff" || (session?.user as any)?.isAdmin || false
+  // Check user roles
+  const userRole = session?.user?.role || (session?.user as any)?.role || ""
+  const isStaff = userRole === "staff" || (session?.user as any)?.isAdmin || false
+  const isSuperuser = userRole === "superuser" || (session?.user as any)?.isSuperuser || false
 
   if (status === "loading") {
     return <PortalLoadingSkeleton />
@@ -121,6 +129,20 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
               </>
             )}
 
+            {isSuperuser && (
+              <>
+                <div className="my-4 border-t pt-4">
+                  <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    <Crown className="h-3 w-3 inline mr-1" />
+                    Superuser
+                  </p>
+                </div>
+                {superuserNavItems.map((item) => (
+                  <NavLink key={item.href} item={item} />
+                ))}
+              </>
+            )}
+
             <div className="pt-4 border-t mt-4">
               <Button
                 variant="ghost"
@@ -177,6 +199,20 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
                     </p>
                   </div>
                   {staffNavItems.map((item) => (
+                    <NavLink key={item.href} item={item} />
+                  ))}
+                </>
+              )}
+
+              {isSuperuser && (
+                <>
+                  <div className="my-4 pt-4 border-t">
+                    <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      <Crown className="h-3 w-3 inline mr-1" />
+                      Superuser
+                    </p>
+                  </div>
+                  {superuserNavItems.map((item) => (
                     <NavLink key={item.href} item={item} />
                   ))}
                 </>

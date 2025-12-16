@@ -1,25 +1,20 @@
 "use client"
 
 /**
- * Parent Dashboard Example
+ * Parent Dashboard
  *
- * #TODO: Fetch real dashboard data from /api/portal/dashboard/
- * #TODO: Fetch children list from /api/portal/players/
- * #TODO: Fetch upcoming events from /api/portal/registrations/
- * #TODO: Fetch dues balance from /api/portal/dues/
- * #TODO: Implement add child flow (/portal/children/add)
- * #TODO: Implement payment methods management (/portal/billing/payment-methods)
- * #TODO: Implement orders history (/portal/orders)
- * #TODO: Implement profile completion flow
- * #TODO: Fetch and display promo credits from /api/portal/credits/
- * #TODO: Real-time check-in status updates via WebSocket or polling
+ * Fetches real data from /api/portal/dashboard/ with fallback to mock data.
+ * Authentication is handled by NextAuth session cookies.
  */
 
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Users,
   Calendar,
@@ -30,12 +25,22 @@ import {
   CheckCircle,
   ChevronRight,
   Plus,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react"
+import type {
+  ParentDashboard,
+  PlayerSummary,
+  UpcomingEvent,
+  ActiveCheckIn,
+  RecentOrder
+} from "@/lib/api-client"
 
-// ==================== Mock Data ====================
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-const mockParentData = {
+// ==================== Mock Data (Fallback) ====================
+
+const mockParentData: ParentDashboard = {
   profile: {
     id: 1,
     email: "sarah.johnson@email.com",
@@ -83,21 +88,76 @@ const mockParentData = {
 // ==================== Main Component ====================
 
 export default function ParentExamplePage() {
-  const dashboard = mockParentData
+  const { data: session } = useSession()
+  const [dashboard, setDashboard] = useState<ParentDashboard | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [usingMockData, setUsingMockData] = useState(false)
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        setLoading(true)
+
+        const response = await fetch(`${API_BASE}/api/portal/dashboard/`, {
+          credentials: 'include', // Include cookies for session auth
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setDashboard(data)
+          setUsingMockData(false)
+        } else {
+          // API returned error, use mock data
+          console.warn('Dashboard API returned error, using mock data:', response.status)
+          setDashboard(mockParentData)
+          setUsingMockData(true)
+        }
+      } catch (error) {
+        // Network error or CORS issue, use mock data
+        console.warn('Failed to fetch dashboard, using mock data:', error)
+        setDashboard(mockParentData)
+        setUsingMockData(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboard()
+  }, [])
+
+  if (loading) {
+    return <DashboardSkeleton />
+  }
+
+  if (!dashboard) {
+    return null
+  }
+
   const balance = parseFloat(dashboard.total_balance)
   const promoCredits = parseFloat(dashboard.promo_credit_total)
+  const firstName = dashboard.profile.full_name?.split(' ')[0] || 'there'
 
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Role Badge */}
-      <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
-        Parent View — Sarah Johnson
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
+          Parent View — {dashboard.profile.full_name || dashboard.profile.email}
+        </Badge>
+        {usingMockData && (
+          <Badge variant="outline" className="border-dashed border-amber-500/50 text-amber-500 text-[10px]">
+            Demo Data
+          </Badge>
+        )}
+      </div>
 
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">
-          Welcome back, Sarah!
+          Welcome back, {firstName}!
         </h1>
         <p className="text-muted-foreground mt-1">
           Here's what's happening with your family
@@ -105,24 +165,28 @@ export default function ParentExamplePage() {
       </div>
 
       {/* Profile Completion Nudge */}
-      <Card className="border border-dashed border-border bg-muted/40">
-        <CardContent className="flex items-center justify-between py-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-background border border-border flex items-center justify-center">
-              <AlertCircle className="h-5 w-5 text-muted-foreground" />
+      {dashboard.profile.profile_completeness < 100 && (
+        <Card className="border border-dashed border-border bg-muted/40">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-background border border-border flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium">Complete your profile</p>
+                <p className="text-sm text-muted-foreground">
+                  {dashboard.profile.profile_completeness}% complete - fill in details to speed up registrations
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium">Complete your profile</p>
-              <p className="text-sm text-muted-foreground">
-                {dashboard.profile.profile_completeness}% complete - fill in details to speed up registrations
-              </p>
-            </div>
-          </div>
-          <Button variant="default" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/85">
-            Complete
-          </Button>
-        </CardContent>
-      </Card>
+            <Link href="/portal/profile">
+              <Button variant="default" size="sm" className="bg-primary text-primary-foreground hover:bg-primary/85">
+                Complete
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -178,39 +242,43 @@ export default function ParentExamplePage() {
       </div>
 
       {/* Active Check-Ins Alert */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-success/80" />
-            <span className="font-semibold">Active Check-Ins</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {dashboard.active_check_ins.map((ci, idx) => (
-              <div key={idx} className="flex items-center justify-between py-2">
-                <div>
-                  <span className="font-medium">{ci.player_name}</span>
-                  <span className="text-muted-foreground"> — {ci.event_title}</span>
+      {dashboard.active_check_ins.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-success/80" />
+              <span className="font-semibold">Active Check-Ins</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {dashboard.active_check_ins.map((ci, idx) => (
+                <div key={idx} className="flex items-center justify-between py-2">
+                  <div>
+                    <span className="font-medium">{ci.player_name}</span>
+                    <span className="text-muted-foreground"> — {ci.event_title}</span>
+                  </div>
+                  <Badge variant="outline" className="border-success/30 text-success/80 bg-success/10">
+                    Checked In
+                  </Badge>
                 </div>
-                <Badge variant="outline" className="border-success/30 text-success/80 bg-success/10">
-                  Checked In
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Children Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>My Children</CardTitle>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Child</span>
-            </Button>
+            <Link href="/portal/children/add">
+              <Button variant="outline" size="sm" className="gap-1">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Child</span>
+              </Button>
+            </Link>
           </div>
         </CardHeader>
         <CardContent>
@@ -227,24 +295,26 @@ export default function ParentExamplePage() {
             <TabsContent value="all">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {dashboard.children.map((child) => (
-                  <Card key={child.id} className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border">
-                          <span className="text-lg font-semibold text-foreground">
-                            {child.first_name[0]}{child.last_name[0]}
-                          </span>
+                  <Link key={child.id} href={`/portal/children/${child.id}`}>
+                    <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border">
+                            <span className="text-lg font-semibold text-foreground">
+                              {child.first_name[0]}{child.last_name[0]}
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-medium truncate">{child.first_name} {child.last_name}</h3>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {child.team_name || `Age ${child.age}`}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-medium truncate">{child.first_name} {child.last_name}</h3>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {child.team_name || `Age ${child.age}`}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             </TabsContent>
@@ -257,9 +327,11 @@ export default function ParentExamplePage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Upcoming Events</CardTitle>
-            <Button variant="ghost" size="sm" className="gap-1">
-              View All <ChevronRight className="h-4 w-4" />
-            </Button>
+            <Link href="/portal/registrations">
+              <Button variant="ghost" size="sm" className="gap-1">
+                View All <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </CardHeader>
         <CardContent>
@@ -278,55 +350,142 @@ export default function ParentExamplePage() {
                     })}
                   </p>
                 </div>
-                <Badge variant="outline" className="ml-2 shrink-0 border-primary/30 text-primary/80 bg-primary/5">
+                <Badge variant="outline" className="ml-2 shrink-0 border-border text-muted-foreground bg-muted/50">
                   Registered
                 </Badge>
               </div>
             ))}
+            {dashboard.upcoming_events.length === 0 && (
+              <p className="text-muted-foreground text-sm py-4 text-center">
+                No upcoming events. <Link href="/events" className="text-primary hover:underline">Browse events</Link>
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-              <CreditCard className="h-6 w-6 text-primary/80" />
-            </div>
-            <div>
-              <h3 className="font-medium">Make a Payment</h3>
-              <p className="text-sm text-muted-foreground">Auto-pay on</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/portal/billing">
+          <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full group">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+                <CreditCard className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-medium">Make a Payment</h3>
+                <p className="text-sm text-muted-foreground">
+                  {dashboard.profile.auto_pay_enabled ? 'Auto-pay on' : 'Auto-pay off'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-              <ShoppingBag className="h-6 w-6 text-primary/80" />
-            </div>
-            <div>
-              <h3 className="font-medium">View Orders</h3>
-              <p className="text-sm text-muted-foreground">
-                {dashboard.recent_orders.length} recent orders
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/portal/orders">
+          <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full group">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+                <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-medium">View Orders</h3>
+                <p className="text-sm text-muted-foreground">
+                  {dashboard.recent_orders.length} recent orders
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-              <CreditCard className="h-6 w-6 text-primary/80" />
-            </div>
-            <div>
-              <h3 className="font-medium">Payment Methods</h3>
-              <p className="text-sm text-muted-foreground">Manage saved cards</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/portal/billing/payment-methods">
+          <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full group">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+                <CreditCard className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-medium">Payment Methods</h3>
+                <p className="text-sm text-muted-foreground">Manage saved cards</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
+    </div>
+  )
+}
+
+// ==================== Loading Skeleton ====================
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      {/* Role Badge */}
+      <Skeleton className="h-6 w-48" />
+
+      {/* Header */}
+      <div>
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-5 w-48 mt-2" />
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-4 rounded" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-12" />
+              <Skeleton className="h-3 w-16 mt-2" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Children Section */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-32" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[1, 2].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-24 mt-1" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Events Section */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="p-3 rounded-lg border">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-64 mt-1" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

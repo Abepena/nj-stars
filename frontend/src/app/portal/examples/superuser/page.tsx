@@ -3,13 +3,12 @@
 /**
  * Superuser/Admin Dashboard Example
  *
- * #TODO: Fetch system stats from /api/portal/admin/stats/
- * #TODO: Fetch revenue data from /api/payments/admin/revenue/
+ * Fetches real data from /api/portal/admin/dashboard/ with fallback to mock data.
+ *
  * #TODO: Implement user management CRUD (/portal/admin/users)
  * #TODO: Implement billing admin tools (/portal/admin/billing)
  * #TODO: Fetch and display orders list (/portal/admin/orders)
  * #TODO: Implement reports generation (revenue, attendance, etc.)
- * #TODO: Fetch pending issues from /api/portal/admin/issues/
  * #TODO: Implement issue resolution workflow
  * #TODO: Real-time activity feed via WebSocket
  * #TODO: Implement staff management (promote/demote users)
@@ -18,10 +17,12 @@
  * #TODO: Add system settings management
  */
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Users,
   Calendar,
@@ -39,9 +40,68 @@ import {
   AlertTriangle
 } from "lucide-react"
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// ==================== Types ====================
+
+interface SystemStats {
+  total_users: number
+  total_players: number
+  total_staff: number
+  active_subscriptions: number
+}
+
+interface Revenue {
+  mtd: number
+  mtd_goal: number
+  last_month: number
+  ytd: number
+}
+
+interface AdminStats {
+  total_players: number
+  todays_events: number
+  pending_payments: number
+  check_ins_today: number
+}
+
+interface PendingIssue {
+  id: number
+  type: string
+  message: string
+  priority: 'high' | 'medium' | 'low'
+}
+
+interface RecentActivity {
+  action: string
+  user: string
+  target: string
+  time: string
+}
+
+interface TopEvent {
+  name: string
+  registrations: number
+  revenue: number
+}
+
+interface SuperuserDashboardData {
+  profile: {
+    name: string
+    email: string
+    role: string
+  }
+  system_stats: SystemStats
+  revenue: Revenue
+  admin_stats: AdminStats
+  pending_issues: PendingIssue[]
+  recent_activity: RecentActivity[]
+  top_events: TopEvent[]
+}
+
 // ==================== Mock Data ====================
 
-const mockSuperuserData = {
+const mockSuperuserData: SuperuserDashboardData = {
   profile: {
     name: "Admin User",
     email: "admin@njstars.com",
@@ -84,20 +144,140 @@ const mockSuperuserData = {
   ],
 }
 
+// ==================== Loading Skeleton ====================
+
+function SuperuserDashboardSkeleton() {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <Skeleton className="h-6 w-56" />
+      <div className="flex justify-between items-center">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i}>
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-8 w-32 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 mb-1" />
+              <Skeleton className="h-3 w-20" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4 text-center">
+              <Skeleton className="h-10 w-10 mx-auto mb-2 rounded-lg" />
+              <Skeleton className="h-4 w-24 mx-auto" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ==================== Main Component ====================
 
 export default function SuperuserExamplePage() {
-  const admin = mockSuperuserData
+  const [dashboard, setDashboard] = useState<SuperuserDashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [usingMockData, setUsingMockData] = useState(false)
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        setLoading(true)
+        const response = await fetch(`${API_BASE}/api/portal/admin/dashboard/`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Map API response to our interface
+          setDashboard({
+            profile: {
+              name: data.profile?.full_name || data.profile?.name || 'Admin',
+              email: data.profile?.email || '',
+              role: data.profile?.role || 'superuser',
+            },
+            system_stats: data.system_stats || mockSuperuserData.system_stats,
+            revenue: data.revenue || mockSuperuserData.revenue,
+            admin_stats: data.admin_stats || mockSuperuserData.admin_stats,
+            pending_issues: data.pending_issues || [],
+            recent_activity: data.recent_activity || [],
+            top_events: data.top_events || [],
+          })
+          setUsingMockData(false)
+        } else {
+          console.warn('Admin dashboard API returned error, using mock data:', response.status)
+          setDashboard(mockSuperuserData)
+          setUsingMockData(true)
+        }
+      } catch (error) {
+        console.warn('Failed to fetch admin dashboard, using mock data:', error)
+        setDashboard(mockSuperuserData)
+        setUsingMockData(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboard()
+  }, [])
+
+  if (loading) {
+    return <SuperuserDashboardSkeleton />
+  }
+
+  if (!dashboard) {
+    return <SuperuserDashboardSkeleton />
+  }
+
+  const admin = dashboard
   const revenueProgress = (admin.revenue.mtd / admin.revenue.mtd_goal) * 100
   const revenueChange = ((admin.revenue.mtd - admin.revenue.last_month) / admin.revenue.last_month * 100).toFixed(1)
 
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Role Badge */}
-      <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200">
-        <Crown className="h-3 w-3 mr-1" />
-        Superuser View — Full System Access
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="border-dashed border-amber-500/50 bg-amber-500/10 text-amber-600 uppercase tracking-wide text-[11px]">
+          <Crown className="h-3 w-3 mr-1" />
+          Superuser View — Full System Access
+        </Badge>
+        {usingMockData && (
+          <Badge variant="outline" className="border-dashed border-amber-500/50 bg-amber-500/10 text-amber-600 uppercase tracking-wide text-[11px]">
+            Demo Data
+          </Badge>
+        )}
+      </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -120,12 +300,12 @@ export default function SuperuserExamplePage() {
       </div>
 
       {/* Revenue Card */}
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+      <Card className="bg-muted/30 border-border">
         <CardContent className="p-6">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-sm text-muted-foreground">Month to Date</p>
-              <p className="text-3xl font-bold text-primary">${admin.revenue.mtd.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-foreground">${admin.revenue.mtd.toLocaleString()}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Progress value={revenueProgress} className="h-2 flex-1" />
                 <span className="text-xs text-muted-foreground">{revenueProgress.toFixed(0)}%</span>
@@ -181,7 +361,7 @@ export default function SuperuserExamplePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Today's Events</CardTitle>
+            <CardTitle className="text-sm font-medium">Today&apos;s Events</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -215,34 +395,34 @@ export default function SuperuserExamplePage() {
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="p-4 text-center">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
-              <Users className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center mx-auto mb-2 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <Users className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="font-medium text-sm">User Management</p>
           </CardContent>
         </Card>
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="p-4 text-center">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
-              <CreditCard className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center mx-auto mb-2 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="font-medium text-sm">Billing Admin</p>
           </CardContent>
         </Card>
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="p-4 text-center">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
-              <ShoppingBag className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center mx-auto mb-2 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <ShoppingBag className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="font-medium text-sm">Orders</p>
           </CardContent>
         </Card>
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="p-4 text-center">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center mx-auto mb-2 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <BarChart3 className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="font-medium text-sm">Reports</p>
           </CardContent>
@@ -263,26 +443,30 @@ export default function SuperuserExamplePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {admin.pending_issues.map((issue) => (
-                <div
-                  key={issue.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${
-                      issue.priority === 'high' ? 'bg-red-500' :
-                      issue.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
-                    }`} />
-                    <div>
-                      <p className="font-medium text-sm">{issue.message}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{issue.type}</p>
+              {admin.pending_issues.length > 0 ? (
+                admin.pending_issues.map((issue) => (
+                  <div
+                    key={issue.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2 w-2 rounded-full ${
+                        issue.priority === 'high' ? 'bg-red-500' :
+                        issue.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
+                      }`} />
+                      <div>
+                        <p className="font-medium text-sm">{issue.message}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{issue.type}</p>
+                      </div>
                     </div>
+                    <Button size="sm" variant="ghost">
+                      Resolve
+                    </Button>
                   </div>
-                  <Button size="sm" variant="ghost">
-                    Resolve
-                  </Button>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No pending issues</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -295,22 +479,26 @@ export default function SuperuserExamplePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {admin.recent_activity.map((activity, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between py-2 border-b last:border-0"
-                >
-                  <div>
-                    <p className="text-sm">
-                      <span className="font-medium">{activity.action}</span>
-                      <span className="text-muted-foreground"> by </span>
-                      <span className="font-medium">{activity.user}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">{activity.target}</p>
+              {admin.recent_activity.length > 0 ? (
+                admin.recent_activity.map((activity, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-medium">{activity.action}</span>
+                        <span className="text-muted-foreground"> by </span>
+                        <span className="font-medium">{activity.user}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">{activity.target}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">{activity.time}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0">{activity.time}</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No recent activity</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -320,40 +508,44 @@ export default function SuperuserExamplePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+            <TrendingUp className="h-5 w-5 text-muted-foreground" />
             Top Performing Events
           </CardTitle>
           <CardDescription>By registrations and revenue</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {admin.top_events.map((event, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary">
-                    #{idx + 1}
+            {admin.top_events.length > 0 ? (
+              admin.top_events.map((event, idx) => (
+                <div key={idx} className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center font-bold text-muted-foreground border border-border">
+                      #{idx + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium">{event.name}</p>
+                      <p className="text-sm text-muted-foreground">{event.registrations} registrations</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{event.name}</p>
-                    <p className="text-sm text-muted-foreground">{event.registrations} registrations</p>
+                  <div className="text-right">
+                    <p className="font-bold text-green-600">${event.revenue.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">revenue</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-green-600">${event.revenue.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">revenue</p>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No events data available</p>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Admin Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Shield className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <Shield className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">Django Admin</h3>
@@ -363,10 +555,10 @@ export default function SuperuserExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Crown className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <Crown className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">Wagtail CMS</h3>

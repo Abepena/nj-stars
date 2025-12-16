@@ -158,14 +158,38 @@ export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: 
 
   // Show skeleton while loading
   if (loading) {
-    return (
-      <div role="status" aria-label="Loading news feed" className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    const skeletonContent = (
+      <div role="status" aria-label="Loading news feed" className="space-y-8">
         <span className="sr-only">Loading news feed...</span>
-        {[1, 2, 3, 4].map((i) => (
-          <NewsCardSkeleton key={i} />
-        ))}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {[1, 2, 3, 4].slice(0, limit || 4).map((i) => (
+            <NewsCardSkeleton key={i} />
+          ))}
+        </div>
+        {showSeeMore && (
+          <div className="flex justify-center">
+            <div className="h-12 w-36 bg-muted animate-pulse rounded" />
+          </div>
+        )}
       </div>
     )
+
+    if (wrapInSection) {
+      return (
+        <section className="py-16 md:py-20 bg-muted/30">
+          <div className="container mx-auto px-4">
+            {/* Section Header Skeleton */}
+            <div className="mb-10">
+              <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-10 w-40 bg-muted animate-pulse rounded" />
+            </div>
+            {skeletonContent}
+          </div>
+        </section>
+      )
+    }
+
+    return skeletonContent
   }
 
   // Show "coming soon" message if no data - but also hide if wrapInSection

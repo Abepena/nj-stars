@@ -3,22 +3,21 @@
 /**
  * Staff/Coach Dashboard Example
  *
- * #TODO: Fetch staff stats from /api/portal/staff/stats/
+ * Fetches real data from /api/portal/dashboard/staff/ with fallback to mock data.
+ *
  * #TODO: Implement check-in management with QR scanning
- * #TODO: Fetch today's events from /api/events/?date=today
- * #TODO: Fetch pending check-ins from /api/portal/check-ins/?status=pending
  * #TODO: Implement check-in/check-out API calls
- * #TODO: Fetch full roster from /api/portal/players/
  * #TODO: Implement roster search/filter
- * #TODO: Fetch recent registrations from /api/registrations/
  * #TODO: Implement pending dues report
  * #TODO: Add attendance export functionality (CSV/PDF)
  * #TODO: Implement event creation for staff with permissions
  */
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Users,
   Calendar,
@@ -27,14 +26,68 @@ import {
   ChevronRight,
   Clock,
   CheckCircle,
-  AlertCircle,
   Shield,
   TrendingUp
 } from "lucide-react"
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// ==================== Types ====================
+
+interface AdminStats {
+  total_players: number
+  todays_events: number
+  pending_payments: number
+  check_ins_today: number
+}
+
+interface PendingCheckIn {
+  id: number
+  participant_name: string
+  event_title: string
+  event_date: string
+}
+
+interface ActiveCheckIn {
+  id: number
+  participant_name: string
+  event_title: string
+  checked_in_at: string
+}
+
+interface RecentRegistration {
+  id: number
+  participant_first_name: string
+  participant_last_name: string
+  event_title: string
+  registered_at: string
+}
+
+interface TodaysEvent {
+  id: number
+  title: string
+  time: string
+  location: string
+  registered: number
+  checked_in: number
+}
+
+interface StaffDashboardData {
+  profile: {
+    name: string
+    email: string
+    role: string
+  }
+  admin_stats: AdminStats
+  pending_check_ins: PendingCheckIn[]
+  active_check_ins: ActiveCheckIn[]
+  recent_registrations: RecentRegistration[]
+  todays_events: TodaysEvent[]
+}
+
 // ==================== Mock Data ====================
 
-const mockStaffData = {
+const mockStaffData: StaffDashboardData = {
   profile: {
     name: "Coach Mike Thompson",
     email: "mike.t@njstars.com",
@@ -68,18 +121,135 @@ const mockStaffData = {
   ],
 }
 
+// ==================== Loading Skeleton ====================
+
+function StaffDashboardSkeleton() {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <Skeleton className="h-6 w-48" />
+      <div>
+        <Skeleton className="h-8 w-64 mb-2" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 mb-1" />
+              <Skeleton className="h-3 w-20" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {[...Array(2)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-32 mb-1" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 // ==================== Main Component ====================
 
 export default function StaffExamplePage() {
-  const staff = mockStaffData
+  const [dashboard, setDashboard] = useState<StaffDashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [usingMockData, setUsingMockData] = useState(false)
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        setLoading(true)
+        const response = await fetch(`${API_BASE}/api/portal/dashboard/staff/`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Map API response to our interface (may need adjustments based on actual API structure)
+          setDashboard({
+            profile: {
+              name: data.profile?.full_name || data.profile?.name || 'Staff Member',
+              email: data.profile?.email || '',
+              role: data.profile?.role || 'staff',
+            },
+            admin_stats: data.admin_stats || mockStaffData.admin_stats,
+            pending_check_ins: data.pending_check_ins || [],
+            active_check_ins: data.active_check_ins || [],
+            recent_registrations: data.recent_registrations || [],
+            todays_events: data.todays_events || [],
+          })
+          setUsingMockData(false)
+        } else {
+          console.warn('Staff dashboard API returned error, using mock data:', response.status)
+          setDashboard(mockStaffData)
+          setUsingMockData(true)
+        }
+      } catch (error) {
+        console.warn('Failed to fetch staff dashboard, using mock data:', error)
+        setDashboard(mockStaffData)
+        setUsingMockData(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboard()
+  }, [])
+
+  if (loading) {
+    return <StaffDashboardSkeleton />
+  }
+
+  if (!dashboard) {
+    return <StaffDashboardSkeleton />
+  }
+
+  const staff = dashboard
 
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Role Badge */}
-      <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
-        <Shield className="h-3 w-3 mr-1 text-muted-foreground" />
-        Staff View — Coach Mike Thompson
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
+          <Shield className="h-3 w-3 mr-1 text-muted-foreground" />
+          Staff View — {staff.profile.name}
+        </Badge>
+        {usingMockData && (
+          <Badge variant="outline" className="border-dashed border-amber-500/50 bg-amber-500/10 text-amber-600 uppercase tracking-wide text-[11px]">
+            Demo Data
+          </Badge>
+        )}
+      </div>
 
       {/* Header */}
       <div>
@@ -104,7 +274,7 @@ export default function StaffExamplePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Today's Events</CardTitle>
+            <CardTitle className="text-sm font-medium">Today&apos;s Events</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -138,10 +308,10 @@ export default function StaffExamplePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-              <ClipboardCheck className="h-6 w-6 text-primary/80" />
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <ClipboardCheck className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">Manage Check-Ins</h3>
@@ -153,10 +323,10 @@ export default function StaffExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-              <Users className="h-6 w-6 text-primary/80" />
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <Users className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">View Roster</h3>
@@ -174,7 +344,7 @@ export default function StaffExamplePage() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Calendar className="h-5 w-5 text-muted-foreground" />
-            Today's Events
+            Today&apos;s Events
           </CardTitle>
           <CardDescription>
             Event attendance tracking
@@ -182,34 +352,38 @@ export default function StaffExamplePage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {staff.todays_events.map((event) => (
-              <div
-                key={event.id}
-                className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center border border-border">
-                    <Calendar className="h-6 w-6 text-muted-foreground" />
+            {staff.todays_events.length > 0 ? (
+              staff.todays_events.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center border border-border">
+                      <Calendar className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{event.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.time} • {event.location}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{event.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.time} • {event.location}
-                    </p>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-success/30 text-success/80 bg-success/5">
+                        {event.checked_in} checked in
+                      </Badge>
+                      <Badge variant="outline" className="border-border text-muted-foreground">
+                        {event.registered} registered
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="border-primary/30 text-primary/80 bg-primary/5">
-                      {event.checked_in} checked in
-                    </Badge>
-                    <Badge variant="outline" className="border-border text-muted-foreground">
-                      {event.registered} registered
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No events scheduled for today</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -233,26 +407,30 @@ export default function StaffExamplePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {staff.pending_check_ins.map((ci) => (
-                <div
-                  key={ci.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center border border-border">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+              {staff.pending_check_ins.length > 0 ? (
+                staff.pending_check_ins.map((ci) => (
+                  <div
+                    key={ci.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center border border-border">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{ci.participant_name}</p>
+                        <p className="text-xs text-muted-foreground">{ci.event_title}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{ci.participant_name}</p>
-                      <p className="text-xs text-muted-foreground">{ci.event_title}</p>
-                    </div>
+                    <Button size="sm" variant="secondary" className="gap-1">
+                      <CheckCircle className="h-3 w-3 text-muted-foreground" />
+                      Check In
+                    </Button>
                   </div>
-                  <Button size="sm" variant="secondary" className="gap-1">
-                    <CheckCircle className="h-3 w-3 text-muted-foreground" />
-                    Check In
-                  </Button>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No pending check-ins</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -270,30 +448,34 @@ export default function StaffExamplePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {staff.active_check_ins.map((ci) => (
-                <div
-                  key={ci.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-success/10 text-success/80 flex items-center justify-center border border-success/30">
-                      <CheckCircle className="h-4 w-4 text-success/80" />
+              {staff.active_check_ins.length > 0 ? (
+                staff.active_check_ins.map((ci) => (
+                  <div
+                    key={ci.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-success/10 text-success/80 flex items-center justify-center border border-success/30">
+                        <CheckCircle className="h-4 w-4 text-success/80" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{ci.participant_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          In since {new Date(ci.checked_in_at).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{ci.participant_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        In since {new Date(ci.checked_in_at).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
+                    <Button variant="secondary" size="sm" className="text-success/90 border-success/40 hover:bg-success/10">
+                      Check Out
+                    </Button>
                   </div>
-                  <Button variant="secondary" size="sm" className="text-success/90 border-success/40 hover:bg-success/10">
-                    Check Out
-                  </Button>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No active check-ins</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -312,30 +494,34 @@ export default function StaffExamplePage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {staff.recent_registrations.map((reg) => (
-              <div
-                key={reg.id}
-                className="flex items-center justify-between p-3 rounded-lg border"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border border-border">
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            {staff.recent_registrations.length > 0 ? (
+              staff.recent_registrations.map((reg) => (
+                <div
+                  key={reg.id}
+                  className="flex items-center justify-between p-3 rounded-lg border"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border border-border">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">
+                        {reg.participant_first_name} {reg.participant_last_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{reg.event_title}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">
-                      {reg.participant_first_name} {reg.participant_last_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{reg.event_title}</p>
-                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(reg.registered_at).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(reg.registered_at).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit'
-                  })}
-                </span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No recent registrations</p>
+            )}
           </div>
         </CardContent>
       </Card>

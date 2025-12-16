@@ -148,11 +148,11 @@ function ChildProfileCard({ child }: { child: Child }) {
 
   return (
     <Link href={`/portal/children/${child.id}`}>
-      <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+      <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer h-full">
         <CardContent className="p-5">
           {/* Header with avatar */}
           <div className="flex items-start gap-4">
-            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border">
               {child.primary_photo_url ? (
                 <img
                   src={child.primary_photo_url}
@@ -160,7 +160,7 @@ function ChildProfileCard({ child }: { child: Child }) {
                   className="h-14 w-14 rounded-full object-cover"
                 />
               ) : (
-                <span className="text-xl font-bold text-primary">
+                <span className="text-xl font-bold text-foreground">
                   {child.first_name[0]}{child.last_name[0]}
                 </span>
               )}
@@ -218,7 +218,7 @@ function ChildProfileCard({ child }: { child: Child }) {
           )}
 
           {/* View Profile Link */}
-          <div className="flex items-center justify-end mt-4 text-sm text-primary">
+          <div className="flex items-center justify-end mt-4 text-sm text-muted-foreground">
             View Profile
             <ChevronRight className="h-4 w-4 ml-1" />
           </div>

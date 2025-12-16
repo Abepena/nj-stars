@@ -3,20 +3,19 @@
 /**
  * Player Dashboard Example
  *
- * #TODO: Fetch real player profile data from /api/portal/profile/
- * #TODO: Fetch player's schedule from /api/events/ filtered by player registrations
- * #TODO: Fetch attendance/stats from /api/portal/attendance/ or similar
+ * Fetches real data from /api/portal/player/dashboard/ with fallback to mock data.
+ *
  * #TODO: Implement QR code check-in functionality
- * #TODO: Fetch team roster from /api/portal/team/ or /api/portal/players/
  * #TODO: Implement dues payment functionality
  * #TODO: Add profile edit modal/page
  * #TODO: Implement push notifications for upcoming events
  */
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Calendar,
   DollarSign,
@@ -29,9 +28,62 @@ import {
   ChevronRight
 } from "lucide-react"
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// ==================== Types ====================
+
+interface PlayerProfile {
+  id: number
+  first_name: string
+  last_name: string
+  age: number
+  email: string
+  team_name: string | null
+  jersey_number: string
+  position: string
+  photo_url: string | null
+}
+
+interface PlayerStats {
+  practices_attended: number
+  practices_total: number
+  tournaments_played: number
+  games_this_season: number
+}
+
+interface CurrentEvent {
+  title: string
+  location: string
+  checked_in_at: string
+}
+
+interface UpcomingEvent {
+  id: number
+  title: string
+  date: string
+  location: string
+  type: 'practice' | 'tournament' | 'game'
+}
+
+interface Teammate {
+  name: string
+  number: string
+  position: string
+}
+
+interface PlayerDashboardData {
+  profile: PlayerProfile
+  stats: PlayerStats
+  dues_balance: string
+  is_checked_in: boolean
+  current_event: CurrentEvent | null
+  upcoming_events: UpcomingEvent[]
+  teammates: Teammate[]
+}
+
 // ==================== Mock Data ====================
 
-const mockPlayerData = {
+const mockPlayerData: PlayerDashboardData = {
   profile: {
     id: 1,
     first_name: "Marcus",
@@ -70,35 +122,151 @@ const mockPlayerData = {
   ],
 }
 
+// ==================== Loading Skeleton ====================
+
+function PlayerDashboardSkeleton() {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <Skeleton className="h-6 w-48" />
+      <div className="flex flex-col sm:flex-row gap-6 items-start">
+        <Skeleton className="h-24 w-24 rounded-full mx-auto sm:mx-0" />
+        <div className="flex-1 text-center sm:text-left">
+          <Skeleton className="h-8 w-48 mb-2 mx-auto sm:mx-0" />
+          <Skeleton className="h-5 w-64 mx-auto sm:mx-0" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-20" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 // ==================== Main Component ====================
 
 export default function PlayerExamplePage() {
-  const player = mockPlayerData
+  const [dashboard, setDashboard] = useState<PlayerDashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [usingMockData, setUsingMockData] = useState(false)
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        setLoading(true)
+        const response = await fetch(`${API_BASE}/api/portal/player/dashboard/`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Map API response to our interface
+          setDashboard({
+            profile: {
+              id: data.profile?.id || 0,
+              first_name: data.profile?.first_name || '',
+              last_name: data.profile?.last_name || '',
+              age: data.profile?.age || 0,
+              email: data.profile?.email || '',
+              team_name: data.profile?.team_name || null,
+              jersey_number: data.profile?.jersey_number || '',
+              position: data.profile?.position || '',
+              photo_url: data.profile?.photo_url || null,
+            },
+            stats: data.stats || mockPlayerData.stats,
+            dues_balance: data.dues_balance || '0.00',
+            is_checked_in: data.is_checked_in || false,
+            current_event: data.current_event || null,
+            upcoming_events: data.upcoming_events || [],
+            teammates: data.teammates || [],
+          })
+          setUsingMockData(false)
+        } else {
+          console.warn('Player dashboard API returned error, using mock data:', response.status)
+          setDashboard(mockPlayerData)
+          setUsingMockData(true)
+        }
+      } catch (error) {
+        console.warn('Failed to fetch player dashboard, using mock data:', error)
+        setDashboard(mockPlayerData)
+        setUsingMockData(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboard()
+  }, [])
+
+  if (loading) {
+    return <PlayerDashboardSkeleton />
+  }
+
+  if (!dashboard) {
+    return <PlayerDashboardSkeleton />
+  }
+
+  const player = dashboard
   const balance = parseFloat(player.dues_balance)
-  const attendanceRate = Math.round((player.stats.practices_attended / player.stats.practices_total) * 100)
+  const attendanceRate = player.stats.practices_total > 0
+    ? Math.round((player.stats.practices_attended / player.stats.practices_total) * 100)
+    : 0
 
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Role Badge */}
-      <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
-        Player View — Marcus Johnson (13+)
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="border-dashed border-border bg-background text-muted-foreground uppercase tracking-wide text-[11px]">
+          Player View — {player.profile.first_name} {player.profile.last_name} (13+)
+        </Badge>
+        {usingMockData && (
+          <Badge variant="outline" className="border-dashed border-amber-500/50 bg-amber-500/10 text-amber-600 uppercase tracking-wide text-[11px]">
+            Demo Data
+          </Badge>
+        )}
+      </div>
 
       {/* Profile Header */}
       <div className="flex flex-col sm:flex-row gap-6 items-start">
         <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center shrink-0 mx-auto sm:mx-0 border border-border">
-          <span className="text-3xl font-bold text-foreground">MJ</span>
+          <span className="text-3xl font-bold text-foreground">
+            {player.profile.first_name.charAt(0)}{player.profile.last_name.charAt(0)}
+          </span>
         </div>
         <div className="flex-1 text-center sm:text-left">
           <h1 className="text-2xl sm:text-3xl font-bold">
             {player.profile.first_name} {player.profile.last_name}
           </h1>
           <p className="text-lg text-muted-foreground mt-1">
-            #{player.profile.jersey_number} • {player.profile.position} • {player.profile.team_name}
+            #{player.profile.jersey_number} • {player.profile.position} • {player.profile.team_name || 'No Team'}
           </p>
 
           {/* Current Check-in Status */}
-          {player.is_checked_in && (
+          {player.is_checked_in && player.current_event && (
             <Badge variant="outline" className="mt-3 border-dashed border-border text-muted-foreground gap-1 bg-transparent">
               <CheckCircle className="h-3 w-3 text-muted-foreground" />
               Checked in at {player.current_event.title}
@@ -162,7 +330,7 @@ export default function PlayerExamplePage() {
       </div>
 
       {/* Current Event */}
-      {player.is_checked_in && (
+      {player.is_checked_in && player.current_event && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -205,35 +373,39 @@ export default function PlayerExamplePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {player.upcoming_events.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-primary/5 text-primary/80 border border-primary/20">
-                    {event.type === 'tournament' ? <Trophy className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
+              {player.upcoming_events.length > 0 ? (
+                player.upcoming_events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-muted text-muted-foreground border border-border">
+                      {event.type === 'tournament' ? <Trophy className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{event.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(event.date).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <MapPin className="h-3 w-3" />
+                        {event.location}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0 border-border text-muted-foreground bg-muted/50">
+                      {event.type === 'tournament' ? 'Tournament' : 'Practice'}
+                    </Badge>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{event.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(event.date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3 w-3" />
-                      {event.location}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="shrink-0 border-primary/30 text-primary/80 bg-primary/5">
-                    {event.type === 'tournament' ? 'Tournament' : 'Practice'}
-                  </Badge>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No upcoming events</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -245,14 +417,14 @@ export default function PlayerExamplePage() {
               <User className="h-5 w-5" />
               My Teammates
             </CardTitle>
-            <CardDescription>{player.profile.team_name} roster</CardDescription>
+            <CardDescription>{player.profile.team_name || 'Team'} roster</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {/* Current player highlighted */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <div className="h-10 w-10 rounded-full bg-primary/5 flex items-center justify-center border border-primary/20">
-                  <span className="font-bold text-primary/80">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center border border-border">
+                  <span className="font-bold text-foreground">
                     {player.profile.jersey_number}
                   </span>
                 </div>
@@ -260,25 +432,29 @@ export default function PlayerExamplePage() {
                   <p className="font-medium">{player.profile.first_name} {player.profile.last_name}</p>
                   <p className="text-sm text-muted-foreground">{player.profile.position}</p>
                 </div>
-                <Badge variant="outline" className="border-primary/30 text-primary/80 bg-primary/5">You</Badge>
+                <Badge variant="outline" className="border-border text-muted-foreground bg-muted/50">You</Badge>
               </div>
 
-              {player.teammates.map((teammate, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                    <span className="font-medium text-muted-foreground">
-                      {teammate.number}
-                    </span>
+              {player.teammates.length > 0 ? (
+                player.teammates.map((teammate, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                      <span className="font-medium text-muted-foreground">
+                        {teammate.number}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{teammate.name}</p>
+                      <p className="text-sm text-muted-foreground">{teammate.position}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{teammate.name}</p>
-                    <p className="text-sm text-muted-foreground">{teammate.position}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No teammates found</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -286,10 +462,10 @@ export default function PlayerExamplePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-              <User className="h-6 w-6 text-primary/80" />
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <User className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <h3 className="font-medium">Edit My Profile</h3>
@@ -299,10 +475,10 @@ export default function PlayerExamplePage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer">
+        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/20">
-              <DollarSign className="h-6 w-6 text-primary/80" />
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <DollarSign className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <h3 className="font-medium">View Dues History</h3>

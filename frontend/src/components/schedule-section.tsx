@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { UserPlus, Trophy, Gamepad2, DoorOpen, ArrowRight } from "lucide-react"
+import { IconCard } from "@/components/ui/icon-card"
+import { UserPlus, Trophy, Dribbble, DoorOpen, ArrowRight } from "lucide-react"
 
 const eventTypes = [
   {
@@ -10,7 +11,7 @@ const eventTypes = [
     href: "/events?event_type=tryout",
   },
   {
-    icon: Gamepad2,
+    icon: Dribbble,
     title: "Games",
     description: "Regular season matchups against local teams. Come support the squad.",
     href: "/events?event_type=game",
@@ -53,21 +54,14 @@ export function ScheduleSection() {
         {/* Event Types Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {eventTypes.map((eventType) => (
-            <Link
+            <IconCard
               key={eventType.title}
+              icon={eventType.icon}
+              title={eventType.title}
+              description={eventType.description}
               href={eventType.href}
-              className="group bg-card border border-border rounded-xl p-6 text-center hover:border-success/50 transition-all"
-            >
-              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mb-4 mx-auto group-hover:bg-success/10 transition-colors">
-                <eventType.icon className="w-6 h-6 text-muted-foreground group-hover:text-success transition-colors" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 group-hover:text-success transition-colors">
-                {eventType.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {eventType.description}
-              </p>
-            </Link>
+              accentColor="success"
+            />
           ))}
         </div>
 

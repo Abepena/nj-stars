@@ -218,10 +218,17 @@ export default function EventsPage() {
   useEffect(() => {
     if (!searchParams) return
     const eventType = searchParams.get('event_type')
+    const viewParam = searchParams.get('view')
+
     if (eventType && EVENT_TYPES.some(t => t.value === eventType)) {
       setSelectedTypes([eventType])
       setTimeFilter("upcoming") // Show upcoming events when filtering by type
       setInitialFilterSet(true)
+    }
+
+    // Set view mode from URL parameter
+    if (viewParam === 'list' || viewParam === 'calendar') {
+      setViewMode(viewParam)
     }
   }, [searchParams])
 

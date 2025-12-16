@@ -61,8 +61,8 @@ export default function ExamplesIndexPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Eye className="h-5 w-5 text-primary" />
+          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center border border-border">
+            <Eye className="h-5 w-5 text-muted-foreground" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold">Portal Examples</h1>
         </div>
@@ -79,11 +79,11 @@ export default function ExamplesIndexPage() {
           const Icon = example.icon
           return (
             <Link key={example.href} href={example.href}>
-              <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer group">
+              <Card className="h-full hover:border-muted-foreground/30 transition-colors cursor-pointer group">
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-6 w-6 text-primary" />
+                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center border border-border group-hover:border-muted-foreground/30 transition-colors">
+                      <Icon className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <Badge variant="outline" className={example.badgeColor}>
                       {example.badge}
@@ -114,8 +114,8 @@ export default function ExamplesIndexPage() {
       <Card className="bg-muted/50">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <Palette className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border">
+              <Palette className="h-6 w-6 text-muted-foreground" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">Design Consistency</h3>

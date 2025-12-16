@@ -123,14 +123,14 @@ export function SiteHeader() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-9 w-9 rounded-full p-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                  className="relative h-9 w-9 rounded-full p-0 hover:ring-2 hover:ring-muted-foreground/30 transition-all"
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarImage
                       src={session.user?.image || undefined}
                       alt={session.user?.name || "User"}
                     />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                    <AvatarFallback className="bg-muted text-foreground text-sm font-medium border border-border">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
@@ -162,7 +162,7 @@ export function SiteHeader() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}
-                  className="text-destructive focus:text-destructive cursor-pointer"
+                  className="text-muted-foreground focus:text-foreground cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign Out</span>

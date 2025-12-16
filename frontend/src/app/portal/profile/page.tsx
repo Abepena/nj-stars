@@ -120,7 +120,7 @@ export default function ProfilePage() {
 
       {/* Profile Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-        <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border">
           {session?.user?.image ? (
             <img
               src={session.user.image}
@@ -128,7 +128,7 @@ export default function ProfilePage() {
               className="h-20 w-20 rounded-full object-cover"
             />
           ) : (
-            <span className="text-2xl font-bold text-primary">{initials}</span>
+            <span className="text-2xl font-bold text-foreground">{initials}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
