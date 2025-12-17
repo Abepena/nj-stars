@@ -1,6 +1,6 @@
 # Checkout & Payment Flow Documentation
 
-> **Last Updated:** December 11, 2025
+> **Last Updated:** December 16, 2025
 > **Purpose:** Document the complete checkout pipeline for local products, POD (Printify) products, and mixed bags.
 
 ---
@@ -14,11 +14,12 @@
 5. [Stripe Webhook Processing](#stripe-webhook-processing)
 6. [Order Creation](#order-creation)
 7. [Printify Order Submission](#printify-order-submission)
-8. [Order Fulfillment Tracking](#order-fulfillment-tracking)
-9. [Local Product Handoff](#local-product-handoff)
-10. [Development vs Production](#development-vs-production)
-11. [API Reference](#api-reference)
-12. [Sequence Diagrams](#sequence-diagrams)
+8. [Printify Pricing & Payment Model](#printify-pricing--payment-model)
+9. [Order Fulfillment Tracking](#order-fulfillment-tracking)
+10. [Local Product Handoff](#local-product-handoff)
+11. [Development vs Production](#development-vs-production)
+12. [API Reference](#api-reference)
+13. [Sequence Diagrams](#sequence-diagrams)
 
 ---
 
@@ -826,3 +827,112 @@ When BOTH are fulfilled:
 ---
 
 _Document maintained by the development team. Questions? Check the codebase or reach out to developers@leag.app._
+
+## Printify Pricing & Payment Model
+
+> **Added:** December 16, 2025
+
+Understanding how money flows between customers, your platform, and Printify is essential for managing your merch business.
+
+### Pricing Independence
+
+**Your site prices do NOT affect Printify.** They are completely separate:
+
+| Price Type | Set By | Example | Where It Lives |
+|------------|--------|---------|----------------|
+| **Base Cost** | Printify | $12.50 | Printify dashboard |
+| **Retail Price** | You | $35.00 | Your Django admin / Product model |
+| **Your Profit** | Calculated | $21.45* | Retail - Base - Fees |
+
+*After ~3% Stripe processing fee
+
+If you change a product price from $35 → $40 on your site:
+- Printify doesn't know or care
+- Printify still charges you the same base cost ($12.50)
+- Your profit margin increases
+
+### Payment Flow Diagram
+
+```
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│  CUSTOMER   │         │   STRIPE    │         │ YOUR STRIPE │
+│             │  $35.00 │             │  $33.95 │   ACCOUNT   │
+│   Orders    │────────>│  Processes  │────────>│   Receives  │
+│   Hoodie    │         │   Payment   │         │   Payment   │
+└─────────────┘         └─────────────┘         └──────┬──────┘
+                                                       │
+                                                       │ Order created
+                                                       │ via webhook
+                                                       ▼
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│  PRINTIFY   │         │ YOUR CARD   │         │   DJANGO    │
+│             │  $12.50 │  (on file   │ <────── │   BACKEND   │
+│  Produces & │<────────│  with       │  Order  │   Creates   │
+│  Ships      │         │  Printify)  │  API    │   Order     │
+└──────┬──────┘         └─────────────┘         └─────────────┘
+       │
+       │ Ships directly
+       │ to customer
+       ▼
+┌─────────────┐
+│  CUSTOMER   │
+│  Receives   │
+│  Package    │
+└─────────────┘
+```
+
+### Payment Summary
+
+| Step | Who Pays | Who Receives | Amount | Notes |
+|------|----------|--------------|--------|-------|
+| 1 | Customer | Stripe | $35.00 | Full retail price |
+| 2 | Stripe | Your Stripe Account | $33.95 | Minus ~3% processing fee |
+| 3 | Your Card | Printify | $12.50 | Base cost (charged to card on file) |
+| 4 | — | **Your Profit** | **$21.45** | Retail - Stripe Fee - Base Cost |
+
+### Key Points
+
+1. **Customer never interacts with Printify** - They pay you via Stripe, receive a package (can have your branding)
+
+2. **You need a payment method in Printify** - Credit card or PayPal on file. Printify auto-charges this when orders are created via API
+
+3. **Printify doesn't see your retail prices** - They only know their base cost. Your markup is your business
+
+4. **Shipping costs** - Printify calculates shipping based on destination. You can either:
+   - Pass shipping cost to customer (add to checkout)
+   - Absorb it in your retail price (offer "free shipping")
+   - Mark up shipping for additional profit
+
+5. **Profit varies by product** - Each product type (t-shirt, hoodie, mug) has different base costs. Check Printify's catalog for current pricing
+
+### Example Profit Calculation
+
+```
+Product: Unisex Heavyweight T-Shirt
+
+Printify Base Cost:     $12.50
+Printify Shipping:      $ 4.69 (to US)
+────────────────────────────────
+Your Cost:              $17.19
+
+Your Retail Price:      $35.00
+Stripe Fee (3%):        -$ 1.05
+────────────────────────────────
+You Receive:            $33.95
+
+YOUR PROFIT:            $33.95 - $17.19 = $16.76 per shirt
+```
+
+### Printify Account Setup Checklist
+
+Before going live with POD products:
+
+- [ ] Create Printify account at [printify.com](https://printify.com)
+- [ ] Add payment method (credit card or PayPal)
+- [ ] Connect your store via API (already done in this codebase)
+- [ ] Set up shipping profiles
+- [ ] Optional: Configure branded packing slips
+- [ ] Optional: Enable auto-send to production (or manually approve each order)
+
+---
+
