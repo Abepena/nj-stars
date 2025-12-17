@@ -28,8 +28,8 @@ const userMenuItems = [
   { href: "/portal/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/portal/children", label: "My Players", icon: Users },
   { href: "/portal/billing", label: "Billing & Orders", icon: CreditCard },
-  { href: "#TODO-registrations", label: "My Registrations", icon: Calendar },
-  { href: "#TODO-settings", label: "Settings", icon: Settings },
+  { href: "/portal/registrations", label: "My Registrations", icon: Calendar },
+  { href: "/portal/settings", label: "Settings", icon: Settings },
 ]
 
 export function MobileNav() {
