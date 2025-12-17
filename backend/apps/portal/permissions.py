@@ -137,3 +137,29 @@ class ReadOnlyOrStaff(permissions.BasePermission):
             return True
 
         return False
+
+
+class IsAdminUser(permissions.BasePermission):
+    """
+    Only admin users (role='admin' in profile) or superusers can access.
+
+    Use for: Full CRUD on events, products, managing users, etc.
+    """
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        # Superusers always have access
+        if request.user.is_superuser:
+            return True
+
+        # Django's is_staff flag
+        if request.user.is_staff:
+            return True
+
+        # Profile role check for 'admin'
+        if hasattr(request.user, 'profile'):
+            return request.user.profile.role == 'admin'
+
+        return False

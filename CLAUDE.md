@@ -586,6 +586,67 @@ git push origin main
 
 ---
 
+---
+
+## Daily Changelog
+
+After each development session or significant batch of changes, update the daily changelog:
+
+### Location
+`documentation/changelogs/YYYY-MM-DD.md`
+
+### When to Update
+- After completing a feature or bug fix
+- Before ending a session
+- When significant progress is made
+
+### Changelog Format
+```markdown
+# Changelog: [Date]
+
+> **Review Status:** Pending
+> **Session Focus:** [Brief description of main work areas]
+
+---
+
+## [Category]
+
+### [Feature/Fix Name]
+**Files:** `path/to/file.tsx`, `path/to/other.py`
+
+**Issue/Feature:** [What was the problem or what was added]
+
+**Implementation:**
+- [Key change 1]
+- [Key change 2]
+
+---
+
+## Files Changed Summary
+[List all files modified with brief descriptions]
+
+---
+
+## Testing Checklist
+- [ ] [Test item 1]
+- [ ] [Test item 2]
+
+---
+
+## Notes for Tomorrow
+1. [Follow-up item]
+2. [Known issue to address]
+```
+
+### Categories to Use
+- **Bug Fixes** - Issues resolved
+- **Backend API Enhancements** - New endpoints, model changes
+- **Frontend Admin Pages** - Admin UI additions
+- **Frontend Features** - User-facing features
+- **Documentation Updates** - Doc changes
+- **Performance** - Optimization work
+- **Security** - Security-related changes
+
 ## Getting Help
 
 - **Docker Issues:** Check `documentation/DOCKER.md`

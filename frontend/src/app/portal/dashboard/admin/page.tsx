@@ -16,8 +16,10 @@ import {
   ChevronRight,
   AlertCircle,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Shirt
 } from "lucide-react"
+import { PrintifyAdminSection } from "@/components/admin/printify-section"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -70,10 +72,10 @@ export default function AdminDashboardPage() {
         setLoading(true)
         setError(null)
 
-        const accessToken = (session as any)?.accessToken
+        const apiToken = (session as any)?.apiToken
         const response = await fetch(`${API_BASE}/api/portal/dashboard/staff/`, {
           headers: {
-            "Authorization": `Bearer ${accessToken || ""}`,
+            "Authorization": `Token ${apiToken || ""}`,
             "Content-Type": "application/json",
           },
         })
@@ -217,6 +219,23 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
 
+        <Link href="/portal/dashboard/admin/events">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Manage Events</h3>
+                <p className="text-sm text-muted-foreground">
+                  View, edit, and manage all events
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
         <Link href="/portal/dashboard/admin/events/new">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
@@ -235,6 +254,9 @@ export default function AdminDashboardPage() {
         </Link>
       </div>
 
+
+      {/* Shop / Printify */}
+      <PrintifyAdminSection />
       {/* Pending Check-ins */}
       {pending_check_ins.length > 0 && (
         <Card>

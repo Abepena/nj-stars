@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
+import { ZoomableImage } from "@/components/zoomable-image"
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft, Truck, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -377,11 +378,9 @@ export default function ProductDetailPage() {
             <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
               {productImages[currentImageIndex] ? (
                 <>
-                  <Image
+                  <ZoomableImage
                     src={productImages[currentImageIndex].url}
                     alt={productImages[currentImageIndex].alt}
-                    fill
-                    className="object-contain"
                     priority
                     unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                   />
@@ -389,15 +388,15 @@ export default function ProductDetailPage() {
                   {productImages.length > 1 && (
                     <>
                       <button
-                        onClick={previousImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-lg transition-all"
+                        onClick={(e) => { e.stopPropagation(); previousImage(); }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-lg transition-all z-10"
                         aria-label="Previous image"
                       >
                         <ChevronLeft className="w-6 h-6" />
                       </button>
                       <button
-                        onClick={nextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-lg transition-all"
+                        onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-lg transition-all z-10"
                         aria-label="Next image"
                       >
                         <ChevronRight className="w-6 h-6" />

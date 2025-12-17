@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { AddressInput, AddressData } from "@/components/ui/address-input"
 import {
   ChevronLeft,
   Bell,
@@ -21,14 +23,53 @@ import {
   EyeOff,
   Lock,
   AlertTriangle,
+  User,
+  MapPin,
+  Phone,
+  Loader2,
+  Check,
 } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
+interface ProfileData {
+  first_name: string
+  last_name: string
+  phone: string
+  address: {
+    street: string
+    city: string
+    state: string
+    zip_code: string
+  }
+}
 
 // ==================== Main Component ====================
 
 export default function SettingsPage() {
   const { data: session } = useSession()
   const { theme, setTheme } = useTheme()
+
+  // Profile data
+  const [profile, setProfile] = useState<ProfileData>({
+    first_name: "",
+    last_name: "",
+    phone: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      zip_code: "",
+    },
+  })
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
+
+  // Full address string for display
+  const [fullAddress, setFullAddress] = useState("")
 
   // Notification preferences (would be synced with backend)
   const [notifications, setNotifications] = useState({
@@ -44,13 +85,117 @@ export default function SettingsPage() {
     showOnRoster: true,
   })
 
+  // Fetch profile on mount
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!session) return
+
+      try {
+        setProfileLoading(true)
+        const apiToken = (session as any)?.apiToken
+        const response = await fetch(`${API_BASE}/api/portal/profile/`, {
+          headers: {
+            Authorization: apiToken ? `Token ${apiToken}` : "",
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setProfile({
+            first_name: data.first_name || "",
+            last_name: data.last_name || "",
+            phone: data.phone || "",
+            address: {
+              street: data.address?.street || "",
+              city: data.address?.city || "",
+              state: data.address?.state || "",
+              zip_code: data.address?.zip_code || "",
+            },
+          })
+          // Build full address string
+          if (data.address?.street) {
+            const parts = [
+              data.address.street,
+              data.address.city,
+              data.address.state,
+              data.address.zip_code,
+            ].filter(Boolean)
+            setFullAddress(parts.join(", "))
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err)
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [session])
+
+  const handleProfileChange = (field: keyof ProfileData, value: string) => {
+    setProfile((prev) => ({ ...prev, [field]: value }))
+    setProfileSaved(false)
+  }
+
+  const handleAddressSelect = (data: AddressData) => {
+    setProfile((prev) => ({
+      ...prev,
+      address: {
+        street: data.street_address || "",
+        city: data.city || "",
+        state: data.state || "",
+        zip_code: data.zip_code || "",
+      },
+    }))
+    setFullAddress(data.formatted_address)
+    setProfileSaved(false)
+  }
+
+  const saveProfile = async () => {
+    if (!session) return
+
+    try {
+      setProfileSaving(true)
+      setProfileError(null)
+
+      const apiToken = (session as any)?.apiToken
+      const response = await fetch(`${API_BASE}/api/portal/profile/`, {
+        method: "PATCH",
+        headers: {
+          Authorization: apiToken ? `Token ${apiToken}` : "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          phone: profile.phone,
+          address: profile.address,
+        }),
+      })
+
+      if (response.ok) {
+        setProfileSaved(true)
+        setTimeout(() => setProfileSaved(false), 3000)
+      } else {
+        const data = await response.json()
+        setProfileError(data.detail || "Failed to save profile")
+      }
+    } catch (err) {
+      setProfileError("Failed to connect to server")
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
   const handleNotificationChange = (key: keyof typeof notifications) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }))
+    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }))
     // TODO: Sync with backend
   }
 
   const handlePrivacyChange = (key: keyof typeof privacy) => {
-    setPrivacy(prev => ({ ...prev, [key]: !prev[key] }))
+    setPrivacy((prev) => ({ ...prev, [key]: !prev[key] }))
     // TODO: Sync with backend
   }
 
@@ -73,6 +218,105 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      {/* Personal Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Personal Information
+          </CardTitle>
+          <CardDescription>
+            Update your name, phone, and address
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {profileLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first-name">First Name</Label>
+                  <Input
+                    id="first-name"
+                    value={profile.first_name}
+                    onChange={(e) => handleProfileChange("first_name", e.target.value)}
+                    placeholder="First name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last-name">Last Name</Label>
+                  <Input
+                    id="last-name"
+                    value={profile.last_name}
+                    onChange={(e) => handleProfileChange("last_name", e.target.value)}
+                    placeholder="Last name"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Phone Number
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={profile.phone}
+                  onChange={(e) => handleProfileChange("phone", e.target.value)}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address" className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Address
+                </Label>
+                <AddressInput
+                  id="address"
+                  value={fullAddress}
+                  onChange={setFullAddress}
+                  onAddressSelect={handleAddressSelect}
+                  placeholder="Start typing your address..."
+                />
+                {profile.address.street && (
+                  <p className="text-xs text-muted-foreground">
+                    {profile.address.street}, {profile.address.city}, {profile.address.state}{" "}
+                    {profile.address.zip_code}
+                  </p>
+                )}
+              </div>
+
+              {profileError && (
+                <p className="text-sm text-destructive">{profileError}</p>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button onClick={saveProfile} disabled={profileSaving}>
+                  {profileSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : profileSaved ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Saved!
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Appearance */}
       <Card>
         <CardHeader>
@@ -94,17 +338,17 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button
-                variant={theme === 'light' ? 'default' : 'outline'}
+                variant={theme === "light" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setTheme('light')}
+                onClick={() => setTheme("light")}
               >
                 <Sun className="h-4 w-4 mr-1" />
                 Light
               </Button>
               <Button
-                variant={theme === 'dark' ? 'default' : 'outline'}
+                variant={theme === "dark" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setTheme('dark')}
+                onClick={() => setTheme("dark")}
               >
                 <Moon className="h-4 w-4 mr-1" />
                 Dark
@@ -143,7 +387,7 @@ export default function SettingsPage() {
               <Switch
                 id="email-events"
                 checked={notifications.emailEvents}
-                onCheckedChange={() => handleNotificationChange('emailEvents')}
+                onCheckedChange={() => handleNotificationChange("emailEvents")}
               />
             </div>
 
@@ -157,7 +401,7 @@ export default function SettingsPage() {
               <Switch
                 id="email-orders"
                 checked={notifications.emailOrders}
-                onCheckedChange={() => handleNotificationChange('emailOrders')}
+                onCheckedChange={() => handleNotificationChange("emailOrders")}
               />
             </div>
 
@@ -171,7 +415,7 @@ export default function SettingsPage() {
               <Switch
                 id="email-newsletter"
                 checked={notifications.emailNewsletter}
-                onCheckedChange={() => handleNotificationChange('emailNewsletter')}
+                onCheckedChange={() => handleNotificationChange("emailNewsletter")}
               />
             </div>
           </div>
@@ -195,7 +439,7 @@ export default function SettingsPage() {
               <Switch
                 id="push-reminders"
                 checked={notifications.pushReminders}
-                onCheckedChange={() => handleNotificationChange('pushReminders')}
+                onCheckedChange={() => handleNotificationChange("pushReminders")}
               />
             </div>
           </div>
@@ -217,7 +461,11 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="show-profile" className="flex items-center gap-2">
-                {privacy.showProfile ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                {privacy.showProfile ? (
+                  <Eye className="h-4 w-4" />
+                ) : (
+                  <EyeOff className="h-4 w-4" />
+                )}
                 Profile Visibility
               </Label>
               <p className="text-sm text-muted-foreground">
@@ -227,7 +475,7 @@ export default function SettingsPage() {
             <Switch
               id="show-profile"
               checked={privacy.showProfile}
-              onCheckedChange={() => handlePrivacyChange('showProfile')}
+              onCheckedChange={() => handlePrivacyChange("showProfile")}
             />
           </div>
 
@@ -241,7 +489,7 @@ export default function SettingsPage() {
             <Switch
               id="show-roster"
               checked={privacy.showOnRoster}
-              onCheckedChange={() => handlePrivacyChange('showOnRoster')}
+              onCheckedChange={() => handlePrivacyChange("showOnRoster")}
             />
           </div>
         </CardContent>
@@ -254,9 +502,7 @@ export default function SettingsPage() {
             <Lock className="h-5 w-5" />
             Security
           </CardTitle>
-          <CardDescription>
-            Manage your account security settings
-          </CardDescription>
+          <CardDescription>Manage your account security settings</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
@@ -277,7 +523,7 @@ export default function SettingsPage() {
             <div className="space-y-0.5">
               <Label>Connected Accounts</Label>
               <p className="text-sm text-muted-foreground">
-                {session?.user?.email || 'Manage social login connections'}
+                {session?.user?.email || "Manage social login connections"}
               </p>
             </div>
             <Button variant="outline" size="sm" disabled>
@@ -294,9 +540,7 @@ export default function SettingsPage() {
             <AlertTriangle className="h-5 w-5" />
             Danger Zone
           </CardTitle>
-          <CardDescription>
-            Irreversible actions for your account
-          </CardDescription>
+          <CardDescription>Irreversible actions for your account</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -315,7 +559,7 @@ export default function SettingsPage() {
 
       {/* Save Notice */}
       <p className="text-xs text-muted-foreground text-center">
-        Changes are saved automatically
+        Profile changes require clicking "Save Changes". Other settings save automatically.
       </p>
     </div>
   )

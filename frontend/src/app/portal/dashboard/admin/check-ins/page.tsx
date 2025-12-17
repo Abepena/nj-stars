@@ -58,10 +58,10 @@ export default function CheckInsPage() {
       setLoading(true)
       setError(null)
 
-      const accessToken = (session as any)?.accessToken
+      const apiToken = (session as any)?.apiToken
       const response = await fetch(`${API_BASE}/api/portal/check-ins/`, {
         headers: {
-          "Authorization": `Bearer ${accessToken || ""}`,
+          "Authorization": `Token ${apiToken || ""}`,
           "Content-Type": "application/json",
         },
       })
@@ -85,11 +85,11 @@ export default function CheckInsPage() {
   const handleCheckIn = async (id: number) => {
     setActionLoading(id)
     try {
-      const accessToken = (session as any)?.accessToken
+      const apiToken = (session as any)?.apiToken
       const response = await fetch(`${API_BASE}/api/portal/check-ins/${id}/check_in/`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${accessToken || ""}`,
+          "Authorization": `Token ${apiToken || ""}`,
           "Content-Type": "application/json",
         },
       })
@@ -110,11 +110,11 @@ export default function CheckInsPage() {
   const handleCheckOut = async (id: number) => {
     setActionLoading(id)
     try {
-      const accessToken = (session as any)?.accessToken
+      const apiToken = (session as any)?.apiToken
       const response = await fetch(`${API_BASE}/api/portal/check-ins/${id}/check_out/`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${accessToken || ""}`,
+          "Authorization": `Token ${apiToken || ""}`,
           "Content-Type": "application/json",
         },
       })

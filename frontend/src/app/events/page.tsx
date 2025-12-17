@@ -209,6 +209,7 @@ export default function EventsPage() {
   const [mobileMapOpen, setMobileMapOpen] = useState(false)
   const [highlightDate, setHighlightDate] = useState<Date | null>(null)
   const [highlightProcessed, setHighlightProcessed] = useState(false)
+  const [mapFocusedEvents, setMapFocusedEvents] = useState<Event[]>([])
 
   // Stable callback to clear highlight after animation completes
   const handleHighlightComplete = useCallback(() => {
@@ -227,16 +228,22 @@ export default function EventsPage() {
       setInitialFilterSet(true)
     }
 
-    // Set view mode from URL parameter
+    // Set view mode from URL parameter, or default to list on mobile
     if (viewParam === 'list' || viewParam === 'calendar') {
       setViewMode(viewParam)
+    } else if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      // Default to list view on mobile
+      setViewMode('list')
     }
   }, [searchParams])
 
   // Handle highlight param to focus on a specific event with animation (runs only once)
+  // Also handles openRegistration param to auto-open the registration modal after login redirect
   useEffect(() => {
     if (!searchParams || highlightProcessed) return
     const highlightSlug = searchParams.get('highlight')
+    const openRegistration = searchParams.get('openRegistration')
+    
     if (highlightSlug && events.length > 0) {
       const eventToHighlight = events.find(e => e.slug === highlightSlug)
       if (eventToHighlight) {
@@ -246,11 +253,19 @@ export default function EventsPage() {
         setTimeFilter("upcoming")
         setInitialFilterSet(true)
         setHighlightProcessed(true) // Mark as processed to prevent re-triggering
+        
         // Trigger the animation by setting highlightDate
         // The CalendarView will handle animating to this date
         setTimeout(() => {
           setHighlightDate(eventDate)
         }, 300) // Small delay to let the page render first
+        
+        // Auto-open registration modal if returning from login
+        if (openRegistration === 'true') {
+          setTimeout(() => {
+            setSelectedEventForRegistration(eventToHighlight)
+          }, 500) // Delay to let highlight animation start first
+        }
       }
     }
   }, [searchParams, events, highlightProcessed])
@@ -258,9 +273,6 @@ export default function EventsPage() {
   // Set default filter to "My Events" for authenticated users (only if no URL params)
   useEffect(() => {
     if (!initialFilterSet && authStatus !== 'loading') {
-      if (session && !searchParams?.get('event_type')) {
-        setTimeFilter("my_events")
-      }
       setInitialFilterSet(true)
     }
   }, [session, authStatus, initialFilterSet, searchParams])
@@ -665,6 +677,7 @@ export default function EventsPage() {
                   <div className="h-[calc(80vh-60px)]">
                     <EventMap
                       events={filteredEvents}
+                      focusedEvents={mapFocusedEvents}
                       selectedEventId={highlightedEventId}
                       onEventSelect={(id) => {
                         setHighlightedEventId(id)
@@ -803,10 +816,27 @@ export default function EventsPage() {
               </div>
             </aside>
 
-            {/* Main Content + Map */}
-            <div className={cn("flex-1 flex gap-6", showMap && "lg:flex-row")}>
-              {/* Main Content */}
-              <main className={cn("flex-1 min-w-0", showMap && "lg:w-3/5")}>
+            {/* Main Content */}
+            <div className="flex-1">
+              {/* Map Section (when enabled) */}
+              {showMap && (
+                <div className="mb-6 rounded-lg overflow-hidden border border-border">
+                  <EventMap
+                    events={filteredEvents}
+                      focusedEvents={mapFocusedEvents}
+                    selectedEventId={highlightedEventId}
+                    onEventSelect={(id) => {
+                      setHighlightedEventId(id)
+                      // Scroll to the event card
+                      const element = document.getElementById(`event-card-${id}`)
+                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }}
+                    className="h-[350px] md:h-[400px]"
+                  />
+                </div>
+              )}
+
+              <main className="flex-1 min-w-0">
                 {error && (
                   <div className="mb-8">
                     <ErrorMessage error={error} />
@@ -831,6 +861,7 @@ export default function EventsPage() {
                     onRegisterClick={handleRegisterClick}
                     myEventIds={myEventIds}
                     highlightDate={highlightDate}
+                    onDateSelect={(date, events) => setMapFocusedEvents(events)}
                     onHighlightComplete={handleHighlightComplete}
                   />
                 ) : !error && filteredEvents.length === 0 ? (
@@ -884,23 +915,6 @@ export default function EventsPage() {
                   </div>
                 )}
               </main>
-
-              {/* Map Sidebar (Desktop) */}
-              {showMap && (
-                <aside className="hidden lg:block lg:w-2/5 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)]">
-                  <EventMap
-                    events={filteredEvents}
-                    selectedEventId={highlightedEventId}
-                    onEventSelect={(id) => {
-                      setHighlightedEventId(id)
-                      // Scroll to the event card
-                      const element = document.getElementById(`event-card-${id}`)
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    }}
-                    className="h-full"
-                  />
-                </aside>
-              )}
             </div>
           </div>
         </div>
@@ -929,6 +943,7 @@ function CalendarView({
   onRegisterClick,
   myEventIds = [],
   highlightDate,
+  onDateSelect,
   onHighlightComplete,
 }: {
   events: Event[]
@@ -937,6 +952,7 @@ function CalendarView({
   onRegisterClick: (event: Event) => void
   myEventIds?: number[]
   highlightDate?: Date | null
+  onDateSelect?: (date: Date | null, events: Event[]) => void
   onHighlightComplete?: () => void
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -1044,7 +1060,12 @@ function CalendarView({
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
   }
 
-  const selectedDayEvents = selectedDate ? getEventsForDay(selectedDate) : []
+  const selectedDayEvents = useMemo(() => selectedDate ? getEventsForDay(selectedDate) : [], [selectedDate, events])
+
+  // Notify parent of date selection changes for map zoom
+  useEffect(() => {
+    onDateSelect?.(selectedDate, selectedDayEvents)
+  }, [selectedDate, selectedDayEvents, onDateSelect])
 
   // Default to today if it has events and user hasn't interacted yet
   useEffect(() => {

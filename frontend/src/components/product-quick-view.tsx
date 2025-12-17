@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { useBag } from "@/lib/bag"
 import { shouldSkipImageOptimization } from "@/lib/utils"
 import { getColorHex } from "@/lib/color-utils"
+import { ZoomableImage } from "@/components/zoomable-image"
 
 interface ColorOption {
   name: string
@@ -210,46 +211,55 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
       setCurrentImageIndex(0)
     }
   }, [open, product.id, product.images, product.variants, product.available_colors, product.available_sizes])
+  // Helper: Get images filtered by a specific color
+  const getImagesForColor = (colorName: string): { url: string; alt: string }[] => {
+    if (!product.images || product.images.length === 0) {
+      if (product.primary_image_url || product.image_url) {
+        return [{ url: product.primary_image_url || product.image_url, alt: product.name }]
+      }
+      return []
+    }
 
-  // Reset image index when color changes
+    // Get variant IDs for the specified color
+    const colorVariantIds = colorName && product.variants
+      ? product.variants
+          .filter(v => v.color === colorName)
+          .map(v => v.printify_variant_id)
+          .filter((id): id is number => id !== null)
+      : []
+
+    // Filter images by color's variant IDs
+    if (colorVariantIds.length > 0) {
+      const colorImages = product.images.filter(img =>
+        img.printify_variant_ids?.some(id => colorVariantIds.includes(id))
+      )
+      if (colorImages.length > 0) {
+        return colorImages.map((img) => ({
+          url: img.url,
+          alt: img.alt_text || product.name,
+        }))
+      }
+    }
+
+    // Fallback: return all images
+    return product.images.map((img) => ({
+      url: img.url,
+      alt: img.alt_text || product.name,
+    }))
+  }
+
+  // Preserve image index when color changes (only reset if new color has fewer images)
   useEffect(() => {
-    setCurrentImageIndex(0)
+    if (!selectedColor) return
+    const newColorImages = getImagesForColor(selectedColor)
+    // Only reset to 0 if current index is out of bounds for the new color
+    if (currentImageIndex >= newColorImages.length) {
+      setCurrentImageIndex(0)
+    }
   }, [selectedColor])
 
   // Build image gallery filtered by selected color
-  const productImages: { url: string; alt: string }[] = (() => {
-    if (product.images && product.images.length > 0) {
-      // Get variant IDs for selected color
-      const selectedVariantIds = selectedColor && product.variants
-        ? product.variants
-            .filter(v => v.color === selectedColor)
-            .map(v => v.printify_variant_id)
-            .filter((id): id is number => id !== null)
-        : []
-
-      // Filter images by selected color's variant IDs
-      let filteredImages = product.images
-      if (selectedVariantIds.length > 0) {
-        const colorImages = product.images.filter(img =>
-          img.printify_variant_ids?.some(id => selectedVariantIds.includes(id))
-        )
-        // Use filtered images if any match, otherwise show all
-        if (colorImages.length > 0) {
-          filteredImages = colorImages
-        }
-      }
-
-      return filteredImages.map((img) => ({
-        url: img.url,
-        alt: img.alt_text || product.name,
-      }))
-    }
-    if (product.primary_image_url || product.image_url) {
-      return [{ url: product.primary_image_url || product.image_url, alt: product.name }]
-    }
-    return []
-  })()
-
+  const productImages = getImagesForColor(selectedColor)
   const handleAddToBag = async () => {
     setIsAdding(true)
     try {
@@ -301,35 +311,33 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
             <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
               {productImages[currentImageIndex] ? (
                 <>
-                  <Image
+                  <ZoomableImage
                     src={productImages[currentImageIndex].url}
                     alt={productImages[currentImageIndex].alt}
-                    fill
-                    className="object-contain"
                     unoptimized={shouldSkipImageOptimization(productImages[currentImageIndex].url)}
                   />
                   {productImages.length > 1 && (
                     <>
                       <button
-                        onClick={previousImage}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
+                        onClick={(e) => { e.stopPropagation(); previousImage(); }}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all z-10"
                         aria-label="Previous image"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={nextImage}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all"
+                        onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/90 hover:bg-background p-2 rounded-full shadow-md transition-all z-10"
                         aria-label="Next image"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>
                       {/* Dots - primary color for active */}
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                         {productImages.map((_, index) => (
                           <button
                             key={index}
-                            onClick={() => setCurrentImageIndex(index)}
+                            onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(index); }}
                             className={`w-2 h-2 rounded-full transition-colors ${
                               index === currentImageIndex ? 'bg-primary' : 'bg-white/50'
                             }`}
@@ -394,7 +402,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                         aria-pressed={selectedColor === color.name}
                       >
                         <span
-                          className="w-7 h-7 rounded-full border border-border"
+                          className="w-9 h-9 rounded-full border border-border"
                           style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                         />
                       </button>

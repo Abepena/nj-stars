@@ -70,10 +70,10 @@ export default function RosterPage() {
         setLoading(true)
         setError(null)
 
-        const accessToken = (session as any)?.accessToken
+        const apiToken = (session as any)?.apiToken
         const response = await fetch(`${API_BASE}/api/portal/players/`, {
           headers: {
-            "Authorization": `Bearer ${accessToken || ""}`,
+            "Authorization": `Token ${apiToken || ""}`,
             "Content-Type": "application/json",
           },
         })
