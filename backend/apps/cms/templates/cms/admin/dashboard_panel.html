@@ -1,0 +1,143 @@
+{% load wagtailadmin_tags %}
+
+<style>
+/* NJ Stars Brand Colors for Dashboard */
+:root {
+    --njs-primary: #e84393;      /* Hot Pink */
+    --njs-secondary: #00bcd4;    /* Teal */
+    --njs-accent: #d4405a;       /* Jersey Red */
+    --njs-success: #10b981;      /* Green */
+    --njs-warning: #f59e0b;      /* Amber */
+    --njs-info: #6496c8;         /* Blue */
+    --njs-dark: #1a1614;         /* Dark BG */
+    --njs-card: #252220;         /* Card BG */
+}
+</style>
+
+<section class="w-panel" style="margin-bottom: 2rem;">
+    <header class="w-panel__header">
+        <h2 class="w-panel__heading w-panel__heading--label" style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon icon-home" aria-hidden="true" style="width: 1.25rem; height: 1.25rem;">
+                <use href="#icon-home"></use>
+            </svg>
+            NJ Stars Dashboard
+        </h2>
+    </header>
+    
+    <div class="w-panel__content" style="padding: 1.5rem;">
+        <!-- Quick Stats Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <!-- Active Players -->
+            <div style="background: linear-gradient(135deg, var(--njs-success) 0%, #059669 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Active Players</div>
+                <div style="font-size: 2rem; font-weight: 700;">{{ total_players }}</div>
+            </div>
+            
+            <!-- Pending Registrations -->
+            <div style="background: linear-gradient(135deg, var(--njs-warning) 0%, #d97706 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Pending Registrations</div>
+                <div style="font-size: 2rem; font-weight: 700;">{{ pending_registrations }}</div>
+            </div>
+            
+            <!-- Unfulfilled Orders -->
+            <div style="background: linear-gradient(135deg, var(--njs-primary) 0%, #c026d3 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Unfulfilled Orders</div>
+                <div style="font-size: 2rem; font-weight: 700;">{{ unfulfilled_orders }}</div>
+            </div>
+            
+            <!-- Monthly Revenue -->
+            <div style="background: linear-gradient(135deg, var(--njs-secondary) 0%, #0891b2 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Revenue (This Month)</div>
+                <div style="font-size: 2rem; font-weight: 700;">${{ monthly_revenue|floatformat:0 }}</div>
+            </div>
+        </div>
+        
+        <!-- Two Column Layout -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            
+            <!-- Upcoming Events -->
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 1.25rem; border: 1px solid #e5e7eb;">
+                <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem; color: #1f2937;">
+                    <svg class="icon icon-date" aria-hidden="true" style="width: 1rem; height: 1rem;">
+                        <use href="#icon-date"></use>
+                    </svg>
+                    Upcoming Events
+                </h3>
+                {% if upcoming_events %}
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for event in upcoming_events %}
+                    <li style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                        <div style="font-weight: 500; color: #1f2937;">{{ event.title }}</div>
+                        <div style="font-size: 0.875rem; color: #6b7280; display: flex; gap: 1rem; margin-top: 0.25rem;">
+                            <span>{{ event.start_datetime|date:"M j, g:i A" }}</span>
+                            <span>{{ event.location|truncatechars:20 }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p style="color: #6b7280; margin: 0;">No upcoming events scheduled.</p>
+                {% endif %}
+            </div>
+            
+            <!-- Recent Registrations -->
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 1.25rem; border: 1px solid #e5e7eb;">
+                <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem; color: #1f2937;">
+                    <svg class="icon icon-user" aria-hidden="true" style="width: 1rem; height: 1rem;">
+                        <use href="#icon-user"></use>
+                    </svg>
+                    Recent Registrations
+                </h3>
+                {% if recent_registrations %}
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for reg in recent_registrations %}
+                    <li style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 500; color: #1f2937;">{{ reg.participant_first_name }} {{ reg.participant_last_name }}</div>
+                            <div style="font-size: 0.875rem; color: #6b7280;">{{ reg.event.title|truncatechars:25 }}</div>
+                        </div>
+                        <span style="
+                            background: {% if reg.payment_status == 'paid' %}#10b981{% elif reg.payment_status == 'pending' %}#f59e0b{% else %}#6b7280{% endif %};
+                            color: white;
+                            padding: 0.25rem 0.5rem;
+                            border-radius: 4px;
+                            font-size: 0.75rem;
+                            text-transform: uppercase;
+                            font-weight: 500;
+                        ">{{ reg.payment_status }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p style="color: #6b7280; margin: 0;">No registrations yet.</p>
+                {% endif %}
+            </div>
+            
+        </div>
+        
+        <!-- Quick Actions -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+            <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 1rem 0; color: #1f2937;">Quick Actions</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                <a href="{% url 'wagtailadmin_pages:add_subpage' 1 %}" 
+                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-primary) 0%, #c026d3 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
+                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                    + New Page
+                </a>
+                <a href="{% url 'wagtailimages:index' %}" 
+                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-secondary) 0%, #0891b2 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
+                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                    Manage Images
+                </a>
+                <a href="{% url 'wagtaildocs:index' %}" 
+                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-success) 0%, #059669 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
+                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                    Manage Documents
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
