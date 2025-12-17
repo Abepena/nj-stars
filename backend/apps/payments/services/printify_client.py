@@ -369,6 +369,48 @@ class PrintifyClient:
         logger.info(f"Unpublishing Printify product: {product_id}")
         return self._request("POST", f"/products/{product_id}/unpublish.json")
 
+    def set_publish_succeeded(self, product_id: str, external_id: str, external_handle: str) -> dict:
+        """
+        Notify Printify that publishing succeeded.
+        This unlocks the product in Printify after a successful publish workflow.
+        """
+        data = {
+            "external": {
+                "id": str(external_id),
+                "handle": external_handle,
+            }
+        }
+        logger.info(f"Setting publish succeeded for Printify product: {product_id}")
+        return self._request("POST", f"/products/{product_id}/publishing_succeeded.json", data=data)
+
+    def set_publish_failed(self, product_id: str, reason: str) -> dict:
+        """
+        Notify Printify that publishing failed.
+        This unlocks the product in Printify, allowing it to be edited or republished.
+        """
+        data = {
+            "reason": reason
+        }
+        logger.info(f"Setting publish failed for Printify product: {product_id} - Reason: {reason}")
+        return self._request("POST", f"/products/{product_id}/publishing_failed.json", data=data)
+
+
+    def delete_product(self, product_id: str) -> dict:
+        """
+        Delete a product from Printify entirely.
+        
+        WARNING: This permanently removes the product from your Printify shop.
+        
+        Args:
+            product_id: Printify product ID
+        
+        Returns:
+            Empty dict on success
+        """
+        logger.info(f"Deleting Printify product: {product_id}")
+        return self._request("DELETE", f"/products/{product_id}.json")
+
+
     # -------------------------------------------------------------------------
     # Webhook Verification (for future webhook handling)
     # -------------------------------------------------------------------------

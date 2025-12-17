@@ -23,6 +23,7 @@ from .views import (
     PrintifySyncView,
     PrintifySyncAndUnpublishView,
     PrintifyDeleteLocalView,
+    PrintifyUnlockView,
 )
 
 router = DefaultRouter()
@@ -57,4 +58,5 @@ urlpatterns = [
     path('admin/printify/sync/', PrintifySyncView.as_view(), name='printify-sync'),
     path('admin/printify/sync-and-unpublish/', PrintifySyncAndUnpublishView.as_view(), name='printify-sync-unpublish'),
     path('admin/printify/delete-local/', PrintifyDeleteLocalView.as_view(), name='printify-delete-local'),
+    path('admin/printify/unlock/', PrintifyUnlockView.as_view(), name='printify-unlock'),
 ]

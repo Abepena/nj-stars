@@ -634,7 +634,7 @@ export function EventRegistrationModal({
             <Separator />
 
             <div className="flex justify-between pt-4">
-              <Button variant="outline" onClick={() => setStep("confirm")}>
+              <Button variant="outline" onClick={() => setStep("waiver")}>
                 Back
               </Button>
               <Button onClick={handleSubmit} disabled={isSubmitting}>
@@ -691,6 +691,14 @@ export function EventRegistrationModal({
               <p className="text-xs text-muted-foreground">
                 Your registration is saved. You can complete payment later from the portal if needed.
               </p>
+            </div>
+
+            <Separator />
+
+            <div className="flex justify-start pt-4">
+              <Button variant="ghost" onClick={() => setStep("details")} disabled={isSubmitting}>
+                ← Back to Details
+              </Button>
             </div>
           </>
         )}

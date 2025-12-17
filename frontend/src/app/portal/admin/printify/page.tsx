@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { LayoutShell } from "@/components/layout-shell"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/toast"
@@ -19,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Loader2, RefreshCw, CheckCircle, Package, Eye, EyeOff, Download, Trash2, ExternalLink, Database, Lock } from "lucide-react"
+import { Loader2, RefreshCw, CheckCircle, Package, Eye, EyeOff, Download, Trash2, ExternalLink, Database, Lock, Unlock } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -81,6 +82,15 @@ export default function PrintifyAdminPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<PrintifyProduct | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [unlockingProductId, setUnlockingProductId] = useState<string | null>(null)
+  const [deletePrintifyDialogOpen, setDeletePrintifyDialogOpen] = useState(false)
+  const [productToDeleteFromPrintify, setProductToDeleteFromPrintify] = useState<PrintifyProduct | null>(null)
+  const [isDeletingFromPrintify, setIsDeletingFromPrintify] = useState(false)
+  
+  // Bulk selection state
+  const [selectedUnsynced, setSelectedUnsynced] = useState<Set<string>>(new Set())
+  const [selectedSynced, setSelectedSynced] = useState<Set<string>>(new Set())
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
 
   const isSuperuser = (session?.user as { is_superuser?: boolean })?.is_superuser
 
@@ -170,6 +180,185 @@ export default function PrintifyAdminPage() {
     } finally {
       setLoadingProductId(null)
     }
+  }
+
+  const handleUnlock = async (productId: string) => {
+    setUnlockingProductId(productId)
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/admin/printify/unlock/`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: productId }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success("Product unlocked! You can now unpublish or edit it.")
+        // Update the product in state to show it's no longer locked
+        setProducts(prev =>
+          prev.map(p => (p.id === productId ? { ...p, is_locked: false } : p))
+        )
+      } else {
+        toast.error(data.error || "Failed to unlock product")
+      }
+    } catch {
+      toast.error("Failed to connect to API")
+    } finally {
+      setUnlockingProductId(null)
+    }
+  }
+
+  const handleDeleteFromPrintify = async () => {
+    if (!productToDeleteFromPrintify) return
+    setIsDeletingFromPrintify(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/admin/printify/delete-product/`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: productToDeleteFromPrintify.id }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success("Product deleted from Printify" + (data.local_deleted ? " and local shop" : ""))
+        setProducts(prev => prev.filter(p => p.id !== productToDeleteFromPrintify.id))
+        setDeletePrintifyDialogOpen(false)
+        setProductToDeleteFromPrintify(null)
+      } else {
+        toast.error(data.error || "Failed to delete from Printify")
+      }
+    } catch {
+      toast.error("Failed to connect to API")
+    } finally {
+      setIsDeletingFromPrintify(false)
+    }
+  }
+
+  // Bulk selection helpers
+  const toggleSelectUnsynced = (id: string) => {
+    setSelectedUnsynced(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectSynced = (id: string) => {
+    setSelectedSynced(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectAllUnsynced = () => {
+    if (selectedUnsynced.size === unsyncedProducts.length) {
+      setSelectedUnsynced(new Set())
+    } else {
+      setSelectedUnsynced(new Set(unsyncedProducts.map(p => p.id)))
+    }
+  }
+
+  const selectAllSynced = () => {
+    if (selectedSynced.size === syncedProducts.length) {
+      setSelectedSynced(new Set())
+    } else {
+      setSelectedSynced(new Set(syncedProducts.map(p => p.id)))
+    }
+  }
+
+  // Bulk actions
+  const handleBulkSync = async () => {
+    if (selectedUnsynced.size === 0) return
+    setIsBulkProcessing(true)
+    let successCount = 0
+    let failCount = 0
+    
+    for (const productId of selectedUnsynced) {
+      try {
+        const res = await fetch(`${API_BASE}/api/payments/admin/printify/sync-and-unpublish/`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ product_id: productId }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setProducts(prev =>
+            prev.map(p => p.id === productId ? { ...p, synced: true, local_slug: data.product?.slug, local_name: data.product?.name } : p)
+          )
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch {
+        failCount++
+      }
+    }
+    
+    setSelectedUnsynced(new Set())
+    setIsBulkProcessing(false)
+    toast.success(`Synced ${successCount} products${failCount > 0 ? `, ${failCount} failed` : ""}`)
+  }
+
+  const handleBulkDeleteLocal = async () => {
+    if (selectedSynced.size === 0) return
+    setIsBulkProcessing(true)
+    let successCount = 0
+    let failCount = 0
+    
+    for (const productId of selectedSynced) {
+      try {
+        const res = await fetch(`${API_BASE}/api/payments/admin/printify/delete-local/`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ product_id: productId }),
+        })
+        if (res.ok) {
+          setProducts(prev =>
+            prev.map(p => p.id === productId ? { ...p, synced: false, local_slug: null, local_name: null } : p)
+          )
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch {
+        failCount++
+      }
+    }
+    
+    setSelectedSynced(new Set())
+    setIsBulkProcessing(false)
+    toast.success(`Removed ${successCount} from shop${failCount > 0 ? `, ${failCount} failed` : ""}`)
+  }
+
+  const handleBulkDeletePrintify = async (selectedIds: Set<string>) => {
+    if (selectedIds.size === 0) return
+    setIsBulkProcessing(true)
+    let successCount = 0
+    let failCount = 0
+    
+    for (const productId of selectedIds) {
+      try {
+        const res = await fetch(`${API_BASE}/api/payments/admin/printify/delete-product/`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ product_id: productId }),
+        })
+        if (res.ok) {
+          setProducts(prev => prev.filter(p => p.id !== productId))
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch {
+        failCount++
+      }
+    }
+    
+    setSelectedUnsynced(new Set())
+    setSelectedSynced(new Set())
+    setIsBulkProcessing(false)
+    toast.success(`Deleted ${successCount} from Printify${failCount > 0 ? `, ${failCount} failed` : ""}`)
   }
 
   const handleSync = async (productId: string) => {
@@ -378,7 +567,7 @@ export default function PrintifyAdminPage() {
                   className="flex-1 sm:flex-none"
                 >
                   <EyeOff className="h-4 w-4" />
-                  <span className="ml-2 hidden sm:inline">Unpublish</span>
+                  <span className="ml-2 hidden sm:inline">Hide</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -399,13 +588,50 @@ export default function PrintifyAdminPage() {
         {unsyncedProducts.length > 0 && (
           <Card className="mb-8 border-amber-500/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2 text-amber-500">
-                <Download className="h-5 w-5" />
-                Not in Shop Database ({unsyncedProducts.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2 text-amber-500">
+                  <Download className="h-5 w-5" />
+                  Not in Shop Database ({unsyncedProducts.length})
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="select-all-unsynced"
+                    checked={selectedUnsynced.size === unsyncedProducts.length && unsyncedProducts.length > 0}
+                    onCheckedChange={selectAllUnsynced}
+                  />
+                  <label htmlFor="select-all-unsynced" className="text-xs text-muted-foreground cursor-pointer">
+                    Select all
+                  </label>
+                </div>
+              </div>
               <CardDescription className="text-sm">
                 Products in Printify not yet synced. Click &quot;Sync&quot; to import.
               </CardDescription>
+              {selectedUnsynced.size > 0 && (
+                <div className="flex items-center gap-2 mt-3 p-2 bg-amber-500/10 rounded-lg">
+                  <span className="text-sm font-medium text-amber-500">{selectedUnsynced.size} selected</span>
+                  <div className="flex-1" />
+                  <Button
+                    size="sm"
+                    onClick={handleBulkSync}
+                    disabled={isBulkProcessing}
+                    className="bg-amber-600 hover:bg-amber-700 h-7 text-xs"
+                  >
+                    {isBulkProcessing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Download className="h-3 w-3 mr-1" />}
+                    Sync Selected
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleBulkDeletePrintify(selectedUnsynced)}
+                    disabled={isBulkProcessing}
+                    className="h-7 text-xs"
+                  >
+                    {isBulkProcessing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                    Delete Selected
+                  </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -415,10 +641,17 @@ export default function PrintifyAdminPage() {
                   return (
                     <div
                       key={product.id}
-                      className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5"
+                      className={`p-3 rounded-lg border ${selectedUnsynced.has(product.id) ? 'border-amber-500 bg-amber-500/10' : 'border-amber-500/30 bg-amber-500/5'}`}
                     >
                       {/* Mobile: Stack layout */}
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 items-start">
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0 pt-1">
+                          <Checkbox
+                            checked={selectedUnsynced.has(product.id)}
+                            onCheckedChange={() => toggleSelectUnsynced(product.id)}
+                          />
+                        </div>
                         {/* Thumbnail */}
                         <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative">
                           {product.images?.[0]?.src ? (
@@ -458,8 +691,8 @@ export default function PrintifyAdminPage() {
                           </div>
                         </div>
 
-                        {/* Action Button */}
-                        <div className="flex-shrink-0">
+                        {/* Action Buttons */}
+                        <div className="flex-shrink-0 flex gap-1">
                           <Button
                             size="sm"
                             onClick={() => handleSyncAndUnpublish(product.id)}
@@ -475,6 +708,18 @@ export default function PrintifyAdminPage() {
                               </>
                             )}
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setProductToDeleteFromPrintify(product)
+                              setDeletePrintifyDialogOpen(true)
+                            }}
+                            title="Delete from Printify"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -488,13 +733,53 @@ export default function PrintifyAdminPage() {
         {/* Synced Products List */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              In Shop Database ({syncedProducts.length})
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                In Shop Database ({syncedProducts.length})
+              </CardTitle>
+              {syncedProducts.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="select-all-synced"
+                    checked={selectedSynced.size === syncedProducts.length && syncedProducts.length > 0}
+                    onCheckedChange={selectAllSynced}
+                  />
+                  <label htmlFor="select-all-synced" className="text-xs text-muted-foreground cursor-pointer">
+                    Select all
+                  </label>
+                </div>
+              )}
+            </div>
             <CardDescription className="text-sm">
               Products synced to your local database.
             </CardDescription>
+            {selectedSynced.size > 0 && (
+              <div className="flex items-center gap-2 mt-3 p-2 bg-muted rounded-lg">
+                <span className="text-sm font-medium">{selectedSynced.size} selected</span>
+                <div className="flex-1" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleBulkDeleteLocal}
+                  disabled={isBulkProcessing}
+                  className="h-7 text-xs"
+                >
+                  {isBulkProcessing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Database className="h-3 w-3 mr-1" />}
+                  Remove from Shop
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleBulkDeletePrintify(selectedSynced)}
+                  disabled={isBulkProcessing}
+                  className="h-7 text-xs"
+                >
+                  {isBulkProcessing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                  Delete from Printify
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {isLoadingProducts && products.length === 0 ? (
@@ -516,10 +801,17 @@ export default function PrintifyAdminPage() {
                   return (
                     <div
                       key={product.id}
-                      className="p-3 rounded-lg border bg-card"
+                      className={`p-3 rounded-lg border ${selectedSynced.has(product.id) ? 'border-primary bg-primary/5' : 'bg-card'}`}
                     >
                       {/* Row 1: Thumbnail + Info + Actions (desktop) */}
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 items-start">
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0 pt-1">
+                          <Checkbox
+                            checked={selectedSynced.has(product.id)}
+                            onCheckedChange={() => toggleSelectSynced(product.id)}
+                          />
+                        </div>
                         {/* Thumbnail */}
                         <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative">
                           {product.images?.[0]?.src ? (
@@ -565,7 +857,7 @@ export default function PrintifyAdminPage() {
                           {product.visible ? (
                             <span className="flex items-center gap-1 text-xs bg-green-500/10 text-green-500 px-2 py-1 rounded-full">
                               <Eye className="h-3 w-3" />
-                              Published
+                              Available
                             </span>
                           ) : (
                             <span className="flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
@@ -574,48 +866,33 @@ export default function PrintifyAdminPage() {
                             </span>
                           )}
                           {product.is_locked && (
-                            <span className="flex items-center gap-1 text-xs bg-amber-500/10 text-amber-500 px-2 py-1 rounded-full" title="Product has active orders - cannot unpublish">
+                            <span className="flex items-center gap-1 text-xs bg-amber-500/10 text-amber-500 px-2 py-1 rounded-full" title="Product is locked in Printify">
                               <Lock className="h-3 w-3" />
                               Locked
                             </span>
                           )}
-
-                          {/* Action Buttons */}
-                          {product.visible ? (
+                          {product.is_locked && (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleUnpublish(product.id)}
-                              disabled={isLoading || product.is_locked}
-                              className="h-8"
-                              title={product.is_locked ? "Cannot unpublish: product has active orders" : "Unpublish from Printify"}
+                              onClick={() => handleUnlock(product.id)}
+                              disabled={unlockingProductId === product.id}
+                              className="h-8 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                              title="Unlock to allow unpublishing"
                             >
-                              {isLoading ? (
+                              {unlockingProductId === product.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <>
-                                  <EyeOff className="h-4 w-4 mr-1" />
-                                  Unpublish
-                                </>
-                              )}
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => handlePublish(product.id)}
-                              disabled={isLoading}
-                              className="h-8"
-                            >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Publish
+                                  <Unlock className="h-4 w-4 mr-1" />
+                                  Unlock
                                 </>
                               )}
                             </Button>
                           )}
+
+                          {/* Action Buttons */}
+                          
                           <Button
                             size="sm"
                             variant="ghost"
@@ -638,6 +915,18 @@ export default function PrintifyAdminPage() {
                               setDeleteDialogOpen(true)
                             }}
                             title="Remove from local database"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-muted-foreground"
+                          >
+                            <Database className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setProductToDeleteFromPrintify(product)
+                              setDeletePrintifyDialogOpen(true)
+                            }}
+                            title="Delete from Printify (permanent)"
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -656,7 +945,7 @@ export default function PrintifyAdminPage() {
                           {product.visible ? (
                             <span className="inline-flex items-center gap-1 text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">
                               <Eye className="h-3 w-3" />
-                              Published
+                              Available
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
@@ -670,44 +959,29 @@ export default function PrintifyAdminPage() {
                               Locked
                             </span>
                           )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-2">
-                          {product.visible ? (
+                          {product.is_locked && (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleUnpublish(product.id)}
-                              disabled={isLoading || product.is_locked}
-                              className="flex-1 h-9"
+                              onClick={() => handleUnlock(product.id)}
+                              disabled={unlockingProductId === product.id}
+                              className="h-7 px-2 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
                             >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                              {unlockingProductId === product.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
                               ) : (
                                 <>
-                                  <EyeOff className="h-4 w-4 mr-1.5" />
-                                  Unpublish
-                                </>
-                              )}
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => handlePublish(product.id)}
-                              disabled={isLoading}
-                              className="flex-1 h-9"
-                            >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Eye className="h-4 w-4 mr-1.5" />
-                                  Publish
+                                  <Unlock className="h-3 w-3 mr-1" />
+                                  Unlock
                                 </>
                               )}
                             </Button>
                           )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          
                           <Button
                             size="sm"
                             variant="outline"
@@ -770,6 +1044,33 @@ export default function PrintifyAdminPage() {
                 <Trash2 className="h-4 w-4 mr-2" />
               )}
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete from Printify Confirmation Dialog */}
+      <AlertDialog open={deletePrintifyDialogOpen} onOpenChange={setDeletePrintifyDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete from Printify?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will <strong>permanently delete</strong> "{productToDeleteFromPrintify?.title}" from your Printify account.
+              {productToDeleteFromPrintify?.synced && " It will also be removed from your local shop."}
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingFromPrintify}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteFromPrintify}
+              disabled={isDeletingFromPrintify}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingFromPrintify ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

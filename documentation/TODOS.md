@@ -28,9 +28,6 @@
 - [ ] Revise project status and remove FastAPI mention
 - [ ] Review Django rebuild plan and confirm as needed
 
-## Infrastructure & Setup
-- [ ] Remove Oracle Cloud dev setup
-
 ## Testing & QA
 - [ ] Get tests on the frontend / API routes that will be live that will stress test the app
 
@@ -46,7 +43,7 @@
 
 ## Launch Prep
 - [ ] Create MVP comprehensive implementation plan for launch this week
-- [ ] **IMPORTANT:** Evaluate the CTA buttons in the hero that would be most appropriate (or wire the tryouts to the next tryout - dynamic on age/grade)
+- [x] **IMPORTANT:** Evaluate the CTA buttons in the hero that would be most appropriate (or wire the tryouts to the next tryout - dynamic on age/grade)
 
 ---
 

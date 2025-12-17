@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import Image from "next/image"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
@@ -74,14 +74,15 @@ type SortOption = "date_asc" | "date_desc" | "name_asc" | "name_desc"
 type TimeFilter = "all" | "upcoming" | "this_week" | "this_month" | "my_events"
 
 // Event type colors for tags - includes calendarText for readable contrast on calendar items
-const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string; bgClassName: string; calendarText: string }> = {
-  open_gym: { label: 'Open Gym', className: 'text-success', bgClassName: 'bg-success', calendarText: 'text-white' },
-  tryout: { label: 'Tryout', className: 'text-info', bgClassName: 'bg-info', calendarText: 'text-white' },
-  game: { label: 'Game', className: 'text-accent', bgClassName: 'bg-accent', calendarText: 'text-white' },
-  practice: { label: 'Practice', className: 'text-warning', bgClassName: 'bg-warning', calendarText: 'text-gray-900' },
-  tournament: { label: 'Tournament', className: 'text-secondary', bgClassName: 'bg-secondary', calendarText: 'text-white' },
-  camp: { label: 'Camp', className: 'text-tertiary', bgClassName: 'bg-tertiary', calendarText: 'text-gray-900' },
-  skills: { label: 'Skills', className: 'text-primary', bgClassName: 'bg-primary', calendarText: 'text-white' },
+// calendarBg is a muted version for calendar day cells, bgClassName is the full-saturation version for badges
+const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string; bgClassName: string; calendarBg: string; calendarText: string; dotColor: string }> = {
+  open_gym: { label: 'Open Gym', className: 'text-success', bgClassName: 'bg-success', calendarBg: 'bg-success/40', calendarText: 'text-foreground', dotColor: 'bg-success/70' },
+  tryout: { label: 'Tryout', className: 'text-info', bgClassName: 'bg-info', calendarBg: 'bg-info/40', calendarText: 'text-foreground', dotColor: 'bg-info/70' },
+  game: { label: 'Game', className: 'text-accent', bgClassName: 'bg-accent', calendarBg: 'bg-accent/40', calendarText: 'text-foreground', dotColor: 'bg-accent/70' },
+  practice: { label: 'Practice', className: 'text-warning', bgClassName: 'bg-warning', calendarBg: 'bg-warning/30', calendarText: 'text-foreground', dotColor: 'bg-warning/60' },
+  tournament: { label: 'Tournament', className: 'text-secondary', bgClassName: 'bg-secondary', calendarBg: 'bg-secondary/40', calendarText: 'text-foreground', dotColor: 'bg-secondary/70' },
+  camp: { label: 'Camp', className: 'text-tertiary', bgClassName: 'bg-tertiary', calendarBg: 'bg-tertiary/30', calendarText: 'text-foreground', dotColor: 'bg-tertiary/60' },
+  skills: { label: 'Skills', className: 'text-primary', bgClassName: 'bg-primary', calendarBg: 'bg-primary/40', calendarText: 'text-foreground', dotColor: 'bg-primary/70' },
 }
 
 // Category filter colors - matches category-colors.ts
@@ -944,6 +945,8 @@ function CalendarView({
   const [isAnimating, setIsAnimating] = useState(false)
   const [pulsingDate, setPulsingDate] = useState<Date | null>(null)
   const [pendingHighlight, setPendingHighlight] = useState<Date | null>(null)
+  const [hasInitialized, setHasInitialized] = useState(false)
+  const eventListRef = useRef<HTMLDivElement>(null)
 
   // Handle highlight date animation sequence (only runs once when highlightDate is first set)
   useEffect(() => {
@@ -1042,6 +1045,37 @@ function CalendarView({
   }
 
   const selectedDayEvents = selectedDate ? getEventsForDay(selectedDate) : []
+
+  // Default to today if it has events and user hasn't interacted yet
+  useEffect(() => {
+    if (hasInitialized || highlightDate) return // Skip if already initialized or using highlight
+    
+    const today = new Date()
+    const todayEvents = getEventsForDay(today)
+    
+    if (todayEvents.length > 0 && isSameMonth(today, currentMonth)) {
+      setSelectedDate(today)
+    }
+    setHasInitialized(true)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, currentMonth]) // Only run when events load or month changes
+
+  // Auto-scroll to event list when a day is selected
+  useEffect(() => {
+    if (selectedDate && eventListRef.current) {
+      // Small delay to let the panel render
+      setTimeout(() => {
+        if (eventListRef.current) {
+          const rect = eventListRef.current.getBoundingClientRect()
+          const isFullyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight
+          
+          if (!isFullyVisible) {
+            eventListRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          }
+        }
+      }, 100)
+    }
+  }, [selectedDate])
 
   const handleDayClick = (day: Date, dayEvents: Event[]) => {
     if (dayEvents.length > 0) {
@@ -1194,7 +1228,7 @@ function CalendarView({
               >
                 {/* Date number */}
                 <div className={cn(
-                  "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full mx-auto md:mx-0 transition-all",
+                  "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full transition-all",
                   isTodayDate && "bg-primary text-primary-foreground",
                   !isCurrentMonth && "text-muted-foreground"
                 )}>
@@ -1207,13 +1241,13 @@ function CalendarView({
                     {/* Mobile: colored dots */}
                     <div className="flex flex-wrap gap-0.5 justify-center md:hidden">
                       {Object.entries(eventTypeGroups).map(([type, count]) => {
-                        const typeConfig = EVENT_TYPE_CONFIG[type] || { bgClassName: 'bg-muted' }
+                        const typeConfig = EVENT_TYPE_CONFIG[type] || { bgClassName: 'bg-muted', dotColor: 'bg-muted/70' }
                         return (
                           <div key={type} className="flex gap-0.5">
                             {Array.from({ length: Math.min(count, 3) }).map((_, idx) => (
                               <div
                                 key={idx}
-                                className={cn("w-1.5 h-1.5 rounded-full", typeConfig.bgClassName)}
+                                className={cn("w-1.5 h-1.5 rounded-full", typeConfig.dotColor || typeConfig.bgClassName)}
                               />
                             ))}
                             {count > 3 && (
@@ -1227,13 +1261,13 @@ function CalendarView({
                     {/* Desktop: compact event preview */}
                     <div className="hidden md:block space-y-0.5">
                       {dayEvents.slice(0, 2).map((event) => {
-                        const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || { bgClassName: 'bg-muted', calendarText: 'text-foreground' }
+                        const typeConfig = EVENT_TYPE_CONFIG[event.event_type] || { bgClassName: 'bg-muted', calendarBg: 'bg-muted/50', calendarText: 'text-foreground' }
                         return (
                           <div
                             key={event.id}
                             className={cn(
                               "text-[10px] px-1 py-0.5 rounded truncate font-medium",
-                              typeConfig.bgClassName,
+                              typeConfig.calendarBg || typeConfig.bgClassName,
                               typeConfig.calendarText
                             )}
                           >
@@ -1257,7 +1291,7 @@ function CalendarView({
 
       {/* Selected Day Detail Panel */}
       {selectedDate && selectedDayEvents.length > 0 && (
-        <div className="bg-card rounded-lg border border-border overflow-hidden animate-in slide-in-from-top-2 duration-200">
+        <div ref={eventListRef} className="bg-card rounded-lg border border-border overflow-hidden animate-in slide-in-from-top-2 duration-200">
           {/* Panel Header */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
             <div>
@@ -1367,9 +1401,16 @@ function CalendarView({
 
       {/* Empty state when no date selected */}
       {!selectedDate && (
-        <p className="text-center text-sm text-muted-foreground py-4">
-          Click on a day with events to see details
-        </p>
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center justify-center min-h-[100px] p-4">
+            <div className="text-center">
+              <Calendar className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Click on a day with events to see details
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

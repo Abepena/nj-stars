@@ -1966,3 +1966,123 @@ class PrintifyDeleteLocalView(PrintifyAdminView):
                 {'error': 'Failed to delete product'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class PrintifyUnlockView(PrintifyAdminView):
+    """
+    Unlock a product that is locked in Printify.
+
+    When products are published, Printify locks them until the external
+    store confirms the publish succeeded or failed. This endpoint calls
+    the publishing_failed endpoint to unlock the product, allowing it
+    to be edited or unpublished.
+
+    POST /api/payments/admin/printify/unlock/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Use publishing_failed to unlock the product
+            # This tells Printify the external publish workflow did not complete
+            client.set_publish_failed(
+                product_id=product_id,
+                reason="Unlocked via admin panel for manual management"
+            )
+
+            return Response({
+                'success': True,
+                'message': f'Product {product_id} unlocked successfully',
+            })
+
+        except PrintifyError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error unlocking Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to unlock product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyDeleteProductView(PrintifyAdminView):
+    """
+    Delete a product from Printify entirely.
+    
+    WARNING: This permanently removes the product from Printify.
+    Also removes the corresponding local product if it exists.
+
+    DELETE /api/payments/admin/printify/delete-product/
+    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    """
+
+    def delete(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response(
+                {'error': 'product_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client = get_printify_client()
+        if not client or not client.is_configured:
+            return Response(
+                {'error': 'Printify API not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        try:
+            # Delete from Printify
+            client.delete_product(product_id)
+
+            # Also delete from local DB if exists
+            local_product = Product.objects.filter(printify_product_id=product_id).first()
+            local_deleted = False
+            if local_product:
+                local_product.delete()
+                local_deleted = True
+
+            return Response({
+                'success': True,
+                'message': f'Product {product_id} deleted from Printify',
+                'local_deleted': local_deleted,
+            })
+
+        except PrintifyError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error deleting Printify product: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to delete product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

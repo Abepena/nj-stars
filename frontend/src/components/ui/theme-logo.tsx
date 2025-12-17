@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 // Logo source paths for each theme
-const LOGO_LIGHT_MODE = "/brand/logos/Text Logo Light.svg"  // Light-colored logo for light backgrounds
-const LOGO_DARK_MODE = "/brand/logos/Text Logo Dark.svg"    // Dark-colored logo for dark backgrounds
+const LOGO_LIGHT_MODE = "/brand/logos/text-logo-light.svg"; // Light-colored logo for light backgrounds
+const LOGO_DARK_MODE = "/brand/logos/text-logo-dark.svg"; // Dark-colored logo for dark backgrounds
 
 interface ThemeLogoProps {
-  width?: number
-  height?: number
-  className?: string
-  linkTo?: string | null
+  width?: number;
+  height?: number;
+  className?: string;
+  linkTo?: string | null;
 }
 
 /**
@@ -25,26 +25,26 @@ export function ThemeLogo({
   className = "",
   linkTo = "/",
 }: ThemeLogoProps) {
-  const [logoSrc, setLogoSrc] = useState(LOGO_DARK_MODE)
+  const [logoSrc, setLogoSrc] = useState(LOGO_DARK_MODE);
 
   useEffect(() => {
     const updateLogo = () => {
-      const isLightMode = document.documentElement.classList.contains("light")
-      setLogoSrc(isLightMode ? LOGO_LIGHT_MODE : LOGO_DARK_MODE)
-    }
+      const isLightMode = document.documentElement.classList.contains("light");
+      setLogoSrc(isLightMode ? LOGO_LIGHT_MODE : LOGO_DARK_MODE);
+    };
 
     // Initial update
-    updateLogo()
+    updateLogo();
 
     // Watch for class changes on html element
-    const observer = new MutationObserver(updateLogo)
+    const observer = new MutationObserver(updateLogo);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
-    })
+    });
 
-    return () => observer.disconnect()
-  }, [])
+    return () => observer.disconnect();
+  }, []);
 
   const imageElement = (
     <Image
@@ -55,7 +55,7 @@ export function ThemeLogo({
       className={className}
       priority
     />
-  )
+  );
 
   if (linkTo) {
     return (
@@ -65,8 +65,8 @@ export function ThemeLogo({
       >
         {imageElement}
       </Link>
-    )
+    );
   }
 
-  return imageElement
+  return imageElement;
 }

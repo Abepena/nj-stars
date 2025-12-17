@@ -10,11 +10,19 @@ export default function PortalLayout({
 }) {
   const pathname = usePathname()
 
-  // Dashboard routes have their own complete layout with sidebar
-  // Don't wrap them with LayoutShell to avoid double navigation
-  const isDashboardRoute = pathname?.startsWith("/portal/dashboard")
+  // Routes that have their own complete layout (don't wrap with LayoutShell)
+  const selfContainedRoutes = [
+    "/portal/dashboard",  // Dashboard has sidebar layout
+    "/portal/login",      // Full-screen auth page
+    "/portal/register",   // Full-screen auth page
+    "/portal/admin",      // Admin pages use LayoutShell directly
+  ]
 
-  if (isDashboardRoute) {
+  const isSelfContained = selfContainedRoutes.some(route =>
+    pathname?.startsWith(route)
+  )
+
+  if (isSelfContained) {
     return <>{children}</>
   }
 
