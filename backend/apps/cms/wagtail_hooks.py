@@ -86,9 +86,14 @@ class EventRegistrationModelAdmin(ModelAdmin):
     menu_icon = 'user'
     menu_order = 200
     list_display = ['participant_name', 'event', 'payment_status_badge', 'registered_at']
-    list_filter = ['payment_status', 'event']
+    list_filter = ['payment_status', 'event', 'registered_at']
     search_fields = ['participant_first_name', 'participant_last_name', 'participant_email', 'event__title']
     ordering = ['-registered_at']
+    list_export = ['csv', 'xlsx']  # Enable export for attendance lists
+    inspect_view_enabled = True    # Enable read-only detail view
+
+    # Hide technical fields from edit view
+    form_fields_exclude = ['stripe_payment_intent_id']
 
     def participant_name(self, obj):
         """Display full participant name"""
@@ -99,10 +104,9 @@ class EventRegistrationModelAdmin(ModelAdmin):
         """Display payment status with colored badge"""
         colors = {
             'pending': '#f59e0b',    # Amber
-            'paid': '#059669',       # Green
+            'completed': '#059669',  # Green
             'failed': '#dc2626',     # Red
             'refunded': '#6b7280',   # Gray
-            'waived': '#2563eb',     # Blue
         }
         color = colors.get(obj.payment_status, '#6b7280')
         return format_html(
@@ -181,6 +185,8 @@ class OrderModelAdmin(ModelAdmin):
     list_filter = ['status', 'created_at']
     search_fields = ['order_number', 'user__email', 'shipping_email']
     ordering = ['-created_at']
+    list_export = ['csv', 'xlsx']  # Enable export for sales reports
+    inspect_view_enabled = True    # Enable read-only detail view
 
     def customer_display(self, obj):
         """Display customer email"""
@@ -236,6 +242,7 @@ class PlayerModelAdmin(ModelAdmin):
     list_filter = ['team_name', 'is_active', 'position']
     search_fields = ['first_name', 'last_name', 'email']
     ordering = ['last_name', 'first_name']
+    list_export = ['csv', 'xlsx']  # Enable export for roster management
 
 
 class DuesAccountModelAdmin(ModelAdmin):
@@ -309,6 +316,7 @@ class NewsletterSubscriberModelAdmin(ModelAdmin):
     list_filter = ['status', 'source', 'subscribe_events', 'subscribe_news']
     search_fields = ['email', 'first_name']
     ordering = ['-subscribed_at']
+    list_export = ['csv', 'xlsx']  # Enable export for email campaigns
 
     def status_badge(self, obj):
         """Display subscription status with colored badge"""
@@ -350,30 +358,29 @@ modeladmin_register(CommunicationsAdminGroup)
 # =============================================================================
 
 from wagtail.admin.ui.components import Component
-from django.template.loader import render_to_string
 
 
 class DashboardPanel(Component):
     """Custom dashboard panel showing business metrics at a glance"""
     order = 50
     template_name = 'cms/admin/dashboard_panel.html'
-    
+
     def get_context_data(self, parent_context):
         context = super().get_context_data(parent_context)
-        
+
         # Get upcoming events
         upcoming_events = Event.objects.filter(
             start_datetime__gte=timezone.now()
         ).order_by('start_datetime')[:5]
-        
+
         # Get recent registrations
         recent_registrations = EventRegistration.objects.select_related(
             'event'
         ).order_by('-registered_at')[:5]
-        
+
         # Get recent orders
         recent_orders = Order.objects.order_by('-created_at')[:5]
-        
+
         # Calculate stats
         total_players = Player.objects.filter(is_active=True).count()
         pending_registrations = EventRegistration.objects.filter(
@@ -382,15 +389,14 @@ class DashboardPanel(Component):
         unfulfilled_orders = Order.objects.filter(
             status__in=['pending', 'processing']
         ).count()
-        
+
         # Revenue this month
-        from datetime import datetime
         month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         monthly_revenue = Order.objects.filter(
             status='delivered',
             created_at__gte=month_start
         ).aggregate(total=Sum('total'))['total'] or 0
-        
+
         context.update({
             'upcoming_events': upcoming_events,
             'recent_registrations': recent_registrations,

@@ -12,6 +12,22 @@
     --njs-dark: #1a1614;         /* Dark BG */
     --njs-card: #252220;         /* Card BG */
 }
+
+.njs-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+}
+.njs-badge-warning { background: var(--njs-warning); }
+.njs-badge-danger { background: var(--njs-accent); }
+.njs-badge-success { background: var(--njs-success); }
 </style>
 
 <section class="w-panel" style="margin-bottom: 2rem;">
@@ -34,16 +50,22 @@
             </div>
             
             <!-- Pending Registrations -->
-            <div style="background: linear-gradient(135deg, var(--njs-warning) 0%, #d97706 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Pending Registrations</div>
-                <div style="font-size: 2rem; font-weight: 700;">{{ pending_registrations }}</div>
-            </div>
+            <a href="{% url 'registrations_eventregistration_modeladmin_index' %}?payment_status=pending" style="text-decoration: none;">
+                <div style="background: linear-gradient(135deg, var(--njs-warning) 0%, #d97706 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Pending Registrations</div>
+                    <div style="font-size: 2rem; font-weight: 700;">{{ pending_registrations }}</div>
+                    {% if pending_registrations > 0 %}<div style="font-size: 0.75rem; margin-top: 0.25rem;">Click to view →</div>{% endif %}
+                </div>
+            </a>
             
             <!-- Unfulfilled Orders -->
-            <div style="background: linear-gradient(135deg, var(--njs-primary) 0%, #c026d3 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Unfulfilled Orders</div>
-                <div style="font-size: 2rem; font-weight: 700;">{{ unfulfilled_orders }}</div>
-            </div>
+            <a href="{% url 'payments_order_modeladmin_index' %}?status__in=pending,processing" style="text-decoration: none;">
+                <div style="background: linear-gradient(135deg, var(--njs-primary) 0%, #c026d3 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.25rem;">Unfulfilled Orders</div>
+                    <div style="font-size: 2rem; font-weight: 700;">{{ unfulfilled_orders }}</div>
+                    {% if unfulfilled_orders > 0 %}<div style="font-size: 0.75rem; margin-top: 0.25rem;">Click to view →</div>{% endif %}
+                </div>
+            </a>
             
             <!-- Monthly Revenue -->
             <div style="background: linear-gradient(135deg, var(--njs-secondary) 0%, #0891b2 100%); border-radius: 12px; padding: 1.25rem; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
@@ -62,21 +84,25 @@
                         <use href="#icon-date"></use>
                     </svg>
                     Upcoming Events
+                    <a href="{% url 'events_event_modeladmin_index' %}" style="margin-left: auto; font-size: 0.75rem; color: var(--njs-secondary);">View all →</a>
                 </h3>
                 {% if upcoming_events %}
                 <ul style="list-style: none; padding: 0; margin: 0;">
                     {% for event in upcoming_events %}
                     <li style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
-                        <div style="font-weight: 500; color: #1f2937;">{{ event.title }}</div>
-                        <div style="font-size: 0.875rem; color: #6b7280; display: flex; gap: 1rem; margin-top: 0.25rem;">
-                            <span>{{ event.start_datetime|date:"M j, g:i A" }}</span>
-                            <span>{{ event.location|truncatechars:20 }}</span>
-                        </div>
+                        <a href="{% url 'events_event_modeladmin_edit' event.pk %}" style="text-decoration: none; color: inherit;">
+                            <div style="font-weight: 500; color: #1f2937;">{{ event.title }}</div>
+                            <div style="font-size: 0.875rem; color: #6b7280; display: flex; gap: 1rem; margin-top: 0.25rem;">
+                                <span>{{ event.start_datetime|date:"M j, g:i A" }}</span>
+                                <span>{{ event.location|truncatechars:20 }}</span>
+                            </div>
+                        </a>
                     </li>
                     {% endfor %}
                 </ul>
                 {% else %}
                 <p style="color: #6b7280; margin: 0;">No upcoming events scheduled.</p>
+                <a href="{% url 'events_event_modeladmin_create' %}" style="display: inline-block; margin-top: 0.75rem; font-size: 0.875rem; color: var(--njs-primary);">+ Create your first event</a>
                 {% endif %}
             </div>
             
@@ -87,15 +113,19 @@
                         <use href="#icon-user"></use>
                     </svg>
                     Recent Registrations
+                    {% if pending_registrations > 0 %}
+                    <span class="njs-badge njs-badge-warning" title="{{ pending_registrations }} pending">{{ pending_registrations }}</span>
+                    {% endif %}
+                    <a href="{% url 'registrations_eventregistration_modeladmin_index' %}" style="margin-left: auto; font-size: 0.75rem; color: var(--njs-secondary);">View all →</a>
                 </h3>
                 {% if recent_registrations %}
                 <ul style="list-style: none; padding: 0; margin: 0;">
                     {% for reg in recent_registrations %}
                     <li style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
+                        <a href="{% url 'registrations_eventregistration_modeladmin_edit' reg.pk %}" style="text-decoration: none; color: inherit; flex: 1;">
                             <div style="font-weight: 500; color: #1f2937;">{{ reg.participant_first_name }} {{ reg.participant_last_name }}</div>
                             <div style="font-size: 0.875rem; color: #6b7280;">{{ reg.event.title|truncatechars:25 }}</div>
-                        </div>
+                        </a>
                         <span style="
                             background: {% if reg.payment_status == 'paid' %}#10b981{% elif reg.payment_status == 'pending' %}#f59e0b{% else %}#6b7280{% endif %};
                             color: white;
@@ -119,25 +149,57 @@
         <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
             <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 1rem 0; color: #1f2937;">Quick Actions</h3>
             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-                <a href="{% url 'wagtailadmin_pages:add_subpage' 1 %}" 
+                <a href="{% url 'events_event_modeladmin_create' %}" 
                    style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-primary) 0%, #c026d3 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
+                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                    + New Event
+                </a>
+                <a href="{% url 'payments_product_modeladmin_create' %}" 
+                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-secondary) 0%, #0891b2 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
+                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                    + New Product
+                </a>
+                <a href="{% url 'core_coach_modeladmin_create' %}" 
+                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-success) 0%, #059669 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
+                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                    + Add Coach
+                </a>
+                <a href="{% url 'portal_player_modeladmin_create' %}" 
+                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-info) 0%, #4a7eb8 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
+                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                    + Add Player
+                </a>
+                <a href="{% url 'wagtailadmin_pages:add_subpage' 1 %}" 
+                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: #6b7280; color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
                    onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
                     + New Page
                 </a>
-                <a href="{% url 'wagtailimages:index' %}" 
-                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-secondary) 0%, #0891b2 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
-                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
-                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
-                    Manage Images
-                </a>
-                <a href="{% url 'wagtaildocs:index' %}" 
-                   style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; text-decoration: none; background: linear-gradient(135deg, var(--njs-success) 0%, #059669 100%); color: white; font-weight: 500; font-size: 0.875rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.15s, box-shadow 0.15s;"
-                   onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
-                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
-                    Manage Documents
-                </a>
             </div>
         </div>
+        
+        <!-- Recent Orders (if any unfulfilled) -->
+        {% if unfulfilled_orders > 0 %}
+        <div style="margin-top: 1.5rem;">
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background: var(--njs-warning); color: white; padding: 0.5rem; border-radius: 8px;">
+                        <svg class="icon icon-warning" aria-hidden="true" style="width: 1.25rem; height: 1.25rem;">
+                            <use href="#icon-warning"></use>
+                        </svg>
+                    </span>
+                    <div>
+                        <div style="font-weight: 600; color: #92400e;">{{ unfulfilled_orders }} Order{{ unfulfilled_orders|pluralize }} Need{{ unfulfilled_orders|pluralize:"s," }} Attention</div>
+                        <div style="font-size: 0.875rem; color: #b45309;">Orders are pending or processing and may need fulfillment.</div>
+                    </div>
+                    <a href="{% url 'payments_order_modeladmin_index' %}" style="margin-left: auto; padding: 0.5rem 1rem; background: var(--njs-warning); color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem; font-weight: 500;">View Orders</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </section>
