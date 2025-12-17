@@ -1,0 +1,23 @@
+NEW CONTACT FORM SUBMISSION
+============================
+
+Category: {{ category_display }}
+Priority: {{ priority_display }}
+Subject: {{ submission.subject }}
+
+FROM
+----
+Name: {{ submission.name }}
+Email: {{ submission.email }}
+Phone: {{ submission.phone|default:"Not provided" }}
+Submitted: {{ submission.created_at|date:"F j, Y \a\t g:i A" }}
+
+MESSAGE
+-------
+{{ submission.message }}
+
+---
+
+View in Admin: {{ admin_url }}
+
+IP Address: {{ submission.ip_address|default:"Unknown" }}

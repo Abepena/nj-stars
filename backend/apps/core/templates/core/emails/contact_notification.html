@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Contact Form Submission</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            border-bottom: 2px solid #e91e8c;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #e91e8c;
+            margin: 0;
+            font-size: 24px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-category {
+            background-color: #e8f4fd;
+            color: #0066cc;
+        }
+        .badge-priority-low {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+        .badge-priority-normal {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+        .badge-priority-high {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+        .badge-priority-urgent {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        .meta {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .meta-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        .meta-row:last-child {
+            margin-bottom: 0;
+        }
+        .meta-label {
+            font-weight: 600;
+            color: #666;
+            width: 100px;
+            flex-shrink: 0;
+        }
+        .meta-value {
+            color: #333;
+        }
+        .meta-value a {
+            color: #e91e8c;
+            text-decoration: none;
+        }
+        .message-box {
+            background-color: #fafafa;
+            border-left: 4px solid #e91e8c;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+        .message-box h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .message-content {
+            white-space: pre-wrap;
+            color: #444;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #e91e8c;
+            color: #ffffff !important;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Contact Form Submission</h1>
+        </div>
+
+        <p style="margin-bottom: 20px;">
+            <span class="badge badge-category">{{ category_display }}</span>
+            <span class="badge badge-priority-{{ submission.priority }}">{{ priority_display }} Priority</span>
+        </p>
+
+        <h2 style="margin: 0 0 15px 0; color: #333;">{{ submission.subject }}</h2>
+
+        <div class="meta">
+            <div class="meta-row">
+                <span class="meta-label">From:</span>
+                <span class="meta-value">{{ submission.name }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Email:</span>
+                <span class="meta-value"><a href="mailto:{{ submission.email }}">{{ submission.email }}</a></span>
+            </div>
+            {% if submission.phone %}
+            <div class="meta-row">
+                <span class="meta-label">Phone:</span>
+                <span class="meta-value"><a href="tel:{{ submission.phone }}">{{ submission.phone }}</a></span>
+            </div>
+            {% endif %}
+            <div class="meta-row">
+                <span class="meta-label">Submitted:</span>
+                <span class="meta-value">{{ submission.created_at|date:"F j, Y \a\t g:i A" }}</span>
+            </div>
+        </div>
+
+        <div class="message-box">
+            <h3>Message</h3>
+            <div class="message-content">{{ submission.message }}</div>
+        </div>
+
+        <a href="{{ admin_url }}" class="action-button">View in Admin Panel</a>
+
+        <div class="footer">
+            <p>This email was sent from the NJ Stars Elite website contact form.</p>
+            <p>IP Address: {{ submission.ip_address|default:"Unknown" }}</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+from .emails import send_contact_notification
 from .models import Coach, InstagramPost, NewsletterSubscriber
 from .serializers import (
     CoachSerializer,
@@ -180,8 +181,8 @@ def contact_submit(request):
         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
     )
 
-    # TODO: Send email notification to contact@leag.app
-    # send_contact_notification_email(submission)
+    # Send email notification (async in background)
+    send_contact_notification(submission)
 
     return Response(
         {
