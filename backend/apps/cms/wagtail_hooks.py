@@ -26,6 +26,101 @@ from apps.payments.models import Product, Order
 from apps.core.models import Coach, NewsletterSubscriber
 from apps.portal.models import Player, DuesAccount
 
+# Geocoding imports
+import requests
+from django import forms
+from django.contrib import messages
+
+
+# =============================================================================
+# GEOCODING HELPER
+# =============================================================================
+
+def geocode_address(address, retries=2):
+    """
+    Geocode an address using OpenStreetMap Nominatim API (free, no API key required).
+    Returns (latitude, longitude) tuple or (None, None) if not found.
+    """
+    import time
+
+    if not address:
+        return None, None
+
+    for attempt in range(retries + 1):
+        try:
+            # Use Nominatim API with a descriptive user agent
+            url = "https://nominatim.openstreetmap.org/search"
+            params = {
+                'q': address,
+                'format': 'json',
+                'limit': 1,
+            }
+            headers = {
+                'User-Agent': 'NJStarsElite/1.0 (basketball team event management)'
+            }
+
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+            response.raise_for_status()
+
+            results = response.json()
+            if results:
+                lat = float(results[0]['lat'])
+                lon = float(results[0]['lon'])
+                return lat, lon
+            return None, None
+
+        except requests.exceptions.Timeout:
+            if attempt < retries:
+                time.sleep(1)  # Wait before retry
+                continue
+            print(f"Geocoding timeout after {retries + 1} attempts for: {address}")
+        except Exception as e:
+            print(f"Geocoding error: {e}")
+            break
+
+    return None, None
+
+
+class EventAdminForm(forms.ModelForm):
+    """Custom form for Event that auto-geocodes on save"""
+
+    class Meta:
+        model = Event
+        fields = '__all__'
+        widgets = {
+            'location': forms.TextInput(attrs={
+                'placeholder': 'Enter full address (e.g., 123 Main St, Newark, NJ 07102)',
+                'style': 'width: 100%;'
+            }),
+            'latitude': forms.NumberInput(attrs={
+                'placeholder': 'Auto-filled from address',
+                'step': '0.000001'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'placeholder': 'Auto-filled from address',
+                'step': '0.000001'
+            }),
+        }
+        help_texts = {
+            'location': 'Enter a full street address. Coordinates will be auto-filled when you save.',
+            'latitude': 'Leave blank to auto-geocode from address, or enter manually.',
+            'longitude': 'Leave blank to auto-geocode from address, or enter manually.',
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+
+        # Auto-geocode if location is set but lat/lng are empty
+        if instance.location and (not instance.latitude or not instance.longitude):
+            lat, lng = geocode_address(instance.location)
+            if lat and lng:
+                instance.latitude = lat
+                instance.longitude = lng
+
+        if commit:
+            instance.save()
+        return instance
+
 
 # =============================================================================
 # EVENTS & PROGRAMS
@@ -38,10 +133,20 @@ class EventModelAdmin(ModelAdmin):
     menu_icon = 'date'
     menu_order = 100
     add_to_settings_menu = False
-    list_display = ['title', 'event_type_badge', 'start_datetime', 'location', 'registration_status', 'spots_display']
+    list_display = ['title', 'event_type_badge', 'start_datetime', 'location', 'has_coordinates', 'registration_status', 'spots_display']
     list_filter = ['event_type', 'registration_open', 'is_public']
     search_fields = ['title', 'description', 'location']
     ordering = ['-start_datetime']
+
+    # Use custom form with geocoding
+    form = EventAdminForm
+
+    def has_coordinates(self, obj):
+        """Show if event has map coordinates"""
+        if obj.latitude and obj.longitude:
+            return format_html('<span style="color: #059669;">✓ Map Ready</span>')
+        return format_html('<span style="color: #9ca3af;">No coordinates</span>')
+    has_coordinates.short_description = 'Map'
 
     def event_type_badge(self, obj):
         """Display event type with colored badge"""
