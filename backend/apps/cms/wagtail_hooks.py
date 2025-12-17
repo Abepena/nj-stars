@@ -13,7 +13,8 @@ Menu Structure:
 """
 
 from django.utils.html import format_html
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Q
+from django.db import models
 from django.utils import timezone
 from wagtail import hooks
 from wagtail_modeladmin.options import ModelAdmin, ModelAdminGroup, modeladmin_register
@@ -413,3 +414,147 @@ class DashboardPanel(Component):
 def add_dashboard_panel(request, panels):
     """Add the custom dashboard panel to Wagtail admin homepage"""
     panels.append(DashboardPanel())
+
+
+# =============================================================================
+# FINANCIAL REPORTS
+# =============================================================================
+
+from django.urls import path, reverse
+from django.shortcuts import render
+from django.db.models import Sum, Count, F, DecimalField
+from django.db.models.functions import TruncMonth, Coalesce
+from wagtail.admin.menu import MenuItem
+from wagtail import hooks
+from datetime import timedelta
+from decimal import Decimal
+
+
+def get_report_data():
+    """Calculate financial report data"""
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # Calculate previous months for trend
+    months = []
+    for i in range(6):
+        month_date = (month_start - timedelta(days=1)).replace(day=1) if i > 0 else month_start
+        for _ in range(i):
+            month_date = (month_date - timedelta(days=1)).replace(day=1)
+        months.append(month_date)
+    months.reverse()
+
+    # Revenue by Event (completed registrations)
+    event_revenue = Event.objects.annotate(
+        total_revenue=Coalesce(
+            Sum(
+                'registrations__amount_paid',
+                filter=Q(registrations__payment_status='completed')
+            ),
+            Decimal('0'),
+            output_field=DecimalField()
+        ),
+        registration_count=Count(
+            'registrations',
+            filter=Q(registrations__payment_status='completed')
+        )
+    ).filter(total_revenue__gt=0).order_by('-total_revenue')[:10]
+
+    # Revenue by Product Category
+    from apps.payments.models import OrderItem
+    category_revenue = OrderItem.objects.filter(
+        order__status='delivered'
+    ).values('product__category').annotate(
+        total_revenue=Sum(F('product_price') * F('quantity')),
+        items_sold=Sum('quantity')
+    ).order_by('-total_revenue')
+
+    # Outstanding Dues
+    total_dues_owed = DuesAccount.objects.filter(
+        balance__gt=0
+    ).aggregate(
+        total=Coalesce(Sum('balance'), Decimal('0'), output_field=DecimalField()),
+        count=Count('id')
+    )
+
+    dues_by_player = DuesAccount.objects.filter(
+        balance__gt=0
+    ).select_related('player').order_by('-balance')[:10]
+
+    # Monthly Revenue Trend (Orders)
+    monthly_order_revenue = Order.objects.filter(
+        status='delivered',
+        created_at__gte=months[0]
+    ).annotate(
+        month=TruncMonth('created_at')
+    ).values('month').annotate(
+        total=Sum('total')
+    ).order_by('month')
+
+    # Monthly Registration Revenue
+    monthly_reg_revenue = EventRegistration.objects.filter(
+        payment_status='completed',
+        registered_at__gte=months[0]
+    ).annotate(
+        month=TruncMonth('registered_at')
+    ).values('month').annotate(
+        total=Sum('amount_paid')
+    ).order_by('month')
+
+    # Summary stats
+    total_order_revenue = Order.objects.filter(
+        status='delivered'
+    ).aggregate(total=Coalesce(Sum('total'), Decimal('0'), output_field=DecimalField()))['total']
+
+    total_registration_revenue = EventRegistration.objects.filter(
+        payment_status='completed'
+    ).aggregate(total=Coalesce(Sum('amount_paid'), Decimal('0'), output_field=DecimalField()))['total']
+
+    this_month_orders = Order.objects.filter(
+        status='delivered',
+        created_at__gte=month_start
+    ).aggregate(total=Coalesce(Sum('total'), Decimal('0'), output_field=DecimalField()))['total']
+
+    this_month_registrations = EventRegistration.objects.filter(
+        payment_status='completed',
+        registered_at__gte=month_start
+    ).aggregate(total=Coalesce(Sum('amount_paid'), Decimal('0'), output_field=DecimalField()))['total']
+
+    return {
+        'event_revenue': event_revenue,
+        'category_revenue': category_revenue,
+        'total_dues_owed': total_dues_owed,
+        'dues_by_player': dues_by_player,
+        'monthly_order_revenue': list(monthly_order_revenue),
+        'monthly_reg_revenue': list(monthly_reg_revenue),
+        'total_order_revenue': total_order_revenue,
+        'total_registration_revenue': total_registration_revenue,
+        'this_month_orders': this_month_orders,
+        'this_month_registrations': this_month_registrations,
+        'months': months,
+    }
+
+
+def financial_reports_view(request):
+    """Financial reports admin view"""
+    context = get_report_data()
+    return render(request, 'cms/admin/financial_reports.html', context)
+
+
+@hooks.register('register_admin_urls')
+def register_reports_url():
+    """Register the financial reports URL"""
+    return [
+        path('reports/', financial_reports_view, name='financial_reports'),
+    ]
+
+
+@hooks.register('register_admin_menu_item')
+def register_reports_menu_item():
+    """Add Reports menu item to sidebar"""
+    return MenuItem(
+        'Reports',
+        reverse('financial_reports'),
+        icon_name='doc-full-inverse',
+        order=600
+    )

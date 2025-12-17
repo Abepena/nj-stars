@@ -1,0 +1,428 @@
+{% extends "wagtailadmin/base.html" %}
+{% load wagtailadmin_tags %}
+
+{% block titletag %}Financial Reports{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+/* NJ Stars Brand Colors */
+:root {
+    --njs-primary: #e84393;
+    --njs-secondary: #00bcd4;
+    --njs-accent: #d4405a;
+    --njs-success: #10b981;
+    --njs-warning: #f59e0b;
+    --njs-info: #6496c8;
+}
+
+.reports-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.reports-header {
+    margin-bottom: 2rem;
+}
+
+.reports-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.reports-header p {
+    color: #6b7280;
+    margin-top: 0.5rem;
+}
+
+/* Summary Cards */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.summary-card.highlight {
+    background: linear-gradient(135deg, var(--njs-primary) 0%, #c026d3 100%);
+    color: white;
+    border: none;
+}
+
+.summary-card.highlight .summary-label {
+    color: rgba(255,255,255,0.9);
+}
+
+.summary-card.warning {
+    background: linear-gradient(135deg, var(--njs-warning) 0%, #d97706 100%);
+    color: white;
+    border: none;
+}
+
+.summary-card.warning .summary-label {
+    color: rgba(255,255,255,0.9);
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.summary-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.summary-subtext {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    opacity: 0.8;
+}
+
+/* Report Sections */
+.report-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.report-section h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.report-section h2 .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Tables */
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.report-table th {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.report-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    color: #4b5563;
+}
+
+.report-table tr:hover {
+    background: #f9fafb;
+}
+
+.report-table .amount {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-weight: 600;
+}
+
+.report-table .amount.positive {
+    color: var(--njs-success);
+}
+
+.report-table .amount.negative {
+    color: var(--njs-accent);
+}
+
+/* Badge */
+.category-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Two Column Layout */
+.two-column {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #9ca3af;
+}
+
+.empty-state p {
+    margin: 0;
+}
+
+/* Monthly Trend Chart (simple bars) */
+.trend-chart {
+    display: flex;
+    align-items: flex-end;
+    height: 120px;
+    gap: 0.5rem;
+    padding: 1rem 0;
+}
+
+.trend-bar {
+    flex: 1;
+    background: linear-gradient(180deg, var(--njs-secondary) 0%, #0891b2 100%);
+    border-radius: 4px 4px 0 0;
+    min-height: 4px;
+    position: relative;
+}
+
+.trend-bar .month-label {
+    position: absolute;
+    bottom: -1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.625rem;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+.trend-bar .value-label {
+    position: absolute;
+    top: -1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.625rem;
+    color: #6b7280;
+    white-space: nowrap;
+    font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <div class="reports-header">
+        <h1>Financial Reports</h1>
+        <p>Overview of revenue, registrations, and outstanding dues</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+        <div class="summary-card highlight">
+            <div class="summary-label">Total Revenue (All Time)</div>
+            <div class="summary-value">${{ total_order_revenue|floatformat:0|default:"0" }}</div>
+            <div class="summary-subtext">From merchandise orders</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-label">Registration Revenue (All Time)</div>
+            <div class="summary-value">${{ total_registration_revenue|floatformat:0|default:"0" }}</div>
+            <div class="summary-subtext">From event registrations</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-label">This Month (Orders)</div>
+            <div class="summary-value">${{ this_month_orders|floatformat:0|default:"0" }}</div>
+            <div class="summary-subtext">Merchandise sales</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-label">This Month (Registrations)</div>
+            <div class="summary-value">${{ this_month_registrations|floatformat:0|default:"0" }}</div>
+            <div class="summary-subtext">Event registrations</div>
+        </div>
+
+        <div class="summary-card warning">
+            <div class="summary-label">Outstanding Dues</div>
+            <div class="summary-value">${{ total_dues_owed.total|floatformat:0|default:"0" }}</div>
+            <div class="summary-subtext">{{ total_dues_owed.count|default:"0" }} players with balance</div>
+        </div>
+    </div>
+
+    <div class="two-column">
+        <!-- Revenue by Event -->
+        <div class="report-section">
+            <h2>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Revenue by Event
+            </h2>
+            {% if event_revenue %}
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Registrations</th>
+                        <th style="text-align: right;">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in event_revenue %}
+                    <tr>
+                        <td>{{ event.title|truncatechars:40 }}</td>
+                        <td>{{ event.registration_count }}</td>
+                        <td style="text-align: right;" class="amount positive">${{ event.total_revenue|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No completed registrations yet</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Revenue by Category -->
+        <div class="report-section">
+            <h2>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Revenue by Product Category
+            </h2>
+            {% if category_revenue %}
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Items Sold</th>
+                        <th style="text-align: right;">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in category_revenue %}
+                    <tr>
+                        <td><span class="category-badge">{{ cat.product__category|default:"Uncategorized" }}</span></td>
+                        <td>{{ cat.items_sold }}</td>
+                        <td style="text-align: right;" class="amount positive">${{ cat.total_revenue|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No delivered orders yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Outstanding Dues -->
+    <div class="report-section">
+        <h2>
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Outstanding Dues (Top 10)
+        </h2>
+        {% if dues_by_player %}
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Standing</th>
+                    <th style="text-align: right;">Balance Owed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in dues_by_player %}
+                <tr>
+                    <td>{{ account.player.full_name }}</td>
+                    <td>
+                        {% if account.is_good_standing %}
+                        <span style="color: var(--njs-success);">Good Standing</span>
+                        {% else %}
+                        <span style="color: var(--njs-accent);">Needs Attention</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;" class="amount negative">${{ account.balance|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No outstanding dues - all players are in good standing!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Monthly Trend -->
+    <div class="two-column">
+        <div class="report-section">
+            <h2>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                Monthly Order Revenue (Last 6 Months)
+            </h2>
+            {% if monthly_order_revenue %}
+            <div class="trend-chart">
+                {% for month_data in monthly_order_revenue %}
+                {% widthratio month_data.total total_order_revenue 100 as bar_height %}
+                <div class="trend-bar" style="height: {% if bar_height %}{{ bar_height }}{% else %}5{% endif %}%;">
+                    <span class="month-label">{{ month_data.month|date:"M" }}</span>
+                    <span class="value-label">${{ month_data.total|floatformat:0 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No order data for trend analysis</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="report-section">
+            <h2>
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Monthly Registration Revenue (Last 6 Months)
+            </h2>
+            {% if monthly_reg_revenue %}
+            <div class="trend-chart">
+                {% for month_data in monthly_reg_revenue %}
+                {% widthratio month_data.total total_registration_revenue 100 as bar_height %}
+                <div class="trend-bar" style="height: {% if bar_height %}{{ bar_height }}{% else %}5{% endif %}%; background: linear-gradient(180deg, var(--njs-primary) 0%, #c026d3 100%);">
+                    <span class="month-label">{{ month_data.month|date:"M" }}</span>
+                    <span class="value-label">${{ month_data.total|floatformat:0 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No registration data for trend analysis</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
