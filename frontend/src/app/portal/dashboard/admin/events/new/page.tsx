@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { AddressInput, AddressData } from "@/components/ui/address-input"
+import { DateTimeInput } from "@/components/ui/datetime-input"
 import {
   ChevronLeft,
   Calendar,
@@ -32,6 +33,7 @@ const EVENT_TYPES = [
   { value: "camp", label: "Camp" },
   { value: "game", label: "Game" },
   { value: "skills", label: "Skills Session" },
+  { value: "social", label: "Team Social" },
 ]
 
 interface EventFormData {
@@ -262,20 +264,18 @@ export default function NewEventPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start_datetime">Start Date & Time *</Label>
-                <Input
+                <DateTimeInput
                   id="start_datetime"
-                  type="datetime-local"
                   value={formData.start_datetime}
-                  onChange={(e) => handleChange("start_datetime", e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange("start_datetime", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end_datetime">End Date & Time *</Label>
-                <Input
+                <DateTimeInput
                   id="end_datetime"
-                  type="datetime-local"
                   value={formData.end_datetime}
-                  onChange={(e) => handleChange("end_datetime", e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange("end_datetime", e.target.value)}
                 />
               </div>
             </div>

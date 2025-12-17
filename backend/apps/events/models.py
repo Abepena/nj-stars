@@ -15,6 +15,7 @@ class EventType(models.TextChoices):
     CAMP = 'camp', 'Camp'
     GAME = 'game', 'Game'
     SKILLS = 'skills', 'Skills'
+    SOCIAL = 'social', 'Team Social'
 
 
 class CalendarSource(models.Model):

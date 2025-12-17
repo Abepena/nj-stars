@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
+import { DateTimeInput } from "@/components/ui/datetime-input"
+import { AddressInput, AddressData } from "@/components/ui/address-input"
 import {
   Select,
   SelectContent,
@@ -36,6 +38,7 @@ const EVENT_TYPE_OPTIONS = [
   { value: "camp", label: "Camp" },
   { value: "game", label: "Game" },
   { value: "skills", label: "Skills Training" },
+  { value: "social", label: "Team Social" },
 ]
 
 interface EventFormData {
@@ -247,6 +250,15 @@ export default function EditEventPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleAddressSelect = (data: AddressData) => {
+    setFormData((prev) => ({
+      ...prev,
+      location: data.formatted_address,
+      latitude: data.latitude?.toString() || "",
+      longitude: data.longitude?.toString() || "",
+    }))
+  }
+
   if (loading) {
     return <EditEventSkeleton />
   }
@@ -354,21 +366,19 @@ export default function EditEventPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start_datetime">Start Date & Time *</Label>
-                <Input
+                <DateTimeInput
                   id="start_datetime"
-                  type="datetime-local"
                   value={formData.start_datetime}
-                  onChange={(e) => updateField("start_datetime", e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("start_datetime", e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end_datetime">End Date & Time *</Label>
-                <Input
+                <DateTimeInput
                   id="end_datetime"
-                  type="datetime-local"
                   value={formData.end_datetime}
-                  onChange={(e) => updateField("end_datetime", e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("end_datetime", e.target.value)}
                   required
                 />
               </div>
@@ -376,11 +386,10 @@ export default function EditEventPage() {
 
             <div className="space-y-2">
               <Label htmlFor="registration_deadline">Registration Deadline</Label>
-              <Input
+              <DateTimeInput
                 id="registration_deadline"
-                type="datetime-local"
                 value={formData.registration_deadline}
-                onChange={(e) => updateField("registration_deadline", e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("registration_deadline", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Leave empty to allow registration until event starts
@@ -401,12 +410,12 @@ export default function EditEventPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="location">Address *</Label>
-              <Input
+              <AddressInput
                 id="location"
                 value={formData.location}
-                onChange={(e) => updateField("location", e.target.value)}
-                placeholder="e.g., 123 Main St, Newark, NJ 07102"
-                required
+                onChange={(value) => updateField("location", value)}
+                onAddressSelect={handleAddressSelect}
+                placeholder="Start typing venue address..."
               />
             </div>
 
@@ -435,7 +444,7 @@ export default function EditEventPage() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Coordinates are auto-filled when saved if address is valid
+              Coordinates auto-fill when you select an address from suggestions
             </p>
           </CardContent>
         </Card>
