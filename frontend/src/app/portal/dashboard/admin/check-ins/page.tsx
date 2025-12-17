@@ -163,7 +163,7 @@ export default function CheckInsPage() {
     <div className="space-y-6">
       {/* Back Link */}
       <Link
-        href="/portal/admin"
+        href="/portal/dashboard/admin"
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />

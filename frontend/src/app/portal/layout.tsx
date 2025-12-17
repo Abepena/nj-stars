@@ -12,10 +12,9 @@ export default function PortalLayout({
 
   // Routes that have their own complete layout (don't wrap with LayoutShell)
   const selfContainedRoutes = [
-    "/portal/dashboard",  // Dashboard has sidebar layout
+    "/portal/dashboard",  // Dashboard has sidebar layout (includes /admin)
     "/portal/login",      // Full-screen auth page
     "/portal/register",   // Full-screen auth page
-    "/portal/admin",      // Admin pages use LayoutShell directly
   ]
 
   const isSelfContained = selfContainedRoutes.some(route =>

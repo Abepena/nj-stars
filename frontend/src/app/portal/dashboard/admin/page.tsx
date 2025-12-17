@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   Users,
   Calendar,
+  CalendarPlus,
   DollarSign,
   ClipboardCheck,
   ChevronRight,
@@ -182,7 +183,7 @@ export default function AdminDashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link href="/portal/admin/check-ins">
+        <Link href="/portal/dashboard/admin/check-ins">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -199,7 +200,7 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/portal/admin/roster">
+        <Link href="/portal/dashboard/admin/roster">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -209,6 +210,23 @@ export default function AdminDashboardPage() {
                 <h3 className="font-semibold">View Roster</h3>
                 <p className="text-sm text-muted-foreground">
                   {admin_stats.total_players} active players
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/portal/dashboard/admin/events/new">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                <CalendarPlus className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Create Event</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add a new event to the calendar
                 </p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -231,7 +249,7 @@ export default function AdminDashboardPage() {
                   Participants awaiting check-in for today's events
                 </CardDescription>
               </div>
-              <Link href="/portal/admin/check-ins">
+              <Link href="/portal/dashboard/admin/check-ins">
                 <Button variant="outline" size="sm">
                   View All
                 </Button>

@@ -21,7 +21,8 @@ import {
   X,
   ChevronLeft,
   Crown,
-  LayoutTemplate
+  LayoutTemplate,
+  Shirt
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -39,10 +40,11 @@ const parentNavItems = [
 ]
 
 const staffNavItems = [
-  { href: "/portal/admin", label: "Admin Dashboard", icon: Shield },
-  { href: "/portal/deliveries", label: "Deliveries", icon: Package },
-  { href: "/portal/admin/check-ins", label: "Check-Ins", icon: ClipboardList },
-  { href: "/portal/admin/roster", label: "Roster", icon: Users },
+  { href: "/portal/dashboard/admin", label: "Admin Dashboard", icon: Shield },
+  { href: "/portal/dashboard/admin/printify", label: "Merch / Printify", icon: Shirt },
+  { href: "/portal/dashboard/admin/check-ins", label: "Check-Ins", icon: ClipboardList },
+  { href: "/portal/dashboard/admin/roster", label: "Roster", icon: Users },
+  { href: "/portal/dashboard/admin/events", label: "Events", icon: ClipboardList },
 ]
 
 const superuserNavItems = [
