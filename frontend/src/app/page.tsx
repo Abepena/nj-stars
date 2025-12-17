@@ -41,7 +41,7 @@ export default function Home() {
 
       {/* Contact Form */}
       <FadeInSection direction="up" delay={100}>
-        <ContactForm wrapInSection />
+        <ContactForm wrapInSection compact />
       </FadeInSection>
 
       {/* Newsletter Signup */}

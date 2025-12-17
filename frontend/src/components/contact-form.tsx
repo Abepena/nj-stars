@@ -14,22 +14,27 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
   MessageSquare,
   Send,
   Loader2,
   CheckCircle,
   Mail,
-  Phone,
   HelpCircle,
   CreditCard,
   Settings,
   AlertTriangle,
   MessageCircle,
+  ChevronDown,
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-const CATEGORIES = [
+export const CATEGORIES = [
   { value: "general", label: "General Question", icon: HelpCircle, description: "Questions about our programs" },
   { value: "registration", label: "Registration & Events", icon: MessageCircle, description: "Tryouts, camps, tournaments" },
   { value: "payments", label: "Orders & Payments", icon: CreditCard, description: "Billing, refunds, merchandise" },
@@ -39,21 +44,27 @@ const CATEGORIES = [
 ]
 
 interface ContactFormProps {
+  /** Wrap in a section element with padding */
   wrapInSection?: boolean
+  /** Compact mode: title + dropdown + collapsible form (for homepage) */
+  compact?: boolean
+  /** Initial category selection */
+  initialCategory?: string
 }
 
-export function ContactForm({ wrapInSection = false }: ContactFormProps) {
+export function ContactForm({ wrapInSection = false, compact = false, initialCategory = "" }: ContactFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    category: "",
+    category: initialCategory,
     subject: "",
     message: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,6 +90,7 @@ export function ContactForm({ wrapInSection = false }: ContactFormProps) {
           subject: "",
           message: "",
         })
+        setIsOpen(false)
       } else {
         const data = await response.json()
         setError(data.message || "Something went wrong. Please try again.")
@@ -95,6 +107,14 @@ export function ContactForm({ wrapInSection = false }: ContactFormProps) {
     setError(null)
   }
 
+  const handleCategoryChange = (value: string) => {
+    handleChange("category", value)
+    // Auto-expand form when category is selected in compact mode
+    if (compact && value) {
+      setIsOpen(true)
+    }
+  }
+
   // Success state
   if (submitted) {
     const content = (
@@ -105,7 +125,7 @@ export function ContactForm({ wrapInSection = false }: ContactFormProps) {
           </div>
           <h3 className="text-2xl font-bold mb-2">Message Sent!</h3>
           <p className="text-muted-foreground mb-6">
-            Thank you for reaching out. We'll get back to you within 24-48 hours.
+            Thank you for reaching out. We&apos;ll get back to you within 24-48 hours.
           </p>
           <Button onClick={() => setSubmitted(false)} variant="outline">
             Send Another Message
@@ -124,6 +144,146 @@ export function ContactForm({ wrapInSection = false }: ContactFormProps) {
     return content
   }
 
+  // Compact mode for homepage
+  if (compact) {
+    const compactContent = (
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="pt-6">
+          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            {/* Header row: Title + Category Dropdown */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-primary" />
+                  Get in Touch
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Questions? We&apos;re here to help.
+                </p>
+              </div>
+              <div className="w-full sm:w-[200px]">
+                <Select
+                  value={formData.category}
+                  onValueChange={handleCategoryChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select topic" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Collapsible Trigger */}
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-between hover:bg-muted/50 -mx-2 px-2"
+              >
+                <span className="text-sm text-muted-foreground">
+                  {isOpen ? "Hide form" : "Show contact form"}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+
+            {/* Collapsible Form Content */}
+            <CollapsibleContent className="pt-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="compact-name">Name *</Label>
+                    <Input
+                      id="compact-name"
+                      value={formData.name}
+                      onChange={(e) => handleChange("name", e.target.value)}
+                      placeholder="Your name"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="compact-email">Email *</Label>
+                    <Input
+                      id="compact-email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleChange("email", e.target.value)}
+                      placeholder="you@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="compact-subject">Subject *</Label>
+                  <Input
+                    id="compact-subject"
+                    value={formData.subject}
+                    onChange={(e) => handleChange("subject", e.target.value)}
+                    placeholder="Brief description of your inquiry"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="compact-message">Message *</Label>
+                  <Textarea
+                    id="compact-message"
+                    value={formData.message}
+                    onChange={(e) => handleChange("message", e.target.value)}
+                    placeholder="Please provide as much detail as possible..."
+                    rows={4}
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-destructive/10 text-destructive text-sm px-4 py-3 rounded-lg">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !formData.category}
+                  className="w-full"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Message
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CollapsibleContent>
+          </Collapsible>
+        </CardContent>
+      </Card>
+    )
+
+    if (wrapInSection) {
+      return (
+        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-muted/30">
+          <div className="max-w-7xl mx-auto">{compactContent}</div>
+        </section>
+      )
+    }
+    return compactContent
+  }
+
+  // Full layout (for /contact page)
   const formContent = (
     <div className="grid lg:grid-cols-5 gap-8">
       {/* Category Selection */}
@@ -172,7 +332,7 @@ export function ContactForm({ wrapInSection = false }: ContactFormProps) {
             Send us a message
           </CardTitle>
           <CardDescription>
-            Fill out the form below and we'll respond as soon as possible.
+            Fill out the form below and we&apos;ll respond as soon as possible.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -297,7 +457,7 @@ export function ContactForm({ wrapInSection = false }: ContactFormProps) {
             <h2 className="text-3xl font-bold mb-3">Get in Touch</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Have questions about our programs, need help with your account, or want to provide feedback?
-              We're here to help.
+              We&apos;re here to help.
             </p>
           </div>
           {formContent}
