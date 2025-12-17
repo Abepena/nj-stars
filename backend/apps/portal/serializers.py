@@ -290,3 +290,148 @@ class WaiverSignSerializer(serializers.Serializer):
     """Sign a waiver"""
     signer_name = serializers.CharField(max_length=200, required=True)
     acknowledged = serializers.BooleanField(required=True)
+
+
+# ==================== Admin Serializers ====================
+
+class GuardianSummarySerializer(serializers.Serializer):
+    """Guardian info for roster admin view"""
+    id = serializers.IntegerField(source='guardian.id')
+    first_name = serializers.CharField(source='guardian.first_name')
+    last_name = serializers.CharField(source='guardian.last_name')
+    email = serializers.EmailField(source='guardian.email')
+    phone = serializers.SerializerMethodField()
+    relationship = serializers.CharField()
+    is_primary = serializers.BooleanField()
+
+    def get_phone(self, obj):
+        if hasattr(obj.guardian, 'profile'):
+            return obj.guardian.profile.phone
+        return ''
+
+
+class PlayerAdminSerializer(serializers.ModelSerializer):
+    """Full player info for admin roster view"""
+    age = serializers.IntegerField(read_only=True)
+    guardians = serializers.SerializerMethodField()
+    waiver_signed = serializers.SerializerMethodField()
+    grade = serializers.SerializerMethodField()
+    school = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Player
+        fields = [
+            'id', 'first_name', 'last_name', 'date_of_birth', 'age',
+            'email', 'phone', 'jersey_number', 'position',
+            'team_name', 'medical_notes',
+            'emergency_contact_name', 'emergency_contact_phone',
+            'guardians', 'waiver_signed', 'grade', 'school',
+            'is_active', 'created_at'
+        ]
+
+    def get_guardians(self, obj):
+        relationships = obj.guardian_relationships.select_related(
+            'guardian', 'guardian__profile'
+        ).all()
+        return GuardianSummarySerializer(relationships, many=True).data
+
+    def get_waiver_signed(self, obj):
+        # Check if any guardian has signed waiver
+        for rel in obj.guardian_relationships.select_related('guardian__profile'):
+            if hasattr(rel.guardian, 'profile') and rel.guardian.profile.has_signed_waiver:
+                return True
+        return False
+
+    def get_grade(self, obj):
+        # Calculate grade from age (rough estimate)
+        age = obj.age
+        if age < 5:
+            return None
+        if age >= 18:
+            return 12
+        return max(1, min(12, age - 5))
+
+    def get_school(self, obj):
+        # School info could be stored in team_name or a dedicated field
+        return obj.team_name if obj.team_name else None
+
+
+class RegistrationAdminSerializer(serializers.ModelSerializer):
+    """Registration info for admin view"""
+    event = serializers.SerializerMethodField()
+    checked_in = serializers.SerializerMethodField()
+    checked_in_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventRegistration
+        fields = [
+            'id', 'event',
+            'participant_first_name', 'participant_last_name',
+            'participant_email', 'participant_phone', 'participant_age',
+            'emergency_contact_name', 'emergency_contact_phone',
+            'waiver_signed', 'payment_status', 'amount_paid',
+            'registered_at', 'checked_in', 'checked_in_at'
+        ]
+
+    def get_event(self, obj):
+        return {
+            'id': obj.event.id,
+            'title': obj.event.title,
+            'slug': obj.event.slug,
+            'start_datetime': obj.event.start_datetime,
+        }
+
+    def get_checked_in(self, obj):
+        return hasattr(obj, 'check_in') and obj.check_in.is_checked_in
+
+    def get_checked_in_at(self, obj):
+        if hasattr(obj, 'check_in') and obj.check_in.checked_in_at:
+            return obj.check_in.checked_in_at
+        return None
+
+
+class EventCheckInAdminSerializer(serializers.Serializer):
+    """Event with registrations for check-in admin view"""
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    slug = serializers.CharField()
+    start_datetime = serializers.DateTimeField()
+    end_datetime = serializers.DateTimeField()
+    location = serializers.CharField()
+    registrations = serializers.SerializerMethodField()
+    checked_in_count = serializers.SerializerMethodField()
+    total_registrations = serializers.SerializerMethodField()
+
+    def get_registrations(self, obj):
+        registrations = obj.registrations.select_related('check_in').all()
+        result = []
+        for reg in registrations:
+            checked_in = hasattr(reg, 'check_in') and reg.check_in.is_checked_in
+            checked_in_at = None
+            checked_in_by = None
+            if hasattr(reg, 'check_in') and reg.check_in.checked_in_at:
+                checked_in_at = reg.check_in.checked_in_at.isoformat()
+                if reg.check_in.checked_in_by:
+                    checked_in_by = reg.check_in.checked_in_by.get_full_name() or reg.check_in.checked_in_by.email
+
+            result.append({
+                'id': reg.id,
+                'participant_first_name': reg.participant_first_name,
+                'participant_last_name': reg.participant_last_name,
+                'participant_email': reg.participant_email,
+                'checked_in': checked_in,
+                'checked_in_at': checked_in_at,
+                'checked_in_by': checked_in_by,
+                'registered_at': reg.registered_at.isoformat(),
+            })
+        return result
+
+    def get_checked_in_count(self, obj):
+        return EventCheckIn.objects.filter(
+            event_registration__event=obj,
+            checked_in_at__isnull=False,
+            checked_out_at__isnull=True
+        ).count()
+
+    def get_total_registrations(self, obj):
+        return obj.registrations.count()

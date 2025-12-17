@@ -4,7 +4,9 @@ from .views import (
     UserProfileViewSet, PlayerViewSet, DuesAccountViewSet,
     SavedPaymentMethodViewSet, PromoCreditViewSet, EventCheckInViewSet,
     parent_dashboard, staff_dashboard, waiver_status, sign_waiver,
-    check_email, link_registration, social_auth
+    check_email, link_registration, social_auth,
+    # Admin views
+    admin_roster, admin_check_ins, admin_check_in_participant, admin_registrations
 )
 
 router = DefaultRouter()
@@ -24,4 +26,10 @@ urlpatterns = [
     path('check-email/', check_email, name='check-email'),
     path('link-registration/', link_registration, name='link-registration'),
     path('social-auth/', social_auth, name='social-auth'),
+
+    # Admin endpoints
+    path('admin/roster/', admin_roster, name='admin-roster'),
+    path('admin/check-ins/', admin_check_ins, name='admin-check-ins'),
+    path('admin/check-ins/<slug:event_slug>/<int:registration_id>/', admin_check_in_participant, name='admin-check-in-participant'),
+    path('admin/registrations/', admin_registrations, name='admin-registrations'),
 ]

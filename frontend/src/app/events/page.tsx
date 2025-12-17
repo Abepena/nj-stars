@@ -211,6 +211,11 @@ export default function EventsPage() {
   const [highlightProcessed, setHighlightProcessed] = useState(false)
   const [mapFocusedEvents, setMapFocusedEvents] = useState<Event[]>([])
 
+  // Stable callback to update map focused events when calendar date changes
+  const handleDateSelect = useCallback((date: Date | null, events: Event[]) => {
+    setMapFocusedEvents(events)
+  }, [])
+
   // Stable callback to clear highlight after animation completes
   const handleHighlightComplete = useCallback(() => {
     setHighlightDate(null)
@@ -861,7 +866,7 @@ export default function EventsPage() {
                     onRegisterClick={handleRegisterClick}
                     myEventIds={myEventIds}
                     highlightDate={highlightDate}
-                    onDateSelect={(date, events) => setMapFocusedEvents(events)}
+                    onDateSelect={handleDateSelect}
                     onHighlightComplete={handleHighlightComplete}
                   />
                 ) : !error && filteredEvents.length === 0 ? (

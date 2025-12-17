@@ -668,3 +668,178 @@ def social_auth(request):
         'token': token.key,
         'created': created,
     }, status=status.HTTP_200_OK)
+
+
+# ==================== Admin API Views ====================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsStaffMember])
+def admin_roster(request):
+    """
+    Get all active players with guardian information for admin roster view.
+
+    GET /api/portal/admin/roster/
+
+    Query params:
+    - position: Filter by position (PG, SG, SF, PF, C)
+    - search: Search by name or jersey number
+    - waiver: Filter by waiver status (signed, unsigned)
+
+    Returns list of players with guardian info.
+    """
+    from .serializers import PlayerAdminSerializer
+
+    queryset = Player.objects.filter(is_active=True).prefetch_related(
+        'guardian_relationships__guardian__profile'
+    )
+
+    # Apply filters
+    position = request.query_params.get('position')
+    if position:
+        queryset = queryset.filter(position=position)
+
+    search = request.query_params.get('search')
+    if search:
+        queryset = queryset.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(jersey_number__icontains=search)
+        )
+
+    # Order by last name
+    queryset = queryset.order_by('last_name', 'first_name')
+
+    serializer = PlayerAdminSerializer(queryset, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsStaffMember])
+def admin_check_ins(request):
+    """
+    Get events with their registrations for check-in management.
+
+    GET /api/portal/admin/check-ins/
+
+    Query params:
+    - date: Filter by date (YYYY-MM-DD format, defaults to today)
+    - upcoming: If 'true', show upcoming events
+    - past: If 'true', show past events
+
+    Returns list of events with registrations and check-in status.
+    """
+    from .serializers import EventCheckInAdminSerializer
+
+    today = timezone.now().date()
+
+    queryset = Event.objects.prefetch_related(
+        'registrations',
+        'registrations__check_in',
+        'registrations__check_in__checked_in_by'
+    )
+
+    # Apply date filters
+    date_param = request.query_params.get('date')
+    upcoming = request.query_params.get('upcoming') == 'true'
+    past = request.query_params.get('past') == 'true'
+
+    if date_param:
+        queryset = queryset.filter(start_datetime__date=date_param)
+    elif upcoming:
+        queryset = queryset.filter(start_datetime__date__gte=today)
+    elif past:
+        queryset = queryset.filter(end_datetime__date__lt=today)
+    else:
+        # Default to today
+        queryset = queryset.filter(start_datetime__date=today)
+
+    # Only show events with registrations
+    queryset = queryset.filter(registrations__isnull=False).distinct()
+
+    # Order by start time
+    queryset = queryset.order_by('start_datetime')
+
+    serializer = EventCheckInAdminSerializer(queryset, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsStaffMember])
+def admin_check_in_participant(request, event_slug, registration_id):
+    """
+    Check in a participant for an event.
+
+    POST /api/portal/admin/check-ins/{event_slug}/{registration_id}/
+
+    Creates or updates EventCheckIn record.
+    """
+    try:
+        registration = EventRegistration.objects.select_related('event').get(
+            id=registration_id,
+            event__slug=event_slug
+        )
+    except EventRegistration.DoesNotExist:
+        return Response(
+            {'error': 'Registration not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Get or create check-in record
+    check_in, created = EventCheckIn.objects.get_or_create(
+        event_registration=registration
+    )
+
+    # Perform check-in
+    check_in.check_in(user=request.user)
+
+    return Response({
+        'success': True,
+        'registration_id': registration.id,
+        'checked_in_at': check_in.checked_in_at,
+        'checked_in_by': request.user.get_full_name() or request.user.email
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsStaffMember])
+def admin_registrations(request):
+    """
+    Get all event registrations for admin management.
+
+    GET /api/portal/admin/registrations/
+
+    Query params:
+    - event: Filter by event slug
+    - payment_status: Filter by payment status (pending, completed, failed, refunded)
+    - search: Search by participant name or email
+
+    Returns list of all registrations with event info.
+    """
+    from .serializers import RegistrationAdminSerializer
+
+    queryset = EventRegistration.objects.select_related(
+        'event', 'user', 'check_in'
+    ).prefetch_related('check_in')
+
+    # Apply filters
+    event_slug = request.query_params.get('event')
+    if event_slug:
+        queryset = queryset.filter(event__slug=event_slug)
+
+    payment_status = request.query_params.get('payment_status')
+    if payment_status:
+        queryset = queryset.filter(payment_status=payment_status)
+
+    search = request.query_params.get('search')
+    if search:
+        queryset = queryset.filter(
+            Q(participant_first_name__icontains=search) |
+            Q(participant_last_name__icontains=search) |
+            Q(participant_email__icontains=search)
+        )
+
+    # Order by registration date (newest first)
+    queryset = queryset.order_by('-registered_at')
+
+    serializer = RegistrationAdminSerializer(queryset, many=True)
+    return Response(serializer.data)
