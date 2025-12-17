@@ -27,6 +27,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images-api.printify.com',
       },
+      // Printify S3 product mockup images
+      {
+        protocol: 'https',
+        hostname: 'pfy-prod-products-mockup-media.s3.us-east-2.amazonaws.com',
+      },
       // Railway default domains
       {
         protocol: 'https',
