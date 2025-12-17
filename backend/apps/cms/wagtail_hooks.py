@@ -198,6 +198,26 @@ class EventRegistrationModelAdmin(ModelAdmin):
     list_export = ['csv', 'xlsx']  # Enable export for attendance lists
     inspect_view_enabled = True    # Enable read-only detail view
 
+    # Export all relevant fields for Google Sheets import
+    export_fields = [
+        'event',
+        'participant_first_name',
+        'participant_last_name',
+        'participant_age',
+        'participant_email',
+        'participant_phone',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'emergency_contact_relationship',
+        'medical_notes',
+        'waiver_signed',
+        'waiver_signer_name',
+        'waiver_signed_at',
+        'payment_status',
+        'amount_paid',
+        'registered_at',
+    ]
+
     # Hide technical fields from edit view
     form_fields_exclude = ['stripe_payment_intent_id']
 
