@@ -218,7 +218,7 @@ export default function EditEventPage() {
       if (response.ok) {
         setSuccessMessage("Event updated successfully!")
         setTimeout(() => {
-          router.push("/portal/dashboard/admin/events")
+          router.push("/portal/dashboard/events")
         }, 1500)
       } else {
         const errorData = await response.json().catch(() => null)
@@ -269,7 +269,7 @@ export default function EditEventPage() {
         <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Error</h2>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <Link href="/portal/dashboard/admin/events">
+        <Link href="/portal/dashboard/events">
           <Button>Back to Events</Button>
         </Link>
       </div>
@@ -279,7 +279,7 @@ export default function EditEventPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <Link
-        href="/portal/dashboard/admin/events"
+        href="/portal/dashboard/events"
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />
@@ -535,7 +535,7 @@ export default function EditEventPage() {
 
         {/* Submit */}
         <div className="flex items-center justify-end gap-4">
-          <Link href="/portal/dashboard/admin/events">
+          <Link href="/portal/dashboard/events">
             <Button type="button" variant="outline">
               Cancel
             </Button>

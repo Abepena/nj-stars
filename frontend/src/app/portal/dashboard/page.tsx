@@ -4,13 +4,11 @@
  * Dashboard Router
  *
  * Routes authenticated users to the appropriate dashboard based on their role.
- * Uses the example dashboards until real functionality is implemented.
  *
  * Role hierarchy:
- * - superuser: Full admin access (is_superuser=true)
- * - staff: Coach/staff access (role='staff' or is_staff=true)
- * - player: Player 13+ with own account (role='player')
- * - parent: Parent/guardian managing children (role='parent', default)
+ * - superuser/staff: Full admin dashboard with management tools
+ * - player: Player dashboard (13+ with own account)
+ * - parent: Parent/guardian dashboard managing children (default)
  */
 
 import { useSession } from "next-auth/react"
@@ -18,11 +16,10 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Loader2 } from "lucide-react"
 
-// Import example dashboards
+// Import dashboards
+import AdminDashboard from "@/components/dashboard/admin-dashboard"
 import PlayerExamplePage from "../examples/player/page"
 import ParentExamplePage from "../examples/parent/page"
-import StaffExamplePage from "../examples/staff/page"
-import SuperuserExamplePage from "../examples/superuser/page"
 
 // Type for the extended session user
 interface ExtendedUser {
@@ -64,21 +61,16 @@ export default function DashboardPage() {
   const user = session.user as ExtendedUser
 
   // Determine which dashboard to show based on role hierarchy
-  // 1. Superuser takes priority (full admin access)
-  if (user.is_superuser) {
-    return <SuperuserExamplePage />
+  // 1. Superuser or Staff - Full admin dashboard
+  if (user.is_superuser || user.is_staff || user.role === "staff") {
+    return <AdminDashboard />
   }
 
-  // 2. Staff/Coach access (is_staff flag or staff role)
-  if (user.is_staff || user.role === "staff") {
-    return <StaffExamplePage />
-  }
-
-  // 3. Player (13+) with own account
+  // 2. Player (13+) with own account
   if (user.role === "player") {
     return <PlayerExamplePage />
   }
 
-  // 4. Parent/Guardian (default)
+  // 3. Parent/Guardian (default)
   return <ParentExamplePage />
 }

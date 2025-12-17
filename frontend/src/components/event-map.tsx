@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { MapPin, Calendar, Clock, DollarSign, Navigation, ChevronLeft, ChevronRight } from "lucide-react"
+import { MapPin, Calendar, Clock, DollarSign, Navigation, ChevronLeft, ChevronRight, Home } from "lucide-react"
 
 interface Event {
   id: number
@@ -20,14 +20,13 @@ interface Event {
 }
 
 interface EventMapProps {
-  focusedEvents?: Event[]  // Events to zoom/focus on (e.g., from calendar day selection)
+  focusedEvents?: Event[]
   events: Event[]
   selectedEventId?: number | null
   onEventSelect?: (eventId: number) => void
   className?: string
 }
 
-// Location group - events that share the same coordinates
 interface LocationGroup {
   lat: number
   lng: number
@@ -35,110 +34,51 @@ interface LocationGroup {
   locationKey: string
 }
 
-// Event type colors for markers (hex values for Google Maps)
 const EVENT_TYPE_COLORS: Record<string, { hex: string; label: string }> = {
-  open_gym: { hex: "#3eb489", label: "Open Gym" },     // success/green
-  tryout: { hex: "#5a8fd8", label: "Tryout" },        // info/blue
-  game: { hex: "#d45d6e", label: "Game" },            // accent/red
-  practice: { hex: "#d4a35a", label: "Practice" },    // warning/amber
-  tournament: { hex: "#1ab4c7", label: "Tournament" }, // secondary/teal
-  camp: { hex: "#d4a821", label: "Camp" },            // tertiary/amber
+  open_gym: { hex: "#3eb489", label: "Open Gym" },
+  tryout: { hex: "#5a8fd8", label: "Tryout" },
+  game: { hex: "#d45d6e", label: "Game" },
+  practice: { hex: "#d4a35a", label: "Practice" },
+  tournament: { hex: "#1ab4c7", label: "Tournament" },
+  camp: { hex: "#d4a821", label: "Camp" },
 }
 
-// Default center: Central New Jersey
-const DEFAULT_CENTER = {
-  lat: 40.4774,
-  lng: -74.2591,
+// NJ Stars Practice Facility - 75 Stivers Street, Cresskill, NJ
+const HOME_BASE = {
+  lat: 40.9415,
+  lng: -73.9585,
+  name: "NJ Stars Practice Facility",
+  address: "75 Stivers Street, Cresskill, NJ",
 }
+
+const DEFAULT_ZOOM = 15
 
 const mapContainerStyle = {
   width: "100%",
   height: "100%",
 }
 
-// Dark mode map styling
 const darkMapStyles = [
   { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-  {
-    featureType: "administrative.locality",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#d59563" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#d59563" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "geometry",
-    stylers: [{ color: "#263c3f" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#6b9a76" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#38414e" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#212a37" }],
-  },
-  {
-    featureType: "road",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#9ca5b3" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#746855" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#1f2835" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#f3d19c" }],
-  },
-  {
-    featureType: "transit",
-    elementType: "geometry",
-    stylers: [{ color: "#2f3948" }],
-  },
-  {
-    featureType: "transit.station",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#d59563" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#17263c" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#515c6d" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#17263c" }],
-  },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#263c3f" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#6b9a76" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#212a37" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#746855" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2835" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#f3d19c" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#2f3948" }] },
+  { featureType: "transit.station", elementType: "labels.text.fill", stylers: [{ color: "#d59563" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] },
+  { featureType: "water", elementType: "labels.text.stroke", stylers: [{ color: "#17263c" }] },
 ]
 
-// Create SVG marker icon with custom color and optional badge for multiple events
 function createMarkerIcon(color: string, isSelected: boolean, hasMultiple: boolean): google.maps.Symbol {
   const scale = isSelected ? 1.3 : 1
   return {
@@ -152,7 +92,19 @@ function createMarkerIcon(color: string, isSelected: boolean, hasMultiple: boole
   }
 }
 
-// Round coordinates to group nearby events (within ~10m)
+// Home base marker - star shape
+function createHomeMarkerIcon(): google.maps.Symbol {
+  return {
+    path: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+    fillColor: "#ec4899",  // Pink/primary color
+    fillOpacity: 1,
+    strokeColor: "#ffffff",
+    strokeWeight: 2,
+    scale: 1.2,
+    anchor: { x: 12, y: 12 } as google.maps.Point,
+  }
+}
+
 function getLocationKey(lat: number, lng: number): string {
   return lat.toFixed(4) + "_" + lng.toFixed(4)
 }
@@ -165,76 +117,45 @@ export function EventMap({
   className,
 }: EventMapProps) {
   const [activeLocationKey, setActiveLocationKey] = useState<string | null>(null)
-  const [activeEventIndex, setActiveEventIndex] = useState(0)  // Index within location group
+  const [activeEventIndex, setActiveEventIndex] = useState(0)
+  const [showHomeInfo, setShowHomeInfo] = useState(false)
   const mapRef = useRef<google.maps.Map | null>(null)
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   })
 
-  // Filter events that have coordinates
-  const mappableEvents = useMemo(
-    () => events.filter((e) => e.latitude && e.longitude),
-    [events]
-  )
+  const mappableEvents = useMemo(() => {
+    const eventsToShow = focusedEvents && focusedEvents.length > 0 ? focusedEvents : []
+    return eventsToShow.filter((e) => e.latitude && e.longitude)
+  }, [focusedEvents])
 
-  // Group events by location
   const locationGroups = useMemo(() => {
     const groups: Record<string, LocationGroup> = {}
-    
     mappableEvents.forEach((event) => {
       const key = getLocationKey(Number(event.latitude), Number(event.longitude))
       if (!groups[key]) {
-        groups[key] = {
-          lat: Number(event.latitude),
-          lng: Number(event.longitude),
-          events: [],
-          locationKey: key,
-        }
+        groups[key] = { lat: Number(event.latitude), lng: Number(event.longitude), events: [], locationKey: key }
       }
       groups[key].events.push(event)
     })
-
-    // Sort events within each group by start time
     Object.values(groups).forEach(group => {
-      group.events.sort((a, b) => 
-        new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime()
-      )
+      group.events.sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
     })
-
     return Object.values(groups)
   }, [mappableEvents])
 
-  // Calculate map bounds to fit all markers
-  const bounds = useMemo(() => {
-    if (mappableEvents.length === 0) return null
-    if (typeof google === "undefined") return null
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map
+  }, [])
 
-    const bounds = new google.maps.LatLngBounds()
-    mappableEvents.forEach((event) => {
-      if (event.latitude && event.longitude) {
-        bounds.extend({ lat: Number(event.latitude), lng: Number(event.longitude) })
-      }
-    })
-    return bounds
-  }, [mappableEvents])
-
-  const onMapLoad = useCallback(
-    (map: google.maps.Map) => {
-      mapRef.current = map  // Store reference for later zooming
-      if (bounds && mappableEvents.length > 1) {
-        map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 })
-      }
-    },
-    [bounds, mappableEvents.length]
-  )
-
-  // Zoom to focused events when they change (e.g., calendar day selected)
+  // Pan map to show InfoWindow fully when events change
   useEffect(() => {
     if (!mapRef.current || !focusedEvents || focusedEvents.length === 0) {
-      // Reset to show all events when no focus
-      if (mapRef.current && bounds && mappableEvents.length > 1) {
-        mapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 })
+      // Reset to home base
+      if (mapRef.current) {
+        mapRef.current.panTo({ lat: HOME_BASE.lat, lng: HOME_BASE.lng })
+        mapRef.current.setZoom(DEFAULT_ZOOM)
       }
       setActiveLocationKey(null)
       setActiveEventIndex(0)
@@ -245,33 +166,49 @@ export function EventMap({
     if (focusedWithCoords.length === 0) return
 
     if (focusedWithCoords.length === 1) {
-      // Single event - zoom to it
       const event = focusedWithCoords[0]
-      mapRef.current.panTo({ lat: Number(event.latitude), lng: Number(event.longitude) })
+      // Pan to position slightly below center to leave room for InfoWindow above
+      const lat = Number(event.latitude) - 0.003  // Offset down to show InfoWindow
+      mapRef.current.panTo({ lat, lng: Number(event.longitude) })
       mapRef.current.setZoom(15)
       const key = getLocationKey(Number(event.latitude), Number(event.longitude))
       setActiveLocationKey(key)
-      // Find the index of this event in its location group
       const group = locationGroups.find(g => g.locationKey === key)
       if (group) {
         const idx = group.events.findIndex(e => e.id === event.id)
         setActiveEventIndex(idx >= 0 ? idx : 0)
       }
     } else {
-      // Multiple events - fit bounds to show all
+      // Multiple events - fit bounds with extra top padding for InfoWindow
       const focusBounds = new google.maps.LatLngBounds()
       focusedWithCoords.forEach(e => {
         focusBounds.extend({ lat: Number(e.latitude), lng: Number(e.longitude) })
       })
-      mapRef.current.fitBounds(focusBounds, { top: 50, right: 50, bottom: 50, left: 50 })
+      mapRef.current.fitBounds(focusBounds, { top: 150, right: 50, bottom: 50, left: 50 })
     }
-  }, [focusedEvents, bounds, mappableEvents.length, locationGroups])
+    setShowHomeInfo(false)
+  }, [focusedEvents, locationGroups])
 
   const handleMarkerClick = (group: LocationGroup) => {
     setActiveLocationKey(group.locationKey)
     setActiveEventIndex(0)
+    setShowHomeInfo(false)
     if (group.events.length > 0) {
       onEventSelect?.(group.events[0].id)
+    }
+    // Pan to show InfoWindow
+    if (mapRef.current) {
+      const lat = group.lat - 0.003
+      mapRef.current.panTo({ lat, lng: group.lng })
+    }
+  }
+
+  const handleHomeClick = () => {
+    setShowHomeInfo(true)
+    setActiveLocationKey(null)
+    if (mapRef.current) {
+      const lat = HOME_BASE.lat - 0.002
+      mapRef.current.panTo({ lat, lng: HOME_BASE.lng })
     }
   }
 
@@ -309,29 +246,12 @@ export function EventMap({
     )
   }
 
-  if (mappableEvents.length === 0) {
-    return (
-      <div className={cn("flex items-center justify-center bg-muted/50 rounded-lg", className)}>
-        <div className="text-center p-6">
-          <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No events with location data</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            Events will appear here when coordinates are added
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className={cn("relative rounded-lg overflow-hidden border border-border", className)}>
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        center={mappableEvents.length === 1
-          ? { lat: Number(mappableEvents[0].latitude), lng: Number(mappableEvents[0].longitude) }
-          : DEFAULT_CENTER
-        }
-        zoom={mappableEvents.length === 1 ? 14 : 10}
+        center={{ lat: HOME_BASE.lat, lng: HOME_BASE.lng }}
+        zoom={DEFAULT_ZOOM}
         onLoad={onMapLoad}
         options={{
           styles: darkMapStyles,
@@ -342,6 +262,42 @@ export function EventMap({
           fullscreenControl: true,
         }}
       >
+        {/* Home Base Marker - always visible */}
+        <Marker
+          position={{ lat: HOME_BASE.lat, lng: HOME_BASE.lng }}
+          icon={createHomeMarkerIcon()}
+          onClick={handleHomeClick}
+          zIndex={50}
+          title={HOME_BASE.name}
+        >
+          {showHomeInfo && (
+            <InfoWindow onCloseClick={() => setShowHomeInfo(false)}>
+              <div className="p-1 max-w-[200px]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Home className="h-3.5 w-3.5 text-pink-500" />
+                  <span className="text-xs font-semibold text-pink-500">Home Base</span>
+                </div>
+                <h3 className="font-semibold text-sm text-gray-900 mb-1">{HOME_BASE.name}</h3>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <MapPin className="h-3 w-3" />
+                  <span>{HOME_BASE.address}</span>
+                </div>
+                <a
+                  href={"https://www.google.com/maps/dir/?api=1&destination=" + HOME_BASE.lat + "," + HOME_BASE.lng}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-pink-500 hover:bg-pink-600 text-white text-xs font-medium rounded transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Navigation className="h-3 w-3" />
+                  Get Directions
+                </a>
+              </div>
+            </InfoWindow>
+          )}
+        </Marker>
+
+        {/* Event Markers */}
         {locationGroups.map((group) => {
           const currentEvent = group.events[activeLocationKey === group.locationKey ? activeEventIndex : 0]
           const typeColor = EVENT_TYPE_COLORS[currentEvent.event_type] || { hex: "#888888", label: currentEvent.event_type }
@@ -355,60 +311,27 @@ export function EventMap({
               icon={createMarkerIcon(typeColor.hex, isSelected, hasMultiple)}
               onClick={() => handleMarkerClick(group)}
               zIndex={isSelected ? 1000 : hasMultiple ? 100 : 1}
-              label={hasMultiple ? {
-                text: String(group.events.length),
-                color: "#ffffff",
-                fontSize: "10px",
-                fontWeight: "bold",
-              } : undefined}
+              label={hasMultiple ? { text: String(group.events.length), color: "#ffffff", fontSize: "10px", fontWeight: "bold" } : undefined}
             >
               {activeLocationKey === group.locationKey && (
-                <InfoWindow
-                  onCloseClick={() => {
-                    setActiveLocationKey(null)
-                    setActiveEventIndex(0)
-                  }}
-                >
+                <InfoWindow onCloseClick={() => { setActiveLocationKey(null); setActiveEventIndex(0) }}>
                   <div className="p-1 max-w-[240px]">
-                    {/* Navigation for multiple events */}
                     {hasMultiple && (
                       <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handlePrevEvent(group)
-                          }}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                          aria-label="Previous event"
-                        >
+                        <button onClick={(e) => { e.stopPropagation(); handlePrevEvent(group) }} className="p-1 hover:bg-gray-100 rounded transition-colors">
                           <ChevronLeft className="h-4 w-4 text-gray-600" />
                         </button>
-                        <span className="text-xs text-gray-500 font-medium">
-                          {activeEventIndex + 1} of {group.events.length} events
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleNextEvent(group)
-                          }}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                          aria-label="Next event"
-                        >
+                        <span className="text-xs text-gray-500 font-medium">{activeEventIndex + 1} of {group.events.length} events</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleNextEvent(group) }} className="p-1 hover:bg-gray-100 rounded transition-colors">
                           <ChevronRight className="h-4 w-4 text-gray-600" />
                         </button>
                       </div>
                     )}
-
                     <div className="flex items-center gap-1 mb-1">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: typeColor.hex }}
-                      />
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: typeColor.hex }} />
                       <span className="text-xs text-gray-500">{typeColor.label}</span>
                     </div>
-                    <h3 className="font-semibold text-sm text-gray-900 mb-1">
-                      {currentEvent.title}
-                    </h3>
+                    <h3 className="font-semibold text-sm text-gray-900 mb-1">{currentEvent.title}</h3>
                     <div className="space-y-0.5 text-xs text-gray-600">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -448,24 +371,23 @@ export function EventMap({
       </GoogleMap>
 
       {/* Legend */}
-      <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm rounded-lg p-2 border border-border shadow-lg">
-        <div className="text-xs font-medium text-muted-foreground mb-1.5">Event Types</div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-          {Object.entries(EVENT_TYPE_COLORS).map(([type, { hex, label }]) => {
-            const hasEvents = mappableEvents.some((e) => e.event_type === type)
-            if (!hasEvents) return null
-            return (
-              <div key={type} className="flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: hex }}
-                />
-                <span className="text-xs text-foreground/80">{label}</span>
-              </div>
-            )
-          })}
+      {mappableEvents.length > 0 && (
+        <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm rounded-lg p-2 border border-border shadow-lg">
+          <div className="text-xs font-medium text-muted-foreground mb-1.5">Event Types</div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            {Object.entries(EVENT_TYPE_COLORS).map(([type, { hex, label }]) => {
+              const hasEvents = mappableEvents.some((e) => e.event_type === type)
+              if (!hasEvents) return null
+              return (
+                <div key={type} className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: hex }} />
+                  <span className="text-xs text-foreground/80">{label}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

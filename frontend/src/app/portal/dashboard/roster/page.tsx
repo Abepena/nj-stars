@@ -135,7 +135,7 @@ export default function RosterPage() {
     <div className="space-y-6">
       {/* Back Link */}
       <Link
-        href="/portal/dashboard/admin"
+        href="/portal/dashboard"
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />

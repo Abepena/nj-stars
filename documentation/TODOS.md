@@ -114,3 +114,78 @@
 - [ ] Consolidate icon sizing (w-4 h-4 default, w-5 h-5 medium, w-6 h-6 large)
 - [ ] Add consistent loading animations across portal pages
 - [ ] Replace hardcoded colors in billing page with semantic color variables
+### In-Person Payment Collection (Research)
+- [ ] **Investigate tap-to-pay & QR code solutions for on-site payment collection**
+  
+  #### Use Cases
+  
+  **1. Drop-In Event Payments**
+  - Parent/player shows up to open gym, tryout, or event without pre-registering
+  - Owner collects payment on the spot via tap-to-pay or QR scan
+  - System creates registration record linked to player
+  
+  **2. Product Handoff Confirmation (Pre-Paid Orders)**
+  - Parent pre-ordered merch online via Stripe checkout
+  - At pickup: Owner hands over item → Parent pays small handling fee OR confirms receipt
+  - In-person payment/scan = delivery confirmation in system
+  - Order status auto-updates to "Delivered"
+  
+  **3. Coach-Delivered Products (Skip Online Checkout)**
+  - Coach brings product directly to parent at practice/game
+  - NO online Stripe checkout needed
+  - Payment collected in-person = order creation + payment + delivery confirmation in ONE step
+  - Simplifies flow for impulse buys or "I'll take one of those" requests
+  
+  #### Requirements
+  - Works on owner's iPhone (tap to pay via NFC)
+  - QR code that parents can scan to pay specific amounts
+  - Integrates with existing Stripe account for unified revenue tracking
+  - Real-time confirmation / receipt (text or email)
+  - Links payment to player/event/order in our database
+  - Admin can see all in-person payments in portal
+  
+  #### Options to Research
+  - **Stripe Terminal** (tap to pay on iPhone) - requires Stripe Terminal SDK
+  - **Stripe Payment Links + QR codes** - generate per-event or custom amount, no SDK
+  - **Square Reader + Square POS** - alternative ecosystem, very polished mobile app
+  - **PayPal Zettle** - tap to pay + QR alternative
+  
+  #### Questions to Answer
+  - Can we auto-create registration/order records from in-person payments?
+  - What are the transaction fees for each option?
+  - Does Stripe Tap to Pay on iPhone work without additional hardware?
+  - Can we build a simple "collect payment" screen in our admin portal?
+  - How do we handle refunds for in-person payments?
+  
+  #### Platform Fee Structure (LEAG/TRNY Revenue Model)
+  
+  | Revenue Type | Platform Fee | Notes |
+  |--------------|--------------|-------|
+  | Event Registrations | **20%** | Tryouts, camps, tournaments, open gyms |
+  | Dues / Subscriptions | **10%** | Monthly/seasonal membership fees |
+  | Third-Party Shop Products | **10%** | Merch from other designers/suppliers |
+  | NJ Stars Printify Products | **10%** | Custom merch (see designer royalty below) |
+  
+  ##### Designer Royalty Model (Custom Printify Merch)
+  - **$1,000 upfront** paid to designer per merch drop (payment floor)
+  - Owner receives **100% of revenue** until $1,000 recovered
+  - After recovery: **5% royalty** to designer per sale
+  - Platform fee (10%) applies throughout
+  - Example flow for $40 hoodie ($14 profit margin):
+    - Sales 1-71: Owner keeps $14/sale → recovers $1,000
+    - Sale 72+: Owner keeps $9.10, Designer gets $2 (5%), Platform gets $4 (10%)
+  
+  ##### Profit Margins
+  - Shop products listed at **35-40% profit margin** on cost
+  - Ensures healthy margins after platform fees + Stripe fees
+  
+  ##### Fee Reduction Opportunities
+  - **Referral credit**: Lower fees for referring other teams/orgs to LEAG platform
+  - **Payout threshold**: Reduced rates after platform reaches specific revenue milestone
+  - Rates negotiable as partnership evolves
+  
+  > **Note**: NJ Stars is a founding partner receiving custom platform development 
+  > in exchange for revenue sharing. This model funds ongoing development and 
+  > support while giving the partner a fully-featured system at no upfront cost.
+
+

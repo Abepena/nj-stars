@@ -5,13 +5,15 @@
  *
  * Fetches real data from /api/portal/player/dashboard/ with fallback to mock data.
  *
- * #TODO: Implement QR code check-in functionality
+ * #TODO: QR check-in - player scans coach's event QR code to check in
  * #TODO: Implement dues payment functionality
- * #TODO: Add profile edit modal/page
+ * #TODO: Add attendance-based rewards/credits for shop or event discounts
+
  * #TODO: Implement push notifications for upcoming events
  */
 
 import { useState, useEffect } from "react"
+import { ProfileEditModal } from "@/components/profile-edit-modal"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -462,25 +464,49 @@ export default function PlayerExamplePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
-              <User className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-medium">Edit My Profile</h3>
-              <p className="text-sm text-muted-foreground">Update photo and contact info</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </CardContent>
-        </Card>
+        <ProfileEditModal
+          player={{
+            id: player.profile.id,
+            first_name: player.profile.first_name,
+            last_name: player.profile.last_name,
+            email: player.profile.email,
+            jersey_number: player.profile.jersey_number,
+            position: player.profile.position,
+          }}
+          onSave={(updated) => {
+            setDashboard((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    profile: {
+                      ...prev.profile,
+                      first_name: updated.first_name,
+                      last_name: updated.last_name,
+                      email: updated.email || prev.profile.email,
+                      jersey_number: updated.jersey_number || prev.profile.jersey_number,
+                      position: updated.position || prev.profile.position,
+                    },
+                  }
+                : prev
+            )
+          }}
+          trigger={
+            <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
+              <CardContent className="flex items-center gap-4 p-6">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+                  <User className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium">Edit My Profile</h3>
+                  <p className="text-sm text-muted-foreground">Update photo and contact info</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          }
+        />
 
         <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
-              <DollarSign className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div className="flex-1">
               <h3 className="font-medium">View Dues History</h3>
               <p className="text-sm text-muted-foreground">See charges and payments</p>
             </div>

@@ -39,10 +39,10 @@ const parentNavItems = [
 ]
 
 const staffNavItems = [
-  { href: "/portal/dashboard/admin", label: "Admin Dashboard", icon: Shield },
-  { href: "/portal/dashboard/admin/check-ins", label: "Check-Ins", icon: ClipboardList },
-  { href: "/portal/dashboard/admin/roster", label: "Roster", icon: Users },
-  { href: "/portal/dashboard/admin/events", label: "Events", icon: ClipboardList },
+  { href: "/portal/dashboard", label: "Admin Dashboard", icon: Shield },
+  { href: "/portal/dashboard/check-ins", label: "Check-Ins", icon: ClipboardList },
+  { href: "/portal/dashboard/roster", label: "Roster", icon: Users },
+  { href: "/portal/dashboard/events", label: "Events", icon: ClipboardList },
 ]
 
 const superuserNavItems = [

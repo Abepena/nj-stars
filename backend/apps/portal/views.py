@@ -226,6 +226,84 @@ class EventCheckInViewSet(viewsets.ModelViewSet):
         return Response(EventCheckInSerializer(check_in).data)
 
 
+# ==================== Dashboard Helper ====================
+
+def _get_parent_dashboard_data(user):
+    """
+    Internal helper to get parent dashboard data.
+    Can be called from both parent_dashboard and staff_dashboard.
+    """
+    # Get or create profile
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+
+    # Get children
+    children = Player.objects.filter(
+        guardian_relationships__guardian=user
+    ).distinct()
+
+    # Calculate total balance across all children
+    total_balance = DuesAccount.objects.filter(
+        player__in=children
+    ).aggregate(total=Sum("balance"))["total"] or 0
+
+    # Get upcoming events for all children
+    upcoming_events = []
+    for child in children:
+        regs = EventRegistration.objects.filter(
+            participant_first_name=child.first_name,
+            participant_last_name=child.last_name,
+            event__start_datetime__gte=timezone.now()
+        ).select_related("event").order_by("event__start_datetime")[:5]
+
+        for reg in regs:
+            upcoming_events.append({
+                "player_name": child.full_name,
+                "event_title": reg.event.title,
+                "event_date": reg.event.start_datetime,
+                "registration_id": reg.id,
+            })
+
+    # Sort all events by date
+    upcoming_events.sort(key=lambda x: x["event_date"])
+    upcoming_events = upcoming_events[:10]
+
+    # Get recent orders
+    recent_orders = Order.objects.filter(user=user).order_by("-created_at")[:5]
+
+    # Get promo credit total
+    promo_total = PromoCredit.objects.filter(
+        user=user, is_active=True
+    ).aggregate(total=Sum("remaining_amount"))["total"] or 0
+
+    # Get active check-ins
+    active_check_ins = []
+    for child in children:
+        check_ins = EventCheckIn.objects.filter(
+            event_registration__participant_first_name=child.first_name,
+            event_registration__participant_last_name=child.last_name,
+            checked_in_at__isnull=False,
+            checked_out_at__isnull=True
+        ).select_related("event_registration__event")
+
+        for ci in check_ins:
+            active_check_ins.append({
+                "player_name": child.full_name,
+                "event_title": ci.event_registration.event.title,
+                "checked_in_at": ci.checked_in_at,
+            })
+
+    return {
+        "profile": UserProfileSerializer(profile).data,
+        "children": PlayerSummarySerializer(children, many=True).data,
+        "total_balance": str(total_balance),
+        "auto_pay_enabled": profile.auto_pay_enabled,
+        "upcoming_events": upcoming_events,
+        "recent_orders": OrderSerializer(recent_orders, many=True).data,
+        "promo_credit_total": str(promo_total),
+        "active_check_ins": active_check_ins,
+    }
+
+
 # ==================== Dashboard Views ====================
 
 @api_view(['GET'])
@@ -318,8 +396,8 @@ def staff_dashboard(request):
     Includes parent dashboard data plus admin statistics.
     """
     # Get parent dashboard data first
-    parent_response = parent_dashboard(request)
-    data = parent_response.data.copy()
+    parent_data = _get_parent_dashboard_data(request.user)
+    data = parent_data.copy()
 
     # Add admin stats
     today = timezone.now().date()
@@ -681,19 +759,26 @@ def admin_roster(request):
     GET /api/portal/admin/roster/
 
     Query params:
+    - team: Filter by team ID
     - position: Filter by position (PG, SG, SF, PF, C)
-    - search: Search by name or jersey number
+    - search: Search by name, jersey number, or team name
     - waiver: Filter by waiver status (signed, unsigned)
 
-    Returns list of players with guardian info.
+    Returns list of players with guardian and team info.
     """
     from .serializers import PlayerAdminSerializer
 
-    queryset = Player.objects.filter(is_active=True).prefetch_related(
+    queryset = Player.objects.filter(is_active=True).select_related(
+        'team'
+    ).prefetch_related(
         'guardian_relationships__guardian__profile'
     )
 
     # Apply filters
+    team_id = request.query_params.get('team')
+    if team_id:
+        queryset = queryset.filter(team_id=team_id)
+
     position = request.query_params.get('position')
     if position:
         queryset = queryset.filter(position=position)
@@ -703,7 +788,19 @@ def admin_roster(request):
         queryset = queryset.filter(
             Q(first_name__icontains=search) |
             Q(last_name__icontains=search) |
-            Q(jersey_number__icontains=search)
+            Q(jersey_number__icontains=search) |
+            Q(team_name__icontains=search) |
+            Q(team__name__icontains=search)
+        )
+
+    waiver = request.query_params.get('waiver')
+    if waiver == 'signed':
+        queryset = queryset.filter(
+            guardian_relationships__guardian__profile__has_signed_waiver=True
+        ).distinct()
+    elif waiver == 'unsigned':
+        queryset = queryset.exclude(
+            guardian_relationships__guardian__profile__has_signed_waiver=True
         )
 
     # Order by last name
@@ -842,4 +939,43 @@ def admin_registrations(request):
     queryset = queryset.order_by('-registered_at')
 
     serializer = RegistrationAdminSerializer(queryset, many=True)
+    return Response(serializer.data)
+
+
+# ==================== Team Views ====================
+
+from .models import Team
+from .serializers import TeamSerializer
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsStaffMember])
+def teams_list(request):
+    """
+    List all active teams.
+    Staff only - for admin roster filtering.
+    """
+    teams = Team.objects.filter(is_active=True).prefetch_related(
+        'head_coach', 'assistant_coaches', 'players'
+    ).order_by('grade_level', 'name')
+    
+    serializer = TeamSerializer(teams, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsStaffMember])
+def team_detail(request, team_id):
+    """
+    Get a single team with its players.
+    Staff only.
+    """
+    try:
+        team = Team.objects.prefetch_related(
+            'head_coach', 'assistant_coaches', 'players'
+        ).get(id=team_id)
+    except Team.DoesNotExist:
+        return Response({'error': 'Team not found'}, status=404)
+    
+    serializer = TeamSerializer(team)
     return Response(serializer.data)

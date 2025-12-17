@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
+    teams_list, team_detail,
     UserProfileViewSet, PlayerViewSet, DuesAccountViewSet,
     SavedPaymentMethodViewSet, PromoCreditViewSet, EventCheckInViewSet,
     parent_dashboard, staff_dashboard, waiver_status, sign_waiver,
@@ -31,5 +32,9 @@ urlpatterns = [
     path('admin/roster/', admin_roster, name='admin-roster'),
     path('admin/check-ins/', admin_check_ins, name='admin-check-ins'),
     path('admin/check-ins/<slug:event_slug>/<int:registration_id>/', admin_check_in_participant, name='admin-check-in-participant'),
-    path('admin/registrations/', admin_registrations, name='admin-registrations'),
+    path("admin/registrations/", admin_registrations, name="admin-registrations"),
+
+    # Teams endpoints
+    path("teams/", teams_list, name="teams-list"),
+    path("teams/<int:team_id>/", team_detail, name="team-detail"),
 ]

@@ -158,7 +158,7 @@ export default function NewEventPage() {
       if (response.ok) {
         setSuccess(true)
         setTimeout(() => {
-          router.push("/portal/dashboard/admin")
+          router.push("/portal/dashboard")
         }, 1500)
       } else {
         const data = await response.json()
@@ -187,7 +187,7 @@ export default function NewEventPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Back Link */}
       <Link
-        href="/portal/dashboard/admin"
+        href="/portal/dashboard"
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />
@@ -404,7 +404,7 @@ export default function NewEventPage() {
             )}
           </Button>
           <Button type="button" variant="outline" asChild>
-            <Link href="/portal/dashboard/admin">Cancel</Link>
+            <Link href="/portal/dashboard">Cancel</Link>
           </Button>
         </div>
       </form>

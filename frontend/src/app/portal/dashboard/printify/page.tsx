@@ -8,7 +8,7 @@ export default function PrintifyRedirect() {
   const router = useRouter()
   
   useEffect(() => {
-    router.replace("/portal/dashboard/admin")
+    router.replace("/portal/dashboard")
   }, [router])
   
   return (

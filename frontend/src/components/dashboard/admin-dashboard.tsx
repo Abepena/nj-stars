@@ -91,7 +91,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 // ==================== Main Component ====================
 
-export default function AdminDashboardPage() {
+export default function AdminDashboard() {
   const { data: session } = useSession()
   const [data, setData] = useState<StaffDashboardData | null>(null)
   const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([])
@@ -240,7 +240,7 @@ export default function AdminDashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link href="/portal/dashboard/admin/check-ins">
+        <Link href="/portal/dashboard/check-ins">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -257,7 +257,7 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/portal/dashboard/admin/roster">
+        <Link href="/portal/dashboard/roster">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -274,7 +274,7 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/portal/dashboard/admin/events">
+        <Link href="/portal/dashboard/events">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
@@ -291,7 +291,7 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/portal/dashboard/admin/events/new">
+        <Link href="/portal/dashboard/events/new">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="flex items-center gap-4 p-6">
               <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
@@ -394,7 +394,7 @@ export default function AdminDashboardPage() {
                   Participants awaiting check-in for today's events
                 </CardDescription>
               </div>
-              <Link href="/portal/dashboard/admin/check-ins">
+              <Link href="/portal/dashboard/check-ins">
                 <Button variant="outline" size="sm">
                   View All
                 </Button>

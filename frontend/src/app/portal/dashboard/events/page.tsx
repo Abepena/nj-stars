@@ -278,7 +278,7 @@ export default function EventsAdminPage() {
         <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Error</h2>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <Link href="/portal/dashboard/admin">
+        <Link href="/portal/dashboard">
           <Button>Go to Admin Dashboard</Button>
         </Link>
       </div>
@@ -288,7 +288,7 @@ export default function EventsAdminPage() {
   return (
     <div className="space-y-6">
       <Link
-        href="/portal/dashboard/admin"
+        href="/portal/dashboard"
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />
@@ -302,7 +302,7 @@ export default function EventsAdminPage() {
             {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href="/portal/dashboard/admin/events/new">
+        <Link href="/portal/dashboard/events/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             New Event
@@ -456,7 +456,7 @@ export default function EventsAdminPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <Link href={`/portal/dashboard/admin/events/${event.slug}/edit`}>
+                                <Link href={`/portal/dashboard/events/${event.slug}/edit`}>
                                   <Pencil className="h-4 w-4 mr-2" />
                                   Edit
                                 </Link>

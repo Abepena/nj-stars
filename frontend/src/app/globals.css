@@ -16,8 +16,8 @@
     --primary: 331.7 78% 58%;            /* hot pink - main brand color (brighter) */
     --primary-foreground: 26.7 16.4% 89.2%;
 
-    --secondary: 188.7 94.5% 48%;       /* vibrant teal (brighter) */
-    --secondary-foreground: 26.7 16.4% 89.2%;
+    --secondary: 188.7 50% 25%;         /* muted teal badge background */
+    --secondary-foreground: 188.7 70% 65%;  /* teal text for contrast */
 
     --accent: 353.4 65% 55%;            /* jersey red accent (brighter) */
     --accent-foreground: 26.7 16.4% 89.2%;
@@ -113,8 +113,8 @@
     --text-tertiary: 38.8 6.8% 60%;
     --primary: 331.7 78% 58%;
     --primary-foreground: 26.7 16.4% 89.2%;
-    --secondary: 188.7 94.5% 48%;
-    --secondary-foreground: 26.7 16.4% 89.2%;
+    --secondary: 188.7 50% 25%;         /* muted teal badge background */
+    --secondary-foreground: 188.7 70% 65%;  /* teal text for contrast */
     --accent: 353.4 65% 55%;
     --accent-foreground: 26.7 16.4% 89.2%;
     --destructive: 353.4 65% 55%;

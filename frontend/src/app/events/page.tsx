@@ -221,6 +221,13 @@ export default function EventsPage() {
     setHighlightDate(null)
   }, [])
 
+  // Auto-toggle map when a date with events is selected
+  useEffect(() => {
+    if (mapFocusedEvents.length > 0) {
+      setShowMap(true)
+    }
+  }, [mapFocusedEvents])
+
   // Initialize filters from URL query parameters
   useEffect(() => {
     if (!searchParams) return
@@ -823,24 +830,6 @@ export default function EventsPage() {
 
             {/* Main Content */}
             <div className="flex-1">
-              {/* Map Section (when enabled) */}
-              {showMap && (
-                <div className="mb-6 rounded-lg overflow-hidden border border-border">
-                  <EventMap
-                    events={filteredEvents}
-                      focusedEvents={mapFocusedEvents}
-                    selectedEventId={highlightedEventId}
-                    onEventSelect={(id) => {
-                      setHighlightedEventId(id)
-                      // Scroll to the event card
-                      const element = document.getElementById(`event-card-${id}`)
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    }}
-                    className="h-[350px] md:h-[400px]"
-                  />
-                </div>
-              )}
-
               <main className="flex-1 min-w-0">
                 {error && (
                   <div className="mb-8">
@@ -859,16 +848,32 @@ export default function EventsPage() {
                     </div>
                   )
                 ) : viewMode === "calendar" ? (
-                  <CalendarView
-                    events={eventsForMonth}
-                    currentMonth={currentMonth}
-                    onMonthChange={setCurrentMonth}
-                    onRegisterClick={handleRegisterClick}
-                    myEventIds={myEventIds}
-                    highlightDate={highlightDate}
-                    onDateSelect={handleDateSelect}
-                    onHighlightComplete={handleHighlightComplete}
-                  />
+                  <>
+                    <CalendarView
+                      events={eventsForMonth}
+                      currentMonth={currentMonth}
+                      onMonthChange={setCurrentMonth}
+                      onRegisterClick={handleRegisterClick}
+                      myEventIds={myEventIds}
+                      highlightDate={highlightDate}
+                      onDateSelect={handleDateSelect}
+                      onHighlightComplete={handleHighlightComplete}
+                    />
+                    {/* Map Section - Below Calendar */}
+                    {showMap && (
+                      <div className="mt-6 rounded-lg overflow-hidden border border-border">
+                        <EventMap
+                          events={filteredEvents}
+                          focusedEvents={mapFocusedEvents}
+                          selectedEventId={highlightedEventId}
+                          onEventSelect={(id) => {
+                            setHighlightedEventId(id)
+                          }}
+                          className="h-[350px] md:h-[400px]"
+                        />
+                      </div>
+                    )}
+                  </>
                 ) : !error && filteredEvents.length === 0 ? (
                   <div className="text-center py-16">
                     {timeFilter === "my_events" ? (
@@ -1243,7 +1248,7 @@ function CalendarView({
                 onClick={() => handleDayClick(day, dayEvents)}
                 disabled={!hasEvents}
                 className={cn(
-                  "min-h-[60px] md:min-h-[80px] p-1.5 border-b border-r border-border text-left transition-all relative",
+                  "min-h-[60px] md:min-h-[80px] p-1.5 border-b border-r border-border transition-all relative flex flex-col",
                   !isCurrentMonth && "bg-muted/30",
                   i % 7 === 6 && "border-r-0",
                   hasEvents && "cursor-pointer hover:bg-muted/50",
@@ -1254,7 +1259,7 @@ function CalendarView({
               >
                 {/* Date number */}
                 <div className={cn(
-                  "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full transition-all",
+                  "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full transition-all self-end",
                   isTodayDate && "bg-primary text-primary-foreground",
                   !isCurrentMonth && "text-muted-foreground"
                 )}>

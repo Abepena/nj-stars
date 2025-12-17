@@ -318,12 +318,14 @@ class PlayerAdminSerializer(serializers.ModelSerializer):
     grade = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
 
+    team = serializers.SerializerMethodField()
+
     class Meta:
         model = Player
         fields = [
             'id', 'first_name', 'last_name', 'date_of_birth', 'age',
             'email', 'phone', 'jersey_number', 'position',
-            'team_name', 'medical_notes',
+            'team', 'team_name', 'medical_notes',
             'emergency_contact_name', 'emergency_contact_phone',
             'guardians', 'waiver_signed', 'grade', 'school',
             'is_active', 'created_at'
@@ -354,6 +356,15 @@ class PlayerAdminSerializer(serializers.ModelSerializer):
     def get_school(self, obj):
         # School info could be stored in team_name or a dedicated field
         return obj.team_name if obj.team_name else None
+
+    def get_team(self, obj):
+        if obj.team:
+            return {
+                'id': obj.team.id,
+                'name': obj.team.name,
+                'grade_level': obj.team.grade_level,
+            }
+        return None
 
 
 class RegistrationAdminSerializer(serializers.ModelSerializer):
@@ -435,3 +446,36 @@ class EventCheckInAdminSerializer(serializers.Serializer):
 
     def get_total_registrations(self, obj):
         return obj.registrations.count()
+
+
+# ==================== Team Serializers ====================
+
+from .models import Team
+
+class TeamSerializer(serializers.ModelSerializer):
+    """Team info for filtering and display"""
+    head_coach_name = serializers.SerializerMethodField()
+    assistant_coach_names = serializers.SerializerMethodField()
+    player_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Team
+        fields = [
+            'id', 'name', 'grade_level',
+            'head_coach_name', 'assistant_coach_names',
+            'player_count', 'is_active'
+        ]
+
+    def get_head_coach_name(self, obj):
+        if obj.head_coach:
+            return obj.head_coach.get_full_name() or obj.head_coach.email
+        return None
+
+    def get_assistant_coach_names(self, obj):
+        return [
+            coach.get_full_name() or coach.email
+            for coach in obj.assistant_coaches.all()
+        ]
+
+    def get_player_count(self, obj):
+        return obj.players.filter(is_active=True).count()

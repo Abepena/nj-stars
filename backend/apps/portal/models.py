@@ -5,6 +5,39 @@ from django.utils import timezone
 User = get_user_model()
 
 
+class Team(models.Model):
+    """Team with grade level and coach assignments"""
+    
+    GRADE_CHOICES = [
+        ("3rd", "3rd Grade"),
+        ("4th", "4th Grade"),
+        ("5th", "5th Grade"),
+        ("6th", "6th Grade"),
+        ("7th", "7th Grade"),
+        ("8th", "8th Grade"),
+        ("hs", "High School"),
+        ("elite", "Elite"),
+    ]
+    
+    name = models.CharField(max_length=100)
+    grade_level = models.CharField(max_length=10, choices=GRADE_CHOICES)
+    description = models.TextField(blank=True)
+    
+    head_coach = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="head_coach_teams")
+    assistant_coaches = models.ManyToManyField(User, blank=True, related_name="assistant_coach_teams")
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ["grade_level", "name"]
+    
+    def __str__(self):
+        return self.name
+
+
+
 class UserProfile(models.Model):
     """Extended profile for authenticated users (parents, staff, players 13+)"""
 
@@ -131,6 +164,7 @@ class Player(models.Model):
     jersey_number = models.CharField(max_length=10, blank=True)
     position = models.CharField(max_length=50, blank=True)
     team_name = models.CharField(max_length=100, blank=True)
+    team = models.ForeignKey("Team", on_delete=models.SET_NULL, null=True, blank=True, related_name="players")
 
     # Photo
     photo = models.ImageField(upload_to='players/', blank=True, null=True)
