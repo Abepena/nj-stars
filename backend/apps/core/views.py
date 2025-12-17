@@ -151,3 +151,144 @@ def newsletter_unsubscribe(request):
     except NewsletterSubscriber.DoesNotExist:
         # Don't reveal if email exists or not
         return Response({'message': 'Successfully unsubscribed'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def contact_submit(request):
+    """
+    Submit a contact form.
+
+    POST /api/contact/
+    {
+        "name": "John Smith",
+        "email": "john@example.com",
+        "phone": "555-1234",  // optional
+        "category": "general",
+        "subject": "Question about tryouts",
+        "message": "I wanted to ask about..."
+    }
+    """
+    from .serializers import ContactSubmissionSerializer
+
+    serializer = ContactSubmissionSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    # Add request metadata
+    submission = serializer.save(
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
+    )
+
+    # TODO: Send email notification to contact@leag.app
+    # send_contact_notification_email(submission)
+
+    return Response(
+        {
+            'message': 'Thank you for contacting us! We will get back to you soon.',
+            'submission_id': submission.id,
+        },
+        status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def contact_submissions_list(request):
+    """
+    List contact submissions for admin dashboard.
+
+    GET /api/contact/admin/
+    Query params:
+    - status: filter by status (new, in_progress, resolved, closed)
+    - category: filter by category
+    - limit: number of results (default 10)
+    """
+    from .models import ContactSubmission
+    from .serializers import ContactSubmissionAdminSerializer
+
+    # Check if user is staff
+    if not request.user.is_staff:
+        return Response(
+            {'error': 'Permission denied'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    queryset = ContactSubmission.objects.all()
+
+    # Filter by status
+    status_filter = request.GET.get('status')
+    if status_filter:
+        queryset = queryset.filter(status=status_filter)
+
+    # Filter by category
+    category = request.GET.get('category')
+    if category:
+        queryset = queryset.filter(category=category)
+
+    # Limit results
+    limit = int(request.GET.get('limit', 10))
+    queryset = queryset[:limit]
+
+    serializer = ContactSubmissionAdminSerializer(queryset, many=True)
+    return Response({
+        'submissions': serializer.data,
+        'total_new': ContactSubmission.objects.filter(status='new').count(),
+        'total_in_progress': ContactSubmission.objects.filter(status='in_progress').count(),
+    })
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def contact_submission_update(request, pk):
+    """
+    Update a contact submission status.
+
+    PATCH /api/contact/admin/<id>/
+    {
+        "status": "in_progress",
+        "priority": "high",
+        "admin_notes": "Following up via email"
+    }
+    """
+    from .models import ContactSubmission
+    from .serializers import ContactSubmissionAdminSerializer
+
+    # Check if user is staff
+    if not request.user.is_staff:
+        return Response(
+            {'error': 'Permission denied'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    try:
+        submission = ContactSubmission.objects.get(pk=pk)
+    except ContactSubmission.DoesNotExist:
+        return Response(
+            {'error': 'Submission not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Handle status change to resolved
+    if request.data.get('status') == 'resolved' and submission.status != 'resolved':
+        submission.mark_resolved(request.user)
+    else:
+        serializer = ContactSubmissionAdminSerializer(
+            submission,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+    return Response(ContactSubmissionAdminSerializer(submission).data)
+
+
+def get_client_ip(request):
+    """Get client IP address from request"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip

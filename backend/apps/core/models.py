@@ -161,3 +161,85 @@ class NewsletterSubscriber(models.Model):
         self.status = 'unsubscribed'
         self.unsubscribed_at = timezone.now()
         self.save()
+
+
+class ContactSubmission(models.Model):
+    """Contact form submissions from the website"""
+
+    CATEGORY_CHOICES = [
+        ('general', 'General Question'),
+        ('registration', 'Registration & Events'),
+        ('payments', 'Orders & Payments'),
+        ('portal', 'Portal / Account Issues'),
+        ('technical', 'Website / Technical Issues'),
+        ('feedback', 'Feedback & Suggestions'),
+        ('other', 'Other'),
+    ]
+
+    STATUS_CHOICES = [
+        ('new', 'New'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+
+    # Contact info
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True)
+
+    # Submission details
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+
+    # Status tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='normal')
+
+    # Admin notes (internal)
+    admin_notes = models.TextField(blank=True, help_text="Internal notes for staff")
+    assigned_to = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_contact_submissions'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_contact_submissions'
+    )
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Contact Submission'
+        verbose_name_plural = 'Contact Submissions'
+
+    def __str__(self):
+        return f"{self.subject} - {self.name} ({self.status})"
+
+    def mark_resolved(self, user):
+        """Mark this submission as resolved"""
+        from django.utils import timezone
+        self.status = 'resolved'
+        self.resolved_at = timezone.now()
+        self.resolved_by = user
+        self.save()

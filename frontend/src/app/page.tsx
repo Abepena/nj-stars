@@ -7,6 +7,7 @@ import { FadeInSection } from "@/components/fade-in-section";
 import { AboutPreview } from "@/components/about-preview";
 import { ProgramsSection } from "@/components/programs-section";
 import { ScheduleSection } from "@/components/schedule-section";
+import { ContactForm } from "@/components/contact-form";
 
 export default function Home() {
   return (
@@ -36,6 +37,11 @@ export default function Home() {
       {/* The Huddle - News Feed */}
       <FadeInSection direction="up" delay={100}>
         <NewsFeed limit={4} showSeeMore wrapInSection />
+      </FadeInSection>
+
+      {/* Contact Form */}
+      <FadeInSection direction="up" delay={100}>
+        <ContactForm wrapInSection />
       </FadeInSection>
 
       {/* Newsletter Signup */}

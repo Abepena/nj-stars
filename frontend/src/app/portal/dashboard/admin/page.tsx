@@ -17,7 +17,12 @@ import {
   AlertCircle,
   Clock,
   CheckCircle,
-  Shirt
+  MessageSquare,
+  HelpCircle,
+  CreditCard,
+  Settings,
+  AlertTriangle,
+  MessageCircle,
 } from "lucide-react"
 import { PrintifyAdminSection } from "@/components/admin/printify-section"
 
@@ -47,10 +52,41 @@ interface RecentRegistration {
   registered_at: string
 }
 
+interface ContactSubmission {
+  id: number
+  name: string
+  email: string
+  category: string
+  subject: string
+  priority: string
+  status: string
+  created_at: string
+  time_since_created: string
+}
+
 interface StaffDashboardData {
   admin_stats: AdminStats
   pending_check_ins: PendingCheckIn[]
   recent_registrations: RecentRegistration[]
+}
+
+// Category icons mapping
+const CATEGORY_ICONS: Record<string, typeof HelpCircle> = {
+  general: HelpCircle,
+  registration: MessageCircle,
+  payments: CreditCard,
+  portal: Settings,
+  technical: AlertTriangle,
+  feedback: MessageSquare,
+  other: HelpCircle,
+}
+
+// Priority colors
+const PRIORITY_COLORS: Record<string, string> = {
+  low: "bg-slate-100 text-slate-700 border-slate-200",
+  normal: "bg-blue-50 text-blue-700 border-blue-200",
+  high: "bg-amber-50 text-amber-700 border-amber-200",
+  urgent: "bg-red-50 text-red-700 border-red-200",
 }
 
 // ==================== Main Component ====================
@@ -58,14 +94,13 @@ interface StaffDashboardData {
 export default function AdminDashboardPage() {
   const { data: session } = useSession()
   const [data, setData] = useState<StaffDashboardData | null>(null)
+  const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([])
+  const [totalNewIssues, setTotalNewIssues] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Check if user is staff
-  const isStaff = (session?.user as any)?.role === 'staff' || (session?.user as any)?.isAdmin
-
   useEffect(() => {
-    async function fetchStaffDashboard() {
+    async function fetchDashboardData() {
       if (!session) return
 
       try {
@@ -73,23 +108,41 @@ export default function AdminDashboardPage() {
         setError(null)
 
         const apiToken = (session as any)?.apiToken
-        const response = await fetch(`${API_BASE}/api/portal/dashboard/staff/`, {
-          headers: {
-            "Authorization": `Token ${apiToken || ""}`,
-            "Content-Type": "application/json",
-          },
-        })
 
-        if (response.ok) {
-          const data = await response.json()
-          setData(data)
-        } else if (response.status === 403) {
+        // Fetch both dashboard data and contact submissions in parallel
+        const [dashboardRes, contactRes] = await Promise.all([
+          fetch(`${API_BASE}/api/portal/dashboard/staff/`, {
+            headers: {
+              "Authorization": `Token ${apiToken || ""}`,
+              "Content-Type": "application/json",
+            },
+          }),
+          fetch(`${API_BASE}/api/contact/admin/?limit=5`, {
+            headers: {
+              "Authorization": `Token ${apiToken || ""}`,
+              "Content-Type": "application/json",
+            },
+          }),
+        ])
+
+        if (dashboardRes.ok) {
+          const dashboardData = await dashboardRes.json()
+          setData(dashboardData)
+        } else if (dashboardRes.status === 403) {
           setError("You don't have permission to access this page")
+          return
         } else {
           setError("Failed to load dashboard data")
+          return
+        }
+
+        if (contactRes.ok) {
+          const contactData = await contactRes.json()
+          setContactSubmissions(contactData.submissions || [])
+          setTotalNewIssues(contactData.total_new || 0)
         }
       } catch (err) {
-        console.error("Failed to fetch staff dashboard:", err)
+        console.error("Failed to fetch dashboard data:", err)
         setError("Unable to connect to server")
       } finally {
         setLoading(false)
@@ -97,7 +150,7 @@ export default function AdminDashboardPage() {
     }
 
     if (session) {
-      fetchStaffDashboard()
+      fetchDashboardData()
     }
   }, [session])
 
@@ -164,21 +217,23 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${admin_stats.pending_payments > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+            <div className={`text-2xl font-bold ${admin_stats.pending_payments > 0 ? "text-amber-600" : "text-green-600"}`}>
               {admin_stats.pending_payments}
             </div>
             <p className="text-xs text-muted-foreground">Accounts with balance</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={totalNewIssues > 0 ? "border-primary/50" : ""}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Check-ins Today</CardTitle>
-            <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Open Issues</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{admin_stats.check_ins_today}</div>
-            <p className="text-xs text-muted-foreground">Completed</p>
+            <div className={`text-2xl font-bold ${totalNewIssues > 0 ? "text-primary" : "text-green-600"}`}>
+              {totalNewIssues}
+            </div>
+            <p className="text-xs text-muted-foreground">Contact submissions</p>
           </CardContent>
         </Card>
       </div>
@@ -254,9 +309,77 @@ export default function AdminDashboardPage() {
         </Link>
       </div>
 
-
       {/* Shop / Printify */}
       <PrintifyAdminSection />
+
+      {/* Pending Issues (Contact Submissions) */}
+      {contactSubmissions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Pending Issues
+                </CardTitle>
+                <CardDescription>
+                  Recent contact form submissions requiring attention
+                </CardDescription>
+              </div>
+              <Badge variant="secondary" className="text-sm">
+                {totalNewIssues} new
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {contactSubmissions.map((submission) => {
+                const CategoryIcon = CATEGORY_ICONS[submission.category] || HelpCircle
+                return (
+                  <div
+                    key={submission.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <CategoryIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{submission.subject}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {submission.name} &bull; {submission.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2 shrink-0">
+                      <Badge variant="outline" className={PRIORITY_COLORS[submission.priority] || PRIORITY_COLORS.normal}>
+                        {submission.priority}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {submission.time_since_created}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground text-center">
+                Manage submissions in the{" "}
+                <a
+                  href="/django-admin/core/contactsubmission/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Django Admin
+                </a>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Check-ins */}
       {pending_check_ins.length > 0 && (
         <Card>
@@ -327,11 +450,11 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {new Date(reg.registered_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
+                    {new Date(reg.registered_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit"
                     })}
                   </span>
                 </div>
@@ -369,7 +492,7 @@ function AdminDashboardSkeleton() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[1, 2].map(i => (
+        {[1, 2, 3, 4].map(i => (
           <Card key={i}>
             <CardContent className="p-6 flex items-center gap-4">
               <Skeleton className="h-12 w-12 rounded-full" />

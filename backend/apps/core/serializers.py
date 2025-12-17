@@ -112,3 +112,61 @@ class NewsletterSubscriberSerializer(serializers.ModelSerializer):
             'source',
         ]
         read_only_fields = ['id', 'subscribed_at']
+
+
+class ContactSubmissionSerializer(serializers.Serializer):
+    """Serializer for public contact form submissions"""
+
+    name = serializers.CharField(max_length=100)
+    email = serializers.EmailField()
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    category = serializers.ChoiceField(choices=[
+        ('general', 'General Question'),
+        ('registration', 'Registration & Events'),
+        ('payments', 'Orders & Payments'),
+        ('portal', 'Portal / Account Issues'),
+        ('technical', 'Website / Technical Issues'),
+        ('feedback', 'Feedback & Suggestions'),
+        ('other', 'Other'),
+    ])
+    subject = serializers.CharField(max_length=200)
+    message = serializers.CharField()
+
+    def create(self, validated_data):
+        from .models import ContactSubmission
+        return ContactSubmission.objects.create(**validated_data)
+
+
+class ContactSubmissionAdminSerializer(serializers.ModelSerializer):
+    """Serializer for admin view of contact submissions"""
+
+    assigned_to_name = serializers.SerializerMethodField()
+    resolved_by_name = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+
+    class Meta:
+        from .models import ContactSubmission
+        model = ContactSubmission
+        fields = [
+            'id', 'name', 'email', 'phone',
+            'category', 'category_display',
+            'subject', 'message',
+            'status', 'status_display',
+            'priority', 'priority_display',
+            'admin_notes', 'assigned_to', 'assigned_to_name',
+            'resolved_at', 'resolved_by', 'resolved_by_name',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_assigned_to_name(self, obj):
+        if obj.assigned_to:
+            return obj.assigned_to.get_full_name() or obj.assigned_to.email
+        return None
+
+    def get_resolved_by_name(self, obj):
+        if obj.resolved_by:
+            return obj.resolved_by.get_full_name() or obj.resolved_by.email
+        return None

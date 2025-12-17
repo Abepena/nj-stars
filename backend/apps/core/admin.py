@@ -77,3 +77,50 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     @admin.action(description='Mark selected subscribers as active')
     def mark_as_active(self, request, queryset):
         queryset.update(status='active', unsubscribed_at=None)
+
+
+from .models import ContactSubmission
+
+
+@admin.register(ContactSubmission)
+class ContactSubmissionAdmin(admin.ModelAdmin):
+    list_display = ['subject', 'name', 'email', 'category', 'status', 'priority', 'created_at']
+    list_filter = ['status', 'priority', 'category', 'created_at']
+    search_fields = ['name', 'email', 'subject', 'message']
+    readonly_fields = ['created_at', 'updated_at', 'ip_address', 'user_agent', 'resolved_at']
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    raw_id_fields = ['assigned_to', 'resolved_by']
+    fieldsets = (
+        ('Contact Info', {
+            'fields': ('name', 'email', 'phone')
+        }),
+        ('Submission', {
+            'fields': ('category', 'subject', 'message')
+        }),
+        ('Status', {
+            'fields': ('status', 'priority', 'assigned_to', 'admin_notes')
+        }),
+        ('Resolution', {
+            'fields': ('resolved_at', 'resolved_by'),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('ip_address', 'user_agent', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    actions = ['mark_as_resolved', 'mark_as_in_progress']
+
+    @admin.action(description='Mark selected as resolved')
+    def mark_as_resolved(self, request, queryset):
+        from django.utils import timezone
+        queryset.update(
+            status='resolved',
+            resolved_at=timezone.now(),
+            resolved_by=request.user
+        )
+
+    @admin.action(description='Mark selected as in progress')
+    def mark_as_in_progress(self, request, queryset):
+        queryset.update(status='in_progress')
