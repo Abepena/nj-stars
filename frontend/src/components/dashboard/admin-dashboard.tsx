@@ -43,6 +43,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { PrintifyAdminSection } from "@/components/admin/printify-section"
 import { DashboardStatCard, DashboardActionCard, DashboardLinkCard, DashboardSection } from "@/components/dashboard/dashboard-cards"
 import { PaymentLinkGenerator } from "@/components/payment-link-generator"
+import { PriorityDropdown, type Priority } from "@/components/ui/priority-dropdown"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -99,14 +100,6 @@ const CATEGORY_ICONS: Record<string, typeof HelpCircle> = {
   technical: AlertTriangle,
   feedback: MessageSquare,
   other: HelpCircle,
-}
-
-// Priority colors
-const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-slate-100 text-slate-700 border-slate-200",
-  normal: "bg-blue-50 text-blue-700 border-blue-200",
-  high: "bg-muted text-foreground border-border",
-  urgent: "bg-red-50 text-red-700 border-red-200",
 }
 
 // #TODO: Styles for unimplemented features - change to normal styling once wired up
@@ -268,6 +261,34 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Failed to update status:", err)
+    }
+  }
+
+  // Handle priority update
+  const handlePriorityUpdate = async (submissionId: number, newPriority: Priority) => {
+    if (!session) return
+
+    try {
+      const apiToken = (session as any)?.apiToken
+      const response = await fetch(`${API_BASE}/api/contact/admin/${submissionId}/`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Token ${apiToken || ""}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ priority: newPriority }),
+      })
+
+      if (response.ok) {
+        // Update priority locally
+        setContactSubmissions(prev =>
+          prev.map(s =>
+            s.id === submissionId ? { ...s, priority: newPriority } : s
+          )
+        )
+      }
+    } catch (err) {
+      console.error("Failed to update priority:", err)
     }
   }
 
@@ -673,9 +694,10 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-2 shrink-0">
-                        <Badge variant="outline" className={PRIORITY_COLORS[submission.priority] || PRIORITY_COLORS.normal}>
-                          {submission.priority}
-                        </Badge>
+                        <PriorityDropdown
+                          value={submission.priority as Priority}
+                          onChange={(newPriority) => handlePriorityUpdate(submission.id, newPriority)}
+                        />
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {submission.time_since_created}
                         </span>

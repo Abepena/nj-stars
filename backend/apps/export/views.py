@@ -1,6 +1,9 @@
 import logging
 import json
+import secrets
+from urllib.parse import urlencode
 from django.conf import settings
+from django.core import signing
 from django.shortcuts import redirect
 from django.http import HttpResponseRedirect
 from rest_framework import status
@@ -23,9 +26,35 @@ def get_google_oauth_config():
     return {
         'client_id': getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', ''),
         'client_secret': getattr(settings, 'GOOGLE_OAUTH_CLIENT_SECRET', ''),
-        'redirect_uri': getattr(settings, 'GOOGLE_OAUTH_REDIRECT_URI', 
+        'redirect_uri': getattr(settings, 'GOOGLE_OAUTH_REDIRECT_URI',
                                 'http://localhost:8000/api/export/google-sheets/callback/'),
     }
+
+
+def create_oauth_state(user_id, return_url):
+    """
+    Create a signed OAuth state containing user_id and return_url.
+    This allows the callback to identify the user without session continuity.
+    """
+    data = {
+        'user_id': user_id,
+        'return_url': return_url,
+        'nonce': secrets.token_urlsafe(16),  # Prevent replay attacks
+    }
+    return signing.dumps(data, salt='google-oauth-state')
+
+
+def parse_oauth_state(state):
+    """
+    Parse and verify the signed OAuth state.
+    Returns (user_id, return_url) or (None, None) if invalid.
+    """
+    try:
+        data = signing.loads(state, salt='google-oauth-state', max_age=3600)  # 1 hour expiry
+        return data.get('user_id'), data.get('return_url', settings.FRONTEND_URL)
+    except signing.BadSignature:
+        logger.error("Invalid OAuth state signature")
+        return None, None
 
 
 @api_view(['GET'])
@@ -34,50 +63,38 @@ def get_google_oauth_config():
 def google_sheets_authorize(request):
     """
     Start OAuth flow to connect user's Google account.
-    
+
     GET /api/export/google-sheets/authorize/
     Returns: { "authorization_url": "https://accounts.google.com/..." }
     """
-    from google_auth_oauthlib.flow import Flow
-    
     config = get_google_oauth_config()
-    
+
     if not config['client_id'] or not config['client_secret']:
         return Response(
             {'error': 'Google OAuth not configured'},
             status=status.HTTP_503_SERVICE_UNAVAILABLE
         )
-    
-    # Store return URL in session
+
+    # Get return URL from request
     return_url = request.GET.get('return_url', settings.FRONTEND_URL)
-    request.session['google_oauth_return_url'] = return_url
-    request.session['google_oauth_user_id'] = request.user.id
-    
-    client_config = {
-        "web": {
-            "client_id": config['client_id'],
-            "client_secret": config['client_secret'],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [config['redirect_uri']],
-        }
+
+    # Create signed state containing user_id and return_url
+    state = create_oauth_state(request.user.id, return_url)
+
+    # Build authorization URL manually to ensure our state is used
+    params = {
+        'response_type': 'code',
+        'client_id': config['client_id'],
+        'redirect_uri': config['redirect_uri'],
+        'scope': ' '.join(GOOGLE_OAUTH_SCOPES),
+        'state': state,
+        'access_type': 'offline',
+        'include_granted_scopes': 'true',
+        'prompt': 'consent',
     }
     
-    flow = Flow.from_client_config(
-        client_config,
-        scopes=GOOGLE_OAUTH_SCOPES,
-        redirect_uri=config['redirect_uri']
-    )
-    
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true',
-        prompt='consent'
-    )
-    
-    # Store state for validation
-    request.session['google_oauth_state'] = state
-    
+    authorization_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
+
     return Response({'authorization_url': authorization_url})
 
 
@@ -85,77 +102,71 @@ def google_sheets_authorize(request):
 def google_sheets_callback(request):
     """
     OAuth callback - exchange code for tokens and store them.
-    
+
     GET /api/export/google-sheets/callback/?code=...&state=...
     Redirects to frontend with success/error status
     """
-    from google_auth_oauthlib.flow import Flow
+    import requests as http_requests
     from apps.portal.models import UserProfile
-    
+
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
-    
-    return_url = request.session.get('google_oauth_return_url', settings.FRONTEND_URL)
-    stored_state = request.session.get('google_oauth_state')
-    user_id = request.session.get('google_oauth_user_id')
-    
+
+    # Parse the signed state to get user_id and return_url
+    user_id, return_url = parse_oauth_state(state) if state else (None, settings.FRONTEND_URL)
+
+    if not return_url:
+        return_url = settings.FRONTEND_URL
+
     if error:
         logger.error(f"Google OAuth error: {error}")
         return HttpResponseRedirect(f"{return_url}?google_auth=error&message={error}")
-    
-    if not code or state != stored_state:
-        logger.error("Invalid OAuth state or missing code")
+
+    if not code or not user_id:
+        logger.error(f"Invalid OAuth state or missing code. user_id={user_id}, has_code={bool(code)}")
         return HttpResponseRedirect(f"{return_url}?google_auth=error&message=invalid_state")
-    
+
     config = get_google_oauth_config()
-    
-    client_config = {
-        "web": {
-            "client_id": config['client_id'],
-            "client_secret": config['client_secret'],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [config['redirect_uri']],
-        }
-    }
-    
+
     try:
-        flow = Flow.from_client_config(
-            client_config,
-            scopes=GOOGLE_OAUTH_SCOPES,
-            state=state,
-            redirect_uri=config['redirect_uri']
+        # Exchange code for tokens manually
+        token_response = http_requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'code': code,
+                'client_id': config['client_id'],
+                'client_secret': config['client_secret'],
+                'redirect_uri': config['redirect_uri'],
+                'grant_type': 'authorization_code',
+            }
         )
         
-        flow.fetch_token(code=code)
-        credentials = flow.credentials
+        if token_response.status_code != 200:
+            logger.error(f"Token exchange failed: {token_response.text}")
+            return HttpResponseRedirect(f"{return_url}?google_auth=error&message=token_exchange_failed")
         
+        tokens = token_response.json()
+
         # Store credentials in user profile
-        if user_id:
-            try:
-                profile = UserProfile.objects.get(user_id=user_id)
-                profile.google_sheets_credentials = json.dumps({
-                    'token': credentials.token,
-                    'refresh_token': credentials.refresh_token,
-                    'token_uri': credentials.token_uri,
-                    'client_id': credentials.client_id,
-                    'client_secret': credentials.client_secret,
-                    'scopes': list(credentials.scopes),
-                })
-                profile.save()
-                logger.info(f"Google credentials saved for user {user_id}")
-            except UserProfile.DoesNotExist:
-                logger.error(f"UserProfile not found for user {user_id}")
-                return HttpResponseRedirect(f"{return_url}?google_auth=error&message=profile_not_found")
-        
-        # Clean up session
-        request.session.pop('google_oauth_state', None)
-        request.session.pop('google_oauth_return_url', None)
-        request.session.pop('google_oauth_user_id', None)
-        
+        try:
+            profile = UserProfile.objects.get(user_id=user_id)
+            profile.google_sheets_credentials = json.dumps({
+                'token': tokens['access_token'],
+                'refresh_token': tokens.get('refresh_token'),
+                'token_uri': 'https://oauth2.googleapis.com/token',
+                'client_id': config['client_id'],
+                'client_secret': config['client_secret'],
+                'scopes': GOOGLE_OAUTH_SCOPES,
+            })
+            profile.save()
+            logger.info(f"Google credentials saved for user {user_id}")
+        except UserProfile.DoesNotExist:
+            logger.error(f"UserProfile not found for user {user_id}")
+            return HttpResponseRedirect(f"{return_url}?google_auth=error&message=profile_not_found")
+
         return HttpResponseRedirect(f"{return_url}?google_auth=success")
-        
+
     except Exception as e:
         logger.error(f"Google OAuth token exchange failed: {e}")
         return HttpResponseRedirect(f"{return_url}?google_auth=error&message=token_exchange_failed")
@@ -167,12 +178,12 @@ def google_sheets_callback(request):
 def google_sheets_status(request):
     """
     Check if user has connected Google Sheets.
-    
+
     GET /api/export/google-sheets/status/
     Returns: { "connected": true/false }
     """
     from apps.portal.models import UserProfile
-    
+
     try:
         profile = UserProfile.objects.get(user=request.user)
         connected = bool(profile.google_sheets_credentials)
@@ -187,11 +198,11 @@ def google_sheets_status(request):
 def google_sheets_disconnect(request):
     """
     Disconnect Google Sheets integration.
-    
+
     POST /api/export/google-sheets/disconnect/
     """
     from apps.portal.models import UserProfile
-    
+
     try:
         profile = UserProfile.objects.get(user=request.user)
         profile.google_sheets_credentials = None
@@ -219,7 +230,7 @@ def export_google_sheets(request):
     from googleapiclient.discovery import build
     from apps.portal.models import UserProfile
     from datetime import datetime
-    
+
     data = request.data.get('data', [])
     columns = request.data.get('columns', [])
     sheet_name = request.data.get('sheet_name', 'Export')
@@ -238,7 +249,7 @@ def export_google_sheets(request):
                 {'error': 'Google Sheets not connected', 'needs_auth': True},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        
+
         creds_data = json.loads(profile.google_sheets_credentials)
         credentials = Credentials(
             token=creds_data['token'],
@@ -263,7 +274,7 @@ def export_google_sheets(request):
     try:
         # Build service with user credentials
         service = build('sheets', 'v4', credentials=credentials)
-        
+
         # Create new spreadsheet
         spreadsheet = {
             'properties': {
@@ -297,7 +308,7 @@ def export_google_sheets(request):
         ).execute()
 
         # Format header row
-        requests = [
+        requests_list = [
             {
                 'repeatCell': {
                     'range': {'sheetId': 0, 'startRowIndex': 0, 'endRowIndex': 1},
@@ -330,7 +341,7 @@ def export_google_sheets(request):
 
         service.spreadsheets().batchUpdate(
             spreadsheetId=spreadsheet_id,
-            body={'requests': requests}
+            body={'requests': requests_list}
         ).execute()
 
         # Update stored token if refreshed
@@ -347,14 +358,14 @@ def export_google_sheets(request):
 
     except Exception as e:
         logger.error(f"Google Sheets export failed: {e}")
-        
+
         # Check if it's an auth error
         if 'invalid_grant' in str(e).lower() or 'token' in str(e).lower():
             return Response(
                 {'error': 'Google authorization expired', 'needs_auth': True},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        
+
         return Response(
             {'error': f'Export failed: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
