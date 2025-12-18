@@ -223,43 +223,36 @@ export default function DashboardPage() {
   return (
     <div className="space-y-0">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        {/* Tab Navigation - Folder Style */}
-        <div className="relative">
-          <TabsList className="h-auto p-0 bg-transparent gap-0 flex-wrap justify-start relative z-10">
-            {availableTabs.map((tab) => {
-              const Icon = tab.icon
-              return (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className={`
-                    flex items-center gap-2 px-5 py-3 transition-all relative
-                    rounded-t-lg rounded-b-none border border-b-0 border-transparent
-                    data-[state=active]:bg-success/40 data-[state=active]:border-border
-                    data-[state=active]:text-foreground data-[state=active]:z-20
-                    data-[state=inactive]:bg-muted/30 data-[state=inactive]:text-muted-foreground
-                    hover:bg-success/20 hover:text-foreground
-                    -mb-px
-                  `}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="font-medium">{tab.label}</span>
-                  {tab.id === "admin" && (
-                    <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0 h-5 bg-success/30 border-success/50 text-foreground">
-                      Full Access
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              )
-            })}
-          </TabsList>
-          {/* Border line that goes behind inactive tabs */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
-        </div>
+        {/* Tab Navigation - Pill Style */}
+        <TabsList className="h-auto p-1 bg-muted/50 rounded-lg gap-1 flex-wrap justify-start w-fit">
+          {availableTabs.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className={`
+                  flex items-center gap-2 px-4 py-2 transition-all rounded-md
+                  data-[state=active]:bg-success/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm
+                  data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground
+                  hover:text-foreground
+                `}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="font-medium">{tab.label}</span>
+                {tab.id === "admin" && (
+                  <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0 h-5 bg-success/30 border-success/50 text-foreground">
+                    Full Access
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )
+          })}
+        </TabsList>
 
         {/* Tab Content - Connected to tabs */}
         {availableTabs.map((tab) => (
-          <TabsContent key={tab.id} value={tab.id} className="mt-0 pt-6 border-x border-b rounded-b-lg border-border bg-card/50">
+          <TabsContent key={tab.id} value={tab.id} className="mt-0 pt-6">
             <div className="px-1">
               {renderDashboard(tab.id)}
             </div>
