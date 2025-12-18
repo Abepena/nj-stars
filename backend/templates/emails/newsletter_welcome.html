@@ -1,0 +1,52 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Welcome to NJ Stars Elite!{% endblock %}
+
+{% block content %}
+<h2>Hey {{ first_name }}!</h2>
+
+<p>
+    Welcome to the NJ Stars Elite family! We're excited to have you join our community of dedicated basketball players, parents, and fans.
+</p>
+
+<p>
+    You've just taken the first step toward staying connected with everything happening at NJ Stars Elite AAU Basketball. Here's what you can expect from us:
+</p>
+
+<div class="highlight-box">
+    <p style="margin: 0; color: #e5e5e5;">
+        <strong style="color: #ffffff;">What you'll receive:</strong><br>
+        - Tryout announcements and registration info<br>
+        - Tournament schedules and results<br>
+        - Training camp opportunities<br>
+        - Exclusive merch drops and promotions<br>
+        - Team news and player highlights
+    </p>
+</div>
+
+<p>
+    We promise to only send you the good stuff - no spam, just basketball.
+</p>
+
+<div class="text-center">
+    <a href="{{ site_url }}" class="cta-button">
+        Visit Our Website
+    </a>
+</div>
+
+<hr class="divider">
+
+<p style="font-size: 14px;">
+    Ready to take it to the next level? Check out our upcoming events and see how you can get involved with NJ Stars Elite.
+</p>
+
+<p>
+    See you on the court!<br>
+    <strong class="text-primary">The NJ Stars Elite Team</strong>
+</p>
+{% endblock %}
+
+{% block footer_extra %}
+<span style="color: #666666;"> | </span>
+<a href="{{ unsubscribe_url }}">Unsubscribe</a>
+{% endblock %}

@@ -15,7 +15,10 @@
 
 ## Forms & User Capture
 - [ ] Create full functionality of the forms to sign up
-- [ ] Add an email capture form to start collecting emails to reach out to upon launching the site
+- [x] Add an email capture form to start collecting emails to reach out to upon launching the site
+  - Email service implemented with MailHog (dev) and SMTP (prod)
+  - Welcome email sent automatically on newsletter subscription
+  - Templates created for: newsletter welcome, order confirmation, event registration
 
 ## Audits & Reviews
 - [ ] Design audit and fix

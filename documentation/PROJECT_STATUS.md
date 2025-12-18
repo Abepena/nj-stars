@@ -478,7 +478,7 @@ All UI components are built with shadcn/ui (Radix UI + Tailwind):
 ## 🐛 Known Limitations
 
 1. **Instagram API:** Currently using mock data (real API requires Facebook app approval)
-2. **Email Notifications:** Not yet implemented (add service like SendGrid/Mailgun)
+2. ~~**Email Notifications:** Not yet implemented~~ **IMPLEMENTED** - EmailService with MailHog (dev) and SMTP (prod)
 3. **File Uploads:** Product images currently use URLs (could add file upload)
 4. **Real-time Updates:** No WebSocket support yet (could add for live updates)
 5. **Analytics:** No analytics integration (could add Google Analytics/Mixpanel)

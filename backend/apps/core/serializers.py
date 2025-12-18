@@ -1,5 +1,9 @@
+import logging
+
 from rest_framework import serializers
 from .models import Coach, InstagramPost, NewsletterSubscriber
+
+logger = logging.getLogger(__name__)
 
 
 class CoachSerializer(serializers.ModelSerializer):
@@ -68,7 +72,7 @@ class NewsletterSubscribeSerializer(serializers.Serializer):
         return normalized
 
     def create(self, validated_data):
-        """Create or reactivate subscription"""
+        """Create or reactivate subscription and send welcome email"""
         email = validated_data['email']
         first_name = validated_data.get('first_name', '')
         source = validated_data.get('source', 'website')
@@ -82,15 +86,29 @@ class NewsletterSubscribeSerializer(serializers.Serializer):
             }
         )
 
+        send_welcome = False
         if not created:
             # Reactivate if previously unsubscribed
             if subscriber.status == 'unsubscribed':
                 subscriber.status = 'active'
                 subscriber.unsubscribed_at = None
+                send_welcome = True  # Send welcome email on reactivation
             # Update first name if provided
             if first_name:
                 subscriber.first_name = first_name
             subscriber.save()
+        else:
+            send_welcome = True  # Send welcome email for new subscribers
+
+        # Send welcome email asynchronously (don't block the response)
+        if send_welcome:
+            try:
+                from .services import EmailService
+                EmailService.send_newsletter_welcome(subscriber)
+                logger.info(f"Welcome email sent to {subscriber.email}")
+            except Exception as e:
+                # Log the error but don't fail the subscription
+                logger.error(f"Failed to send welcome email to {subscriber.email}: {str(e)}")
 
         return subscriber
 

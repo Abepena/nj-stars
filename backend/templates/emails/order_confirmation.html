@@ -1,0 +1,58 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Order Confirmation - #{{ order_number }}{% endblock %}
+
+{% block content %}
+<h2>Thanks for your order!</h2>
+
+<p>
+    Hey {{ shipping_name|default:"there" }}, your order has been confirmed and we're getting it ready for you.
+</p>
+
+<div class="highlight-box">
+    <p style="margin: 0; color: #e5e5e5;">
+        <strong style="color: #ffffff;">Order #{{ order_number }}</strong>
+    </p>
+</div>
+
+<h3 style="color: #ffffff; margin-top: 25px;">Order Summary</h3>
+
+<table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+    {% for item in items %}
+    <tr style="border-bottom: 1px solid #2a2a4a;">
+        <td style="padding: 12px 0; color: #e5e5e5;">
+            {{ item.product.name }}
+            {% if item.variant_name %}<br><span style="color: #888; font-size: 14px;">{{ item.variant_name }}</span>{% endif %}
+            <br><span style="color: #888; font-size: 14px;">Qty: {{ item.quantity }}</span>
+        </td>
+        <td style="padding: 12px 0; text-align: right; color: #e5e5e5;">
+            ${{ item.total }}
+        </td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td style="padding: 15px 0; font-weight: bold; color: #ffffff;">
+            Total
+        </td>
+        <td style="padding: 15px 0; text-align: right; font-weight: bold; color: #e91e8c; font-size: 18px;">
+            ${{ total }}
+        </td>
+    </tr>
+</table>
+
+<p>
+    We'll send you another email with tracking information once your order ships.
+</p>
+
+<div class="text-center">
+    <a href="{{ site_url }}/portal/orders" class="cta-button">
+        View Order Status
+    </a>
+</div>
+
+<hr class="divider">
+
+<p style="font-size: 14px; color: #888;">
+    If you have any questions about your order, please contact us at <a href="mailto:{{ support_email }}" style="color: #e91e8c;">{{ support_email }}</a>
+</p>
+{% endblock %}

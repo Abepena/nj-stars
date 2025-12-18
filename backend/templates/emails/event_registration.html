@@ -1,0 +1,49 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Registration Confirmed - {{ event_name }}{% endblock %}
+
+{% block content %}
+<h2>You're Registered!</h2>
+
+<p>
+    Hey {{ participant_name|default:"there" }}, your registration for <strong class="text-primary">{{ event_name }}</strong> has been confirmed!
+</p>
+
+<div class="highlight-box">
+    <p style="margin: 0; color: #e5e5e5;">
+        <strong style="color: #ffffff;">Event Details</strong><br><br>
+        <strong>Event:</strong> {{ event_name }}<br>
+        <strong>Date:</strong> {{ event_date|date:"F j, Y" }} at {{ event_date|time:"g:i A" }}<br>
+        {% if event_location %}<strong>Location:</strong> {{ event_location }}{% endif %}
+    </p>
+</div>
+
+<h3 style="color: #ffffff; margin-top: 25px;">What to Bring</h3>
+<p>
+    - Basketball shoes (non-marking soles)<br>
+    - Athletic wear<br>
+    - Water bottle<br>
+    - Positive attitude!
+</p>
+
+<p>
+    Please arrive 15 minutes early to check in and warm up.
+</p>
+
+<div class="text-center">
+    <a href="{{ site_url }}/events" class="cta-button">
+        View Event Details
+    </a>
+</div>
+
+<hr class="divider">
+
+<p style="font-size: 14px; color: #888;">
+    Need to cancel or have questions? Contact us at <a href="mailto:{{ support_email }}" style="color: #e91e8c;">{{ support_email }}</a>
+</p>
+
+<p>
+    See you there!<br>
+    <strong class="text-primary">The NJ Stars Elite Team</strong>
+</p>
+{% endblock %}
