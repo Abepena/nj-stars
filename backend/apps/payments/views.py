@@ -2421,6 +2421,43 @@ def cash_handoff(request, cash_id):
     return Response(CashPaymentSerializer(cash_payment).data)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cash_undo_handoff(request, cash_id):
+    """
+    Undo a cash handoff, moving it back to collected status.
+    
+    Admin only - allows reverting a handoff if done in error.
+    """
+    if not is_admin_user(request.user):
+        return Response(
+            {"error": "Admin access required"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    try:
+        cash_payment = CashPayment.objects.get(pk=cash_id)
+    except CashPayment.DoesNotExist:
+        return Response(
+            {"error": "Cash payment not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if cash_payment.status != 'handed_off':
+        return Response(
+            {"error": f"Can only undo handoff for handed_off items, current status: {cash_payment.status}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Revert to collected status
+    cash_payment.status = 'collected'
+    cash_payment.handed_off_at = None
+    cash_payment.handed_off_to = None
+    cash_payment.notes += f"\n[Undo Handoff] Reverted by {request.user.email} at {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+    cash_payment.save()
+
+    return Response(CashPaymentSerializer(cash_payment).data)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cash_by_staff(request):

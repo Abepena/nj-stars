@@ -292,3 +292,97 @@
 .animate-pulse-highlight {
   animation: pulse-highlight 0.6s ease-in-out 2;
 }
+
+/* ==========================================================================
+   Badge Utility Classes
+   Muted backgrounds with foreground text for consistent visual hierarchy
+   ========================================================================== */
+
+@layer components {
+  /* Category badge styles - use these for event/product type badges */
+  .badge-skills {
+    @apply border border-primary/50 bg-primary/40 text-foreground;
+  }
+  .badge-tryout {
+    @apply border border-info/50 bg-info/40 text-foreground;
+  }
+  .badge-open-gym {
+    @apply border border-success/50 bg-success/40 text-foreground;
+  }
+  .badge-game {
+    @apply border border-accent/50 bg-accent/40 text-foreground;
+  }
+  .badge-practice {
+    @apply border border-warning/40 bg-warning/30 text-foreground;
+  }
+  .badge-tournament {
+    @apply border border-secondary/50 bg-secondary/40 text-foreground;
+  }
+  .badge-camp {
+    @apply border border-tertiary/40 bg-tertiary/30 text-foreground;
+  }
+
+  /* Status badge styles */
+  .badge-success {
+    @apply border border-success/50 bg-success/40 text-foreground;
+  }
+  .badge-warning {
+    @apply border border-warning/40 bg-warning/30 text-foreground;
+  }
+  .badge-info {
+    @apply border border-info/50 bg-info/40 text-foreground;
+  }
+  .badge-error {
+    @apply border border-accent/50 bg-accent/40 text-foreground;
+  }
+  .badge-muted {
+    @apply border border-border bg-muted/50 text-foreground;
+  }
+
+  /* Filter/toggle badge styles - for category filters */
+  .filter-badge-active {
+    @apply font-medium;
+  }
+  .filter-skills {
+    @apply bg-primary/40 text-foreground border border-primary/50;
+  }
+  .filter-skills-inactive {
+    @apply bg-primary/15 text-foreground/70 border border-primary/30 hover:bg-primary/25;
+  }
+  .filter-tryout {
+    @apply bg-info/40 text-foreground border border-info/50;
+  }
+  .filter-tryout-inactive {
+    @apply bg-info/15 text-foreground/70 border border-info/30 hover:bg-info/25;
+  }
+  .filter-open-gym {
+    @apply bg-success/40 text-foreground border border-success/50;
+  }
+  .filter-open-gym-inactive {
+    @apply bg-success/15 text-foreground/70 border border-success/30 hover:bg-success/25;
+  }
+  .filter-game {
+    @apply bg-accent/40 text-foreground border border-accent/50;
+  }
+  .filter-game-inactive {
+    @apply bg-accent/15 text-foreground/70 border border-accent/30 hover:bg-accent/25;
+  }
+  .filter-practice {
+    @apply bg-warning/30 text-foreground border border-warning/40;
+  }
+  .filter-practice-inactive {
+    @apply bg-warning/10 text-foreground/70 border border-warning/25 hover:bg-warning/20;
+  }
+  .filter-tournament {
+    @apply bg-secondary/40 text-foreground border border-secondary/50;
+  }
+  .filter-tournament-inactive {
+    @apply bg-secondary/15 text-foreground/70 border border-secondary/30 hover:bg-secondary/25;
+  }
+  .filter-camp {
+    @apply bg-tertiary/30 text-foreground border border-tertiary/40;
+  }
+  .filter-camp-inactive {
+    @apply bg-tertiary/10 text-foreground/70 border border-tertiary/25 hover:bg-tertiary/20;
+  }
+}

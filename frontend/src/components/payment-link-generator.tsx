@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import {
   Dialog,
@@ -14,13 +14,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -34,7 +27,10 @@ import {
   Calendar,
   DollarSign,
   Sparkles,
+  Search,
+  X,
 } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -93,6 +89,14 @@ export function PaymentLinkGenerator({
   const [selectedProductId, setSelectedProductId] = useState<string>("")
   const [selectedEventId, setSelectedEventId] = useState<string>("")
 
+  // Search state
+  const [productSearch, setProductSearch] = useState("")
+  const [eventSearch, setEventSearch] = useState("")
+  const [showProductDropdown, setShowProductDropdown] = useState(false)
+  const [showEventDropdown, setShowEventDropdown] = useState(false)
+  const productSearchRef = useRef<HTMLDivElement>(null)
+  const eventSearchRef = useRef<HTMLDivElement>(null)
+
   // Custom payment fields
   const [customTitle, setCustomTitle] = useState("")
   const [customDescription, setCustomDescription] = useState("")
@@ -108,6 +112,36 @@ export function PaymentLinkGenerator({
       fetchData()
     }
   }, [open, session])
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
+        setShowProductDropdown(false)
+      }
+      if (eventSearchRef.current && !eventSearchRef.current.contains(event.target as Node)) {
+        setShowEventDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  // Filter products: exclude free items and match search
+  const filteredProducts = products
+    .filter((p) => parseFloat(p.price) > 0) // Exclude free items
+    .filter((p) =>
+      productSearch === "" ||
+      p.name.toLowerCase().includes(productSearch.toLowerCase())
+    )
+
+  // Filter events: exclude free items and match search
+  const filteredEvents = events
+    .filter((e) => e.price && parseFloat(e.price) > 0) // Exclude free items
+    .filter((e) =>
+      eventSearch === "" ||
+      e.title.toLowerCase().includes(eventSearch.toLowerCase())
+    )
 
   const fetchData = async () => {
     setLoadingData(true)
@@ -217,9 +251,33 @@ export function PaymentLinkGenerator({
     setPaymentType("product")
     setSelectedProductId("")
     setSelectedEventId("")
+    setProductSearch("")
+    setEventSearch("")
     setCustomTitle("")
     setCustomDescription("")
     setCustomAmount("")
+  }
+
+  const handleSelectProduct = (product: Product) => {
+    setSelectedProductId(product.id.toString())
+    setProductSearch(product.name)
+    setShowProductDropdown(false)
+  }
+
+  const handleSelectEvent = (event: Event) => {
+    setSelectedEventId(event.id)
+    setEventSearch(event.title)
+    setShowEventDropdown(false)
+  }
+
+  const clearProductSelection = () => {
+    setSelectedProductId("")
+    setProductSearch("")
+  }
+
+  const clearEventSelection = () => {
+    setSelectedEventId("")
+    setEventSearch("")
   }
 
   const selectedProduct = products.find((p) => p.id.toString() === selectedProductId)
@@ -242,7 +300,7 @@ export function PaymentLinkGenerator({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="bg-emerald-600/80 hover:bg-emerald-600 text-white">
+          <Button className="bg-secondary/80 hover:bg-secondary text-white">
             <Link2 className="h-4 w-4 mr-2" />
             Generate Payment Link
           </Button>
@@ -251,7 +309,7 @@ export function PaymentLinkGenerator({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-emerald-600" />
+            <Link2 className="h-5 w-5 text-secondary" />
             Generate Payment Link
           </DialogTitle>
           <DialogDescription>
@@ -262,25 +320,27 @@ export function PaymentLinkGenerator({
         {success && generatedLink ? (
           <div className="space-y-6 py-4">
             <div className="flex flex-col items-center justify-center">
-              <CheckCircle className="h-12 w-12 text-green-600 mb-4" />
+              <CheckCircle className="h-12 w-12 text-secondary mb-3" />
               <p className="text-lg font-medium">Payment Link Generated!</p>
+              <p className="text-sm text-muted-foreground">Scan the QR code or share the link below</p>
             </div>
 
-            {/* QR Code Display */}
-            {generatedLink.qr_code_url && (
-              <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <img
-                    src={generatedLink.qr_code_url}
-                    alt="Payment QR Code"
-                    className="w-48 h-48"
-                  />
-                </div>
+            {/* QR Code Display - Generated client-side */}
+            <div className="flex justify-center">
+              <div className="bg-white p-4 rounded-xl shadow-lg">
+                <QRCodeSVG
+                  value={generatedLink.url}
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                />
               </div>
-            )}
+            </div>
 
             {/* Link Display */}
-            <div className="bg-accent rounded-lg p-4">
+            <div className="bg-muted/50 rounded-lg p-4">
               <Label className="text-xs text-muted-foreground mb-2 block">
                 Payment Link
               </Label>
@@ -288,20 +348,24 @@ export function PaymentLinkGenerator({
                 <Input
                   value={generatedLink.url}
                   readOnly
-                  className="font-mono text-sm"
+                  className="font-mono text-sm bg-background"
                 />
                 <Button
                   size="icon"
                   variant="outline"
                   onClick={handleCopyLink}
+                  className="shrink-0"
                 >
                   {copied ? (
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-secondary" />
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
                 </Button>
               </div>
+              {copied && (
+                <p className="text-xs text-secondary mt-2 text-center">Link copied to clipboard!</p>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -335,30 +399,62 @@ export function PaymentLinkGenerator({
               {/* Product Selection */}
               <TabsContent value="product" className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Select Product</Label>
+                  <Label>Search Products</Label>
                   {loadingData ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Loading products...
                     </div>
                   ) : (
-                    <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a product..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id.toString()}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{product.name}</span>
-                              <Badge variant="secondary" className="ml-2">
+                    <div ref={productSearchRef} className="relative">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search products..."
+                          value={productSearch}
+                          onChange={(e) => {
+                            setProductSearch(e.target.value)
+                            setSelectedProductId("")
+                            setShowProductDropdown(true)
+                          }}
+                          onFocus={() => setShowProductDropdown(true)}
+                          className="pl-9 pr-9"
+                        />
+                        {productSearch && (
+                          <button
+                            type="button"
+                            onClick={clearProductSelection}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      {showProductDropdown && filteredProducts.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                          {filteredProducts.map((product) => (
+                            <button
+                              key={product.id}
+                              type="button"
+                              onClick={() => handleSelectProduct(product)}
+                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-accent/50 transition-colors ${
+                                selectedProductId === product.id.toString() ? "bg-accent" : ""
+                              }`}
+                            >
+                              <span className="truncate">{product.name}</span>
+                              <Badge variant="secondary" className="ml-2 shrink-0">
                                 ${parseFloat(product.price).toFixed(2)}
                               </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {showProductDropdown && productSearch && filteredProducts.length === 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg p-3 text-sm text-muted-foreground">
+                          No products found matching "{productSearch}"
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -374,7 +470,7 @@ export function PaymentLinkGenerator({
                       )}
                       <div className="flex-1">
                         <p className="font-medium">{selectedProduct.name}</p>
-                        <p className="text-2xl font-bold text-green-600">
+                        <p className="text-2xl font-bold text-secondary">
                           ${parseFloat(selectedProduct.price).toFixed(2)}
                         </p>
                       </div>
@@ -386,30 +482,67 @@ export function PaymentLinkGenerator({
               {/* Event Selection */}
               <TabsContent value="event" className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Select Event</Label>
+                  <Label>Search Events</Label>
                   {loadingData ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Loading events...
                     </div>
                   ) : (
-                    <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose an event..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {events.filter((e) => e.price).map((event) => (
-                          <SelectItem key={event.id} value={event.id}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{event.title}</span>
-                              <Badge variant="secondary" className="ml-2">
+                    <div ref={eventSearchRef} className="relative">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search events..."
+                          value={eventSearch}
+                          onChange={(e) => {
+                            setEventSearch(e.target.value)
+                            setSelectedEventId("")
+                            setShowEventDropdown(true)
+                          }}
+                          onFocus={() => setShowEventDropdown(true)}
+                          className="pl-9 pr-9"
+                        />
+                        {eventSearch && (
+                          <button
+                            type="button"
+                            onClick={clearEventSelection}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      {showEventDropdown && filteredEvents.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                          {filteredEvents.map((event) => (
+                            <button
+                              key={event.id}
+                              type="button"
+                              onClick={() => handleSelectEvent(event)}
+                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-accent/50 transition-colors ${
+                                selectedEventId === event.id ? "bg-accent" : ""
+                              }`}
+                            >
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="truncate">{event.title}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(event.start_datetime).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <Badge variant="secondary" className="ml-2 shrink-0">
                                 ${parseFloat(event.price!).toFixed(2)}
                               </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {showEventDropdown && eventSearch && filteredEvents.length === 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg p-3 text-sm text-muted-foreground">
+                          No paid events found matching "{eventSearch}"
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -421,7 +554,7 @@ export function PaymentLinkGenerator({
                         {new Date(selectedEvent.start_datetime).toLocaleDateString()}
                       </p>
                       {selectedEvent.price && (
-                        <p className="text-2xl font-bold text-green-600 mt-2">
+                        <p className="text-2xl font-bold text-secondary mt-2">
                           ${parseFloat(selectedEvent.price).toFixed(2)}
                         </p>
                       )}
@@ -476,7 +609,7 @@ export function PaymentLinkGenerator({
             {getPreviewAmount() > 0 && (
               <div className="bg-accent/50 rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground mb-1">Payment Amount</p>
-                <p className="text-3xl font-bold text-green-600">
+                <p className="text-3xl font-bold text-secondary">
                   ${getPreviewAmount().toFixed(2)}
                 </p>
               </div>
@@ -491,7 +624,7 @@ export function PaymentLinkGenerator({
 
             {/* Generate Button */}
             <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="w-full bg-secondary hover:bg-secondary/90"
               onClick={handleGenerate}
               disabled={loading || getPreviewAmount() <= 0}
             >

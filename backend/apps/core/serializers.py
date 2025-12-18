@@ -138,6 +138,7 @@ class ContactSubmissionSerializer(serializers.Serializer):
 
 
 class ContactSubmissionAdminSerializer(serializers.ModelSerializer):
+    time_since_created = serializers.SerializerMethodField()
     """Serializer for admin view of contact submissions"""
 
     assigned_to_name = serializers.SerializerMethodField()
@@ -157,7 +158,7 @@ class ContactSubmissionAdminSerializer(serializers.ModelSerializer):
             'priority', 'priority_display',
             'admin_notes', 'assigned_to', 'assigned_to_name',
             'resolved_at', 'resolved_by', 'resolved_by_name',
-            'created_at', 'updated_at',
+            'created_at', 'updated_at', 'time_since_created',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -170,3 +171,7 @@ class ContactSubmissionAdminSerializer(serializers.ModelSerializer):
         if obj.resolved_by:
             return obj.resolved_by.get_full_name() or obj.resolved_by.email
         return None
+
+    def get_time_since_created(self, obj):
+        from django.utils.timesince import timesince
+        return timesince(obj.created_at) + " ago"

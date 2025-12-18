@@ -72,14 +72,14 @@ interface Order {
 
 // ==================== Status Config ====================
 
-const statusConfig: Record<OrderStatus, { icon: React.ComponentType<any>; color: string; bgColor: string }> = {
-  pending: { icon: Clock, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-900/50' },
-  paid: { icon: CheckCircle2, color: 'text-green-500', bgColor: 'bg-green-100 dark:bg-green-900/50' },
-  processing: { icon: Package, color: 'text-blue-500', bgColor: 'bg-blue-100 dark:bg-blue-900/50' },
-  shipped: { icon: Truck, color: 'text-violet-500', bgColor: 'bg-violet-100 dark:bg-violet-900/50' },
-  delivered: { icon: CheckCircle2, color: 'text-emerald-500', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50' },
-  canceled: { icon: XCircle, color: 'text-red-500', bgColor: 'bg-red-100 dark:bg-red-900/50' },
-  refunded: { icon: XCircle, color: 'text-gray-500', bgColor: 'bg-gray-100 dark:bg-gray-900/50' },
+const statusConfig: Record<OrderStatus, { icon: React.ComponentType<any>; color: string; bgColor: string; badgeClass: string }> = {
+  pending: { icon: Clock, color: 'text-foreground', bgColor: 'bg-warning/30', badgeClass: 'bg-warning/30 text-foreground border-warning/40' },
+  paid: { icon: CheckCircle2, color: 'text-foreground', bgColor: 'bg-success/40', badgeClass: 'bg-success/40 text-foreground border-success/50' },
+  processing: { icon: Package, color: 'text-foreground', bgColor: 'bg-info/40', badgeClass: 'bg-info/40 text-foreground border-info/50' },
+  shipped: { icon: Truck, color: 'text-foreground', bgColor: 'bg-secondary/40', badgeClass: 'bg-secondary/40 text-foreground border-secondary/50' },
+  delivered: { icon: CheckCircle2, color: 'text-foreground', bgColor: 'bg-success/40', badgeClass: 'bg-success/40 text-foreground border-success/50' },
+  canceled: { icon: XCircle, color: 'text-foreground', bgColor: 'bg-accent/40', badgeClass: 'bg-accent/40 text-foreground border-accent/50' },
+  refunded: { icon: XCircle, color: 'text-foreground', bgColor: 'bg-muted/50', badgeClass: 'bg-muted/50 text-foreground border-border' },
 }
 
 // ==================== Main Component ====================
@@ -216,7 +216,7 @@ function OrderCard({ order }: { order: Order }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className={config.color}>
+            <Badge variant="outline" className={config.badgeClass}>
               {order.status_display}
             </Badge>
             <span className="font-bold">${order.total.toFixed(2)}</span>
@@ -228,13 +228,13 @@ function OrderCard({ order }: { order: Order }) {
         {/* Fulfillment Badges */}
         <div className="flex flex-wrap gap-2 mb-4">
           {order.has_pod_items && (
-            <Badge variant="secondary" className="text-xs bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-400">
+            <Badge variant="outline" className="text-xs bg-secondary/40 text-foreground border-secondary/50">
               <Truck className="h-3 w-3 mr-1" />
               Print on Demand
             </Badge>
           )}
           {order.has_local_items && (
-            <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+            <Badge variant="outline" className="text-xs bg-success/40 text-foreground border-success/50">
               <Package className="h-3 w-3 mr-1" />
               Coach Delivery
             </Badge>
@@ -284,7 +284,7 @@ function OrderCard({ order }: { order: Order }) {
                   <span>Qty: {item.quantity}</span>
                   {item.selected_size && <span>• {item.selected_size}</span>}
                   {item.selected_color && <span>• {item.selected_color}</span>}
-                  <span className={`${item.fulfillment_type === 'pod' ? 'text-violet-500' : 'text-emerald-500'}`}>
+                  <span className="text-foreground/70">
                     • {item.fulfillment_display}
                   </span>
                 </div>

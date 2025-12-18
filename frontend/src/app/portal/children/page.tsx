@@ -177,7 +177,7 @@ function ChildProfileCard({ child }: { child: Child }) {
                   </p>
                 </div>
                 {child.is_checked_in && (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-400 shrink-0">
+                  <Badge variant="outline" className="bg-success/40 text-foreground border-success/50 shrink-0">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Active
                   </Badge>
@@ -211,7 +211,7 @@ function ChildProfileCard({ child }: { child: Child }) {
 
           {/* Balance Alert */}
           {hasBalance && (
-            <div className="mt-3 flex items-center gap-2 p-2 rounded-md bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
+            <div className="mt-3 flex items-center gap-2 p-2 rounded-md bg-warning/20 text-foreground text-sm">
               <DollarSign className="h-4 w-4 shrink-0" />
               <span>Balance due: ${balance.toFixed(2)}</span>
             </div>

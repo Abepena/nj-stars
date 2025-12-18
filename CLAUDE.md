@@ -583,6 +583,7 @@ git push origin main
 2. **Create feature branches for any non-trivial work** - Even small features
 3. **Keep feature branches short-lived** - Merge within 1-3 days ideally
 4. **Delete feature branches after merging** - Keep repo clean
+5. **No AI attribution in commits** - Do not include "Generated with Claude Code", "Co-Authored-By: Claude", or similar AI tool mentions in commit messages
 
 ---
 

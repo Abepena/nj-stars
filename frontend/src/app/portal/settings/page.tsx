@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 import { AddressInput, AddressData } from "@/components/ui/address-input"
 import {
   ChevronLeft,
@@ -28,6 +29,9 @@ import {
   Phone,
   Loader2,
   Check,
+  LayoutDashboard,
+  Gamepad2,
+  Users,
 } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 
@@ -45,11 +49,23 @@ interface ProfileData {
   }
 }
 
+// Extended user type
+interface ExtendedUser {
+  id?: string
+  email?: string | null
+  name?: string | null
+  is_superuser?: boolean
+  is_staff?: boolean
+  role?: string
+}
+
 // ==================== Main Component ====================
 
 export default function SettingsPage() {
   const { data: session } = useSession()
   const { theme, setTheme } = useTheme()
+
+  const user = session?.user as ExtendedUser | undefined
 
   // Profile data
   const [profile, setProfile] = useState<ProfileData>({
@@ -84,6 +100,16 @@ export default function SettingsPage() {
     showProfile: true,
     showOnRoster: true,
   })
+
+  // Dashboard & Role settings
+  const [dashboardSettings, setDashboardSettings] = useState({
+    playerProfileEnabled: false,  // Opt-in to player view for adult leagues
+    showParentDashboard: false,   // Show parent dashboard tab for staff/players
+  })
+
+  // Age info from profile
+  const [isAdult, setIsAdult] = useState<boolean | null>(null)
+  const [dateOfBirth, setDateOfBirth] = useState<string | null>(null)
 
   // Fetch profile on mount
   useEffect(() => {
@@ -123,6 +149,15 @@ export default function SettingsPage() {
             ].filter(Boolean)
             setFullAddress(parts.join(", "))
           }
+          // Set dashboard settings from profile
+          setDashboardSettings({
+            playerProfileEnabled: data.player_profile_enabled ?? false,
+            showParentDashboard: data.show_parent_dashboard ?? false,
+          })
+
+          // Set age info
+          setIsAdult(data.is_adult ?? null)
+          setDateOfBirth(data.date_of_birth ?? null)
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err)
@@ -198,6 +233,90 @@ export default function SettingsPage() {
     setPrivacy((prev) => ({ ...prev, [key]: !prev[key] }))
     // TODO: Sync with backend
   }
+
+  const handlePlayerProfileToggle = async () => {
+    const newValue = !dashboardSettings.playerProfileEnabled
+    setDashboardSettings((prev) => ({
+      ...prev,
+      playerProfileEnabled: newValue,
+    }))
+
+    // Sync with backend
+    try {
+      const apiToken = (session as any)?.apiToken
+      await fetch(`${API_BASE}/api/portal/profile/`, {
+        method: "PATCH",
+        headers: {
+          Authorization: apiToken ? `Token ${apiToken}` : "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ player_profile_enabled: newValue }),
+      })
+    } catch (err) {
+      console.error("Failed to update player profile setting:", err)
+      // Revert on error
+      setDashboardSettings((prev) => ({
+        ...prev,
+        playerProfileEnabled: !newValue,
+      }))
+    }
+  }
+
+  const handleParentDashboardToggle = async () => {
+    const newValue = !dashboardSettings.showParentDashboard
+    setDashboardSettings((prev) => ({
+      ...prev,
+      showParentDashboard: newValue,
+    }))
+
+    // Sync with backend
+    try {
+      const apiToken = (session as any)?.apiToken
+      const response = await fetch(`${API_BASE}/api/portal/profile/`, {
+        method: "PATCH",
+        headers: {
+          Authorization: apiToken ? `Token ${apiToken}` : "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ show_parent_dashboard: newValue }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        console.error("Failed to update parent dashboard setting:", data)
+        // Revert on error
+        setDashboardSettings((prev) => ({
+          ...prev,
+          showParentDashboard: !newValue,
+        }))
+      }
+    } catch (err) {
+      console.error("Failed to update parent dashboard setting:", err)
+      // Revert on error
+      setDashboardSettings((prev) => ({
+        ...prev,
+        showParentDashboard: !newValue,
+      }))
+    }
+  }
+
+  // Determine if user can see the player opt-in option
+  // Show for parents, coaches, and staff (not admins who already have full access)
+  const canOptInAsPlayer =
+    user?.role === "parent" ||
+    user?.role === "coach" ||
+    user?.role === "staff" ||
+    (user?.is_staff && !user?.is_superuser)
+
+  // Determine if user can see the parent dashboard opt-in option
+  // Show for staff/coaches and players who are 18+
+  const canShowParentDashboard =
+    isAdult === true && (
+      user?.role === "coach" ||
+      user?.role === "staff" ||
+      user?.role === "player" ||
+      (user?.is_staff && !user?.is_superuser)
+    )
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -317,6 +436,118 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Dashboard & Roles */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5" />
+            Dashboard & Roles
+          </CardTitle>
+          <CardDescription>
+            Configure your dashboard views and role settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Current Role Display */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Your Role</Label>
+              <p className="text-sm text-muted-foreground">
+                Your current role in the organization
+              </p>
+            </div>
+            <Badge variant="secondary" className="capitalize">
+              {user?.is_superuser
+                ? "Admin"
+                : user?.is_staff
+                  ? "Staff"
+                  : user?.role || "Parent"}
+            </Badge>
+          </div>
+
+          {/* Player Profile Opt-in (for parents/coaches/staff) */}
+          {canOptInAsPlayer && (
+            <>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="player-profile" className="flex items-center gap-2">
+                    <Gamepad2 className="h-4 w-4" />
+                    Enable Player Profile
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Create a player profile for adult leagues and tournaments
+                  </p>
+                </div>
+                <Switch
+                  id="player-profile"
+                  checked={dashboardSettings.playerProfileEnabled}
+                  onCheckedChange={handlePlayerProfileToggle}
+                />
+              </div>
+              {dashboardSettings.playerProfileEnabled && (
+                <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+                  <p>
+                    You now have access to the <strong>Player</strong> dashboard view.
+                    Visit your dashboard to switch between views using the tabs at the top.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Parent Dashboard Opt-in (for staff/coaches/adult players) */}
+          {canShowParentDashboard && (
+            <>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="parent-dashboard" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Show Parent Dashboard
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Access parent features to manage family registrations
+                  </p>
+                </div>
+                <Switch
+                  id="parent-dashboard"
+                  checked={dashboardSettings.showParentDashboard}
+                  onCheckedChange={handleParentDashboardToggle}
+                />
+              </div>
+              {dashboardSettings.showParentDashboard && (
+                <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+                  <p>
+                    You now have access to the <strong>Parent</strong> dashboard view.
+                    Visit your dashboard to switch between views using the tabs at the top.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Age restriction notice for under-18 users */}
+          {isAdult === false && user?.role === "player" && (
+            <div className="bg-muted/30 rounded-lg p-3 text-sm text-muted-foreground">
+              <p>
+                Parent dashboard features are available for users 18 and older.
+              </p>
+            </div>
+          )}
+
+          {/* Info for admins */}
+          {user?.is_superuser && (
+            <div className="bg-secondary/10 rounded-lg p-3 text-sm">
+              <p className="text-muted-foreground">
+                As an Admin, you have access to all dashboard views.
+                Use the tabs on your dashboard to switch between Admin, Staff, Parent, and Player views.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Appearance */}
       <Card>
         <CardHeader>
@@ -381,7 +612,7 @@ export default function SettingsPage() {
               <div className="space-y-0.5">
                 <Label htmlFor="email-events">Event Updates</Label>
                 <p className="text-sm text-muted-foreground">
-                  Get notified about events you're registered for
+                  Get notified about events you&apos;re registered for
                 </p>
               </div>
               <Switch
@@ -559,7 +790,7 @@ export default function SettingsPage() {
 
       {/* Save Notice */}
       <p className="text-xs text-muted-foreground text-center">
-        Profile changes require clicking "Save Changes". Other settings save automatically.
+        Profile changes require clicking &quot;Save Changes&quot;. Other settings save automatically.
       </p>
     </div>
   )

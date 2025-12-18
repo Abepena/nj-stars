@@ -23,7 +23,7 @@ import {
   SheetClose
 } from "@/components/ui/sheet"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfWeek, endOfWeek, addMonths, subMonths } from "date-fns"
-import { Calendar, List, SlidersHorizontal, ChevronLeft, ChevronRight, Check, X, ChevronDown, User, Download, ExternalLink, CalendarPlus, MapPin } from "lucide-react"
+import { Calendar, List, SlidersHorizontal, ChevronLeft, ChevronRight, Check, X, ChevronDown, User, Download, ExternalLink, CalendarPlus, MapPin, DollarSign, Clock } from "lucide-react"
 import { EventMap } from "@/components/event-map"
 import { Switch } from "@/components/ui/switch"
 import { EventCardHorizontal } from "@/components/event-card-horizontal"
@@ -73,48 +73,48 @@ type ViewMode = "list" | "calendar"
 type SortOption = "date_asc" | "date_desc" | "name_asc" | "name_desc"
 type TimeFilter = "all" | "upcoming" | "this_week" | "this_month" | "my_events"
 
-// Event type colors for tags - includes calendarText for readable contrast on calendar items
-// calendarBg is a muted version for calendar day cells, bgClassName is the full-saturation version for badges
+// Event type colors - unified across calendar, filters, and badges
+// Using muted backgrounds with foreground text for consistency
 const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string; bgClassName: string; calendarBg: string; calendarText: string; dotColor: string }> = {
-  open_gym: { label: 'Open Gym', className: 'text-success', bgClassName: 'bg-success', calendarBg: 'bg-success/40', calendarText: 'text-foreground', dotColor: 'bg-success/70' },
-  tryout: { label: 'Tryout', className: 'text-info', bgClassName: 'bg-info', calendarBg: 'bg-info/40', calendarText: 'text-foreground', dotColor: 'bg-info/70' },
-  game: { label: 'Game', className: 'text-accent', bgClassName: 'bg-accent', calendarBg: 'bg-accent/40', calendarText: 'text-foreground', dotColor: 'bg-accent/70' },
-  practice: { label: 'Practice', className: 'text-warning', bgClassName: 'bg-warning', calendarBg: 'bg-warning/30', calendarText: 'text-foreground', dotColor: 'bg-warning/60' },
-  tournament: { label: 'Tournament', className: 'text-secondary', bgClassName: 'bg-secondary', calendarBg: 'bg-secondary/40', calendarText: 'text-foreground', dotColor: 'bg-secondary/70' },
-  camp: { label: 'Camp', className: 'text-tertiary', bgClassName: 'bg-tertiary', calendarBg: 'bg-tertiary/30', calendarText: 'text-foreground', dotColor: 'bg-tertiary/60' },
-  skills: { label: 'Skills', className: 'text-primary', bgClassName: 'bg-primary', calendarBg: 'bg-primary/40', calendarText: 'text-foreground', dotColor: 'bg-primary/70' },
+  open_gym: { label: 'Open Gym', className: 'text-success', bgClassName: 'bg-success/40', calendarBg: 'bg-success/40', calendarText: 'text-foreground', dotColor: 'bg-success/70' },
+  tryout: { label: 'Tryout', className: 'text-info', bgClassName: 'bg-info/40', calendarBg: 'bg-info/40', calendarText: 'text-foreground', dotColor: 'bg-info/70' },
+  game: { label: 'Game', className: 'text-accent', bgClassName: 'bg-accent/40', calendarBg: 'bg-accent/40', calendarText: 'text-foreground', dotColor: 'bg-accent/70' },
+  practice: { label: 'Practice', className: 'text-warning', bgClassName: 'bg-warning/30', calendarBg: 'bg-warning/30', calendarText: 'text-foreground', dotColor: 'bg-warning/60' },
+  tournament: { label: 'Tournament', className: 'text-secondary', bgClassName: 'bg-secondary/40', calendarBg: 'bg-secondary/40', calendarText: 'text-foreground', dotColor: 'bg-secondary/70' },
+  camp: { label: 'Camp', className: 'text-tertiary', bgClassName: 'bg-tertiary/30', calendarBg: 'bg-tertiary/30', calendarText: 'text-foreground', dotColor: 'bg-tertiary/60' },
+  skills: { label: 'Skills', className: 'text-primary', bgClassName: 'bg-primary/40', calendarBg: 'bg-primary/40', calendarText: 'text-foreground', dotColor: 'bg-primary/70' },
 }
 
-// Category filter colors - matches category-colors.ts
+// Category filter colors - matches calendar muted style with text-foreground
 const getEventTypeColor = (type: string, isActive: boolean) => {
   const colors: Record<string, { active: string; inactive: string }> = {
     open_gym: {
-      active: "bg-success/30 text-success font-medium border border-success/70",
-      inactive: "bg-success/8 text-success/70 border border-success/25 hover:bg-success/12",
+      active: "bg-success/40 text-foreground font-medium border border-success/50",
+      inactive: "bg-success/15 text-foreground/70 border border-success/30 hover:bg-success/25",
     },
     tryout: {
-      active: "bg-info/30 text-info font-medium border border-info/70",
-      inactive: "bg-info/8 text-info/70 border border-info/25 hover:bg-info/12",
+      active: "bg-info/40 text-foreground font-medium border border-info/50",
+      inactive: "bg-info/15 text-foreground/70 border border-info/30 hover:bg-info/25",
     },
     game: {
-      active: "bg-accent/30 text-accent font-medium border border-accent/70",
-      inactive: "bg-accent/8 text-accent/70 border border-accent/25 hover:bg-accent/12",
+      active: "bg-accent/40 text-foreground font-medium border border-accent/50",
+      inactive: "bg-accent/15 text-foreground/70 border border-accent/30 hover:bg-accent/25",
     },
     practice: {
-      active: "bg-warning/30 text-warning font-medium border border-warning/70",
-      inactive: "bg-warning/8 text-warning/70 border border-warning/25 hover:bg-warning/12",
+      active: "bg-warning/30 text-foreground font-medium border border-warning/40",
+      inactive: "bg-warning/10 text-foreground/70 border border-warning/25 hover:bg-warning/20",
     },
     tournament: {
-      active: "bg-secondary/30 text-secondary font-medium border border-secondary/70",
-      inactive: "bg-secondary/8 text-secondary/70 border border-secondary/25 hover:bg-secondary/12",
+      active: "bg-secondary/40 text-foreground font-medium border border-secondary/50",
+      inactive: "bg-secondary/15 text-foreground/70 border border-secondary/30 hover:bg-secondary/25",
     },
     camp: {
-      active: "bg-tertiary/30 text-tertiary font-medium border border-tertiary/70",
-      inactive: "bg-tertiary/8 text-tertiary/70 border border-tertiary/25 hover:bg-tertiary/12",
+      active: "bg-tertiary/30 text-foreground font-medium border border-tertiary/40",
+      inactive: "bg-tertiary/10 text-foreground/70 border border-tertiary/25 hover:bg-tertiary/20",
     },
     skills: {
-      active: "bg-primary/30 text-primary font-medium border border-primary/70",
-      inactive: "bg-primary/8 text-primary/70 border border-primary/25 hover:bg-primary/12",
+      active: "bg-primary/40 text-foreground font-medium border border-primary/50",
+      inactive: "bg-primary/15 text-foreground/70 border border-primary/30 hover:bg-primary/25",
     },
   }
   const colorSet = colors[type] || {
@@ -1390,10 +1390,15 @@ function CalendarView({
                           {/* Price & Register */}
                           <div className="flex-shrink-0 text-right">
                             <p className={cn(
-                              "text-sm font-semibold",
+                              "text-sm font-semibold flex items-center justify-end gap-1",
                               event.requires_payment ? "text-foreground" : "text-success"
                             )}>
-                              {event.requires_payment ? `$${event.price}` : 'FREE'}
+                              {event.requires_payment ? (
+                                <>
+                                  <DollarSign className="w-3.5 h-3.5" />
+                                  <span>{event.price}</span>
+                                </>
+                              ) : 'FREE'}
                             </p>
                             {myEventIds.includes(event.id) ? (
                               <span className="flex items-center justify-end gap-1 text-xs font-medium text-success mt-1">
@@ -1402,9 +1407,9 @@ function CalendarView({
                               </span>
                             ) : event.is_registration_open && (
                               <Button
-                                variant="default"
+                                variant="outline"
                                 size="sm"
-                                className="min-h-[44px] md:min-h-0 md:h-auto py-2.5 md:py-1.5 px-4 md:px-3 text-sm md:text-xs font-medium mt-2 md:mt-1"
+                                className="min-h-[44px] md:min-h-0 md:h-auto py-2.5 md:py-1.5 px-4 md:px-3 text-sm md:text-xs font-medium mt-2 md:mt-1 bg-muted/50 hover:bg-muted border-border text-foreground"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   onRegisterClick(event)
@@ -1595,9 +1600,9 @@ function EventCard({
             </span>
           ) : event.is_registration_open && (
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
-              className="min-h-[44px] md:min-h-0 md:h-auto py-2.5 md:py-1.5 px-4 md:px-3 text-sm md:text-xs font-medium"
+              className="min-h-[44px] md:min-h-0 md:h-auto py-2.5 md:py-1.5 px-4 md:px-3 text-sm md:text-xs font-medium bg-muted/50 hover:bg-muted border-border text-foreground"
               onClick={(e) => {
                 e.stopPropagation()
                 onRegisterClick()

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
+import { BackToDashboard } from "@/components/back-to-dashboard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -162,13 +163,7 @@ export default function CheckInsPage() {
   return (
     <div className="space-y-6">
       {/* Back Link */}
-      <Link
-        href="/portal/dashboard"
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Back to Admin Dashboard
-      </Link>
+      <BackToDashboard />
 
       {/* Header */}
       <div>
@@ -346,10 +341,10 @@ function CheckInRow({
       <div className="flex items-center gap-3 min-w-0">
         <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
           ci.is_checked_in
-            ? 'bg-green-100 text-green-600'
+            ? 'bg-success/40 text-foreground'
             : ci.is_checked_out
-            ? 'bg-gray-100 text-gray-600'
-            : 'bg-amber-100 text-amber-600'
+            ? 'bg-muted/50 text-foreground'
+            : 'bg-warning/30 text-foreground'
         }`}>
           {ci.is_checked_in ? (
             <CheckCircle className="h-5 w-5" />
@@ -410,7 +405,7 @@ function CheckInRow({
           </Button>
         )}
         {ci.is_checked_out && (
-          <Badge variant="secondary">Completed</Badge>
+          <Badge variant="muted">Completed</Badge>
         )}
       </div>
     </div>

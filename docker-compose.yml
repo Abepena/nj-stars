@@ -58,6 +58,13 @@ services:
       # Email settings (MailHog for development)
       EMAIL_HOST: mailhog
       EMAIL_PORT: 1025
+      # Google Sheets Export
+      GOOGLE_SHEETS_ENABLED: "true"
+      GOOGLE_SERVICE_ACCOUNT_FILE: /app/google-credentials.json
+      # Google OAuth for user-based Sheets export
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:8000/api/export/google-sheets/callback/}
       EMAIL_USE_TLS: "false"
     volumes:
       - ./backend:/app

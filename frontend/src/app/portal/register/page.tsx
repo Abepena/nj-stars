@@ -7,7 +7,7 @@ import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { ShootingStars } from "@/components/ui/shooting-stars"
 import { ThemeLogo } from "@/components/ui/theme-logo"
-import { Mail, Lock, Eye, EyeOff, User, Phone, CheckCircle, Users, UserCircle, ArrowLeft, Check, X, AlertCircle } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, User, Phone, CheckCircle, Users, UserCircle, ArrowLeft, Check, X, AlertCircle, Calendar } from "lucide-react"
 
 type Role = "parent" | "player" | null
 
@@ -35,6 +35,19 @@ function getPasswordStrength(password: string): { score: number; label: string; 
   return { score, label: "Strong", color: "bg-success" }
 }
 
+// Calculate age from date of birth
+function calculateAge(dateOfBirth: string): number | null {
+  if (!dateOfBirth) return null
+  const today = new Date()
+  const birthDate = new Date(dateOfBirth)
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
+
 export default function RegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -46,6 +59,7 @@ export default function RegisterPage() {
     lastName: "",
     email: "",
     phone: "",
+    dateOfBirth: "",
     password: "",
     confirmPassword: "",
   })
@@ -129,6 +143,9 @@ export default function RegisterPage() {
     }
   }
 
+  // Calculate age from DOB for validation
+  const userAge = useMemo(() => calculateAge(formData.dateOfBirth), [formData.dateOfBirth])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -141,6 +158,23 @@ export default function RegisterPage() {
 
     if (formData.password.length < 8) {
       setError("Password must be at least 8 characters")
+      return
+    }
+
+    // Age validation
+    if (!formData.dateOfBirth) {
+      setError("Date of birth is required")
+      return
+    }
+
+    const age = calculateAge(formData.dateOfBirth)
+    if (age === null || age < 13) {
+      setError("You must be at least 13 years old to create an account")
+      return
+    }
+
+    if (selectedRole === "parent" && age < 18) {
+      setError("You must be at least 18 years old to register as a parent/guardian")
       return
     }
 
@@ -159,7 +193,8 @@ export default function RegisterPage() {
           first_name: formData.firstName,
           last_name: formData.lastName,
           phone: formData.phone.replace(/\D/g, ""), // Send raw digits
-          role: selectedRole,
+          date_of_birth: formData.dateOfBirth,
+          registered_as: selectedRole,
         }),
       })
 
@@ -471,6 +506,44 @@ export default function RegisterPage() {
                         className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
                         placeholder="(201) 555-1234"
                       />
+                    </div>
+
+                    {/* Date of Birth Input (Required for age verification) */}
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[hsl(var(--text-tertiary))]" />
+                        <input
+                          name="dateOfBirth"
+                          type="date"
+                          value={formData.dateOfBirth}
+                          onChange={handleChange}
+                          required
+                          max={new Date().toISOString().split('T')[0]}
+                          className="w-full pl-12 pr-4 py-3 bg-[hsl(var(--bg-tertiary))] border border-[hsl(var(--bg-tertiary))] rounded-xl text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm [color-scheme:dark]"
+                        />
+                      </div>
+                      {/* Age validation feedback */}
+                      {formData.dateOfBirth && userAge !== null && (
+                        <div className={`text-xs flex items-center gap-1.5 ${
+                          userAge < 13 ? "text-destructive" :
+                          selectedRole === "parent" && userAge < 18 ? "text-tertiary" :
+                          "text-[hsl(var(--text-tertiary))]"
+                        }`}>
+                          {userAge < 13 ? (
+                            <>
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              <span>Must be at least 13 years old to register</span>
+                            </>
+                          ) : selectedRole === "parent" && userAge < 18 ? (
+                            <>
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              <span>Must be 18+ to register as a parent/guardian</span>
+                            </>
+                          ) : (
+                            <span>Age: {userAge} years old</span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Password Input */}

@@ -44,6 +44,7 @@ urlpatterns = [
     path("api/payments/", include("apps.payments.urls")),
     path("api/portal/", include("apps.portal.urls")),
     path("api/", include("apps.core.urls")),
+    path("api/export/", include("apps.export.urls")),
 
     # Authentication API (dj-rest-auth)
     path("api/auth/", include("dj_rest_auth.urls")),

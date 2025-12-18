@@ -52,14 +52,15 @@ import {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
+// Uses global badge utility classes from globals.css for consistency
 const EVENT_TYPE_COLORS: Record<string, string> = {
-  tryout: "bg-info/20 text-info border-info/30",
-  open_gym: "bg-success/20 text-success border-success/30",
-  tournament: "bg-secondary/20 text-secondary border-secondary/30",
-  practice: "bg-warning/20 text-warning border-warning/30",
-  camp: "bg-tertiary/20 text-tertiary border-tertiary/30",
-  game: "bg-accent/20 text-accent border-accent/30",
-  skills: "bg-primary/20 text-primary border-primary/30",
+  tryout: "badge-tryout",
+  open_gym: "badge-open-gym",
+  tournament: "badge-tournament",
+  practice: "badge-practice",
+  camp: "badge-camp",
+  game: "badge-game",
+  skills: "badge-skills",
 }
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -279,9 +280,7 @@ export default function EventsAdminPage() {
         <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Error</h2>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <Link href="/portal/dashboard">
-          <Button>Go to Admin Dashboard</Button>
-        </Link>
+        <BackToDashboard label="Go to Dashboard" />
       </div>
     )
   }
@@ -297,7 +296,7 @@ export default function EventsAdminPage() {
             {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href="/portal/dashboard/events/new">
+        <Link href="/portal/dashboard/admin/events/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             New Event
@@ -372,7 +371,7 @@ export default function EventsAdminPage() {
                   filteredEvents.map((event) => {
                     const isPast = new Date(event.end_datetime) < new Date()
                     const priceDisplay = event.requires_payment
-                      ? `$${parseFloat(event.price).toFixed(2)}`
+                      ? parseFloat(event.price).toFixed(2)
                       : "Free"
 
                     return (
@@ -413,20 +412,20 @@ export default function EventsAdminPage() {
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             {event.is_public ? (
-                              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30 w-fit">
+                              <Badge variant="success" className="w-fit">
                                 Public
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-muted text-muted-foreground w-fit">
+                              <Badge variant="muted" className="w-fit">
                                 Draft
                               </Badge>
                             )}
                             {event.registration_open ? (
-                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 w-fit">
+                              <Badge variant="info" className="w-fit">
                                 Reg. Open
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-muted text-muted-foreground w-fit">
+                              <Badge variant="muted" className="w-fit">
                                 Reg. Closed
                               </Badge>
                             )}
@@ -451,7 +450,7 @@ export default function EventsAdminPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <Link href={`/portal/dashboard/events/${event.slug}/edit`}>
+                                <Link href={`/portal/dashboard/admin/events/${event.slug}/edit`}>
                                   <Pencil className="h-4 w-4 mr-2" />
                                   Edit
                                 </Link>

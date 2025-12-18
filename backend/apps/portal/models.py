@@ -84,8 +84,38 @@ class UserProfile(models.Model):
     notification_email = models.BooleanField(default=True)
     notification_sms = models.BooleanField(default=False)
 
+    # Dashboard preferences
+    player_profile_enabled = models.BooleanField(
+        default=False,
+        help_text="Enable player view option on dashboard (for parents/staff who also play)"
+    )
+    show_parent_dashboard = models.BooleanField(
+        default=False,
+        help_text="Show parent dashboard tab (for staff/players who are also parents)"
+    )
+
+    # Registration info
+    date_of_birth = models.DateField(
+        null=True,
+        blank=True,
+        help_text="User's date of birth for age verification"
+    )
+    REGISTERED_AS_CHOICES = [
+        ('parent', 'Parent'),
+        ('player', 'Player'),
+    ]
+    registered_as = models.CharField(
+        max_length=20,
+        choices=REGISTERED_AS_CHOICES,
+        default='parent',
+        help_text="Role selected during registration"
+    )
+
     # Stripe Customer ID for saved payment methods
     stripe_customer_id = models.CharField(max_length=255, blank=True)
+
+    # Google Sheets OAuth credentials (JSON)
+    google_sheets_credentials = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -132,6 +162,22 @@ class UserProfile(models.Model):
     def has_signed_waiver(self):
         """Check if user has a signed waiver on file"""
         return self.waiver_signed_at is not None
+
+    @property
+    def age(self):
+        """Calculate age from date of birth"""
+        if not self.date_of_birth:
+            return None
+        today = timezone.now().date()
+        return today.year - self.date_of_birth.year - (
+            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        )
+
+    @property
+    def is_adult(self):
+        """Check if user is 18 or older"""
+        age = self.age
+        return age is not None and age >= 18
 
     def sign_waiver(self, signer_name: str, version: str = "2024.1"):
         """Sign the liability waiver"""

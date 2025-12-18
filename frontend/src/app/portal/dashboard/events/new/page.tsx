@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { BackToDashboard } from "@/components/back-to-dashboard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -186,13 +187,7 @@ export default function NewEventPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Back Link */}
-      <Link
-        href="/portal/dashboard"
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Back to Admin
-      </Link>
+      <BackToDashboard />
 
       {/* Header */}
       <div>

@@ -265,7 +265,7 @@ function PlayerRow({ player }: { player: Player }) {
           href={`/portal/children/${player.id}`}
           className="flex items-center gap-3 hover:text-primary transition-colors"
         >
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
             {player.primary_photo_url ? (
               <img
                 src={player.primary_photo_url}
@@ -273,7 +273,7 @@ function PlayerRow({ player }: { player: Player }) {
                 className="h-10 w-10 rounded-full object-cover"
               />
             ) : (
-              <span className="text-sm font-bold text-primary">
+              <span className="text-sm font-bold text-foreground">
                 {player.first_name[0]}{player.last_name[0]}
               </span>
             )}
@@ -315,12 +315,12 @@ function PlayerRow({ player }: { player: Player }) {
       </TableCell>
       <TableCell>
         {player.is_active ? (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+          <Badge variant="outline" className="bg-success/40 text-foreground border-success/50 gap-1">
             <CheckCircle className="h-3 w-3" />
             Active
           </Badge>
         ) : (
-          <Badge variant="outline" className="bg-gray-100 text-gray-600 gap-1">
+          <Badge variant="outline" className="bg-muted/50 text-foreground border-border gap-1">
             <XCircle className="h-3 w-3" />
             Inactive
           </Badge>

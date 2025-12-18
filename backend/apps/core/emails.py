@@ -142,3 +142,54 @@ NJ Stars Elite Team
     except Exception as e:
         logger.error(f"Failed to send contact confirmation to {submission.email}: {e}")
         return False
+
+
+def send_contact_reply(submission, reply_message, staff_user):
+    """
+    Send a reply email to a contact form submission.
+
+    Args:
+        submission: ContactSubmission model instance
+        reply_message: The reply text from staff
+        staff_user: The staff user sending the reply
+
+    Returns:
+        bool: True if email sent successfully, False otherwise
+    """
+    subject = f"Re: {submission.subject}"
+
+    # Get staff name for signature
+    staff_name = staff_user.get_full_name() or staff_user.email.split("@")[0]
+
+    # Simple text email (templates may not exist)
+    text_content = f"""
+Hi {submission.name.split()[0] if submission.name else "there"},
+
+{reply_message}
+
+---
+Original Message:
+Subject: {submission.subject}
+{submission.message[:500]}{"..." if len(submission.message) > 500 else ""}
+
+---
+Best regards,
+{staff_name}
+NJ Stars Elite Team
+    """.strip()
+
+    try:
+        send_mail(
+            subject=subject,
+            message=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[submission.email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Contact reply sent to {submission.email} for submission #{submission.id}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send contact reply for submission #{submission.id}: {e}")
+        return False

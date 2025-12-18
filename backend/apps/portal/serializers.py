@@ -20,6 +20,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(source='user.last_name', required=False)
     full_name = serializers.CharField(read_only=True)
     profile_completeness = serializers.IntegerField(read_only=True)
+    # Computed age fields
+    age = serializers.IntegerField(read_only=True)
+    is_adult = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = UserProfile
@@ -28,9 +31,27 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'role', 'phone', 'address_line1', 'address_line2',
             'city', 'state', 'zip_code', 'auto_pay_enabled',
             'notification_email', 'notification_sms',
+            # Dashboard preferences
+            'player_profile_enabled', 'show_parent_dashboard',
+            # Registration info
+            'date_of_birth', 'registered_as', 'age', 'is_adult',
             'profile_completeness', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'email', 'role', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'email', 'role', 'age', 'is_adult', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """Validate age-based restrictions"""
+        instance = self.instance
+        show_parent = data.get('show_parent_dashboard')
+
+        # If trying to enable parent dashboard, check age
+        if show_parent and instance:
+            if not instance.is_adult:
+                raise serializers.ValidationError({
+                    'show_parent_dashboard': 'You must be 18 or older to access parent features.'
+                })
+
+        return data
 
     def update(self, instance, validated_data):
         # Handle nested user data

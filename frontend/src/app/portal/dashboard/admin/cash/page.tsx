@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { format } from "date-fns"
+import { format, startOfMonth, endOfMonth, parseISO, isWithinInterval, subMonths } from "date-fns"
 import {
   Card,
   CardContent,
@@ -42,7 +42,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ExportButton } from "@/components/ui/export-button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DollarSign,
   ChevronLeft,
@@ -54,6 +61,8 @@ import {
   MoreHorizontal,
   Loader2,
   AlertCircle,
+  CalendarIcon,
+  Eye,
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -107,11 +116,17 @@ export default function CashReconciliationPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [limitFilter, setLimitFilter] = useState<string>("10")
+  const [dateStart, setDateStart] = useState<string>("")
+  const [dateEnd, setDateEnd] = useState<string>("")
+  const [monthFilter, setMonthFilter] = useState<string>("all")
 
   // UI State
   const [pendingExpanded, setPendingExpanded] = useState(true)
   const [staffExpanded, setStaffExpanded] = useState(false)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [selectedTransaction, setSelectedTransaction] = useState<CashPayment | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -125,6 +140,13 @@ export default function CashReconciliationPage() {
     }
   }, [session])
 
+  // Refetch when limit filter changes
+  useEffect(() => {
+    if (session && !loading) {
+      fetchHistory()
+    }
+  }, [limitFilter])
+
   const fetchData = async () => {
     if (!session) return
     setLoading(true)
@@ -136,11 +158,14 @@ export default function CashReconciliationPage() {
         Authorization: apiToken ? `Token ${apiToken}` : "",
       }
 
+      // Determine page size based on limit filter
+      const pageSize = limitFilter === "all" ? 1000 : parseInt(limitFilter)
+
       // Fetch pending cash, staff summary, and history in parallel
       const [pendingRes, staffRes, historyRes] = await Promise.all([
         fetch(`${API_BASE}/api/payments/cash/pending/`, { headers }),
         fetch(`${API_BASE}/api/payments/cash/by-staff/`, { headers }),
-        fetch(`${API_BASE}/api/payments/cash/history/?page_size=20`, { headers }),
+        fetch(`${API_BASE}/api/payments/cash/history/?page_size=${pageSize}`, { headers }),
       ])
 
       if (!pendingRes.ok || !staffRes.ok || !historyRes.ok) {
@@ -171,6 +196,32 @@ export default function CashReconciliationPage() {
     }
   }
 
+  const fetchHistory = async () => {
+    if (!session) return
+
+    try {
+      const apiToken = (session as any)?.apiToken
+      const headers = {
+        Authorization: apiToken ? `Token ${apiToken}` : "",
+      }
+
+      const pageSize = limitFilter === "all" ? 1000 : parseInt(limitFilter)
+      const historyRes = await fetch(`${API_BASE}/api/payments/cash/history/?page_size=${pageSize}`, { headers })
+
+      if (historyRes.ok) {
+        const historyData = await historyRes.json()
+        setRecentHistory(historyData.results || [])
+      }
+    } catch (err) {
+      console.error("Failed to fetch history:", err)
+    }
+  }
+
+  const handleViewDetails = (cash: CashPayment) => {
+    setSelectedTransaction(cash)
+    setDetailsOpen(true)
+  }
+
   const handleHandoff = async (cashId: number) => {
     setActionLoading(cashId)
 
@@ -198,31 +249,58 @@ export default function CashReconciliationPage() {
     }
   }
 
+  const handleUndoHandoff = async (cashId: number) => {
+    setActionLoading(cashId)
+
+    try {
+      const apiToken = (session as any)?.apiToken
+      const response = await fetch(`${API_BASE}/api/payments/cash/${cashId}/undo-handoff/`, {
+        method: "POST",
+        headers: {
+          Authorization: apiToken ? `Token ${apiToken}` : "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to undo handoff")
+      }
+
+      // Refresh data
+      fetchData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update")
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "collected":
         return (
-          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+          <Badge variant="outline" className="bg-warning/30 text-foreground border-warning/40">
             <Clock className="h-3 w-3 mr-1" />
             Pending
           </Badge>
         )
       case "handed_off":
         return (
-          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+          <Badge variant="outline" className="bg-success/40 text-foreground border-success/50">
             <CheckCircle className="h-3 w-3 mr-1" />
             Handed Off
           </Badge>
         )
       case "deposited":
         return (
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+          <Badge variant="outline" className="bg-info/40 text-foreground border-info/50">
             <DollarSign className="h-3 w-3 mr-1" />
             Deposited
           </Badge>
         )
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="muted">{status}</Badge>
     }
   }
 
@@ -230,11 +308,45 @@ export default function CashReconciliationPage() {
     const matchesSearch =
       searchQuery === "" ||
       cash.collected_by_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cash.linked_item_description.toLowerCase().includes(searchQuery.toLowerCase())
+      cash.linked_item_description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      format(new Date(cash.collected_at), "yyyy-MM-dd").includes(searchQuery)
 
     const matchesStatus = statusFilter === "all" || cash.status === statusFilter
 
-    return matchesSearch && matchesStatus
+    // Date range filtering
+    let matchesDateRange = true
+    const cashDate = new Date(cash.collected_at)
+
+    // If month filter is set (and not "all"), use that
+    if (monthFilter && monthFilter !== "all") {
+      const [year, month] = monthFilter.split("-").map(Number)
+      const monthStart = new Date(year, month - 1, 1)
+      const monthEnd = endOfMonth(monthStart)
+      matchesDateRange = isWithinInterval(cashDate, { start: monthStart, end: monthEnd })
+    } else {
+      // Otherwise use custom date range if set
+      if (dateStart) {
+        const startDate = new Date(dateStart)
+        startDate.setHours(0, 0, 0, 0)
+        if (cashDate < startDate) matchesDateRange = false
+      }
+      if (dateEnd && matchesDateRange) {
+        const endDate = new Date(dateEnd)
+        endDate.setHours(23, 59, 59, 999)
+        if (cashDate > endDate) matchesDateRange = false
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesDateRange
+  })
+
+  // Generate month options for the last 12 months
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const date = subMonths(new Date(), i)
+    return {
+      value: format(date, "yyyy-MM"),
+      label: format(date, "MMMM yyyy"),
+    }
   })
 
   // Export columns
@@ -291,8 +403,8 @@ export default function CashReconciliationPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-amber-600" />
+              <div className="h-10 w-10 rounded-full bg-warning/30 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-foreground" />
               </div>
               <div>
                 <div className="text-2xl font-bold">${stats.totalPending.toFixed(2)}</div>
@@ -305,8 +417,8 @@ export default function CashReconciliationPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="h-10 w-10 rounded-full bg-success/40 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-foreground" />
               </div>
               <div>
                 <div className="text-2xl font-bold">${stats.totalHandedOff.toFixed(2)}</div>
@@ -319,8 +431,8 @@ export default function CashReconciliationPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-full bg-info/40 flex items-center justify-center">
+                <Users className="h-5 w-5 text-foreground" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{stats.pendingCount}</div>
@@ -335,15 +447,15 @@ export default function CashReconciliationPage() {
       <Card>
         <Collapsible open={pendingExpanded} onOpenChange={setPendingExpanded}>
           <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors">
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-amber-600" />
-                    Cash Yet to be Collected
+                    <Clock className="h-5 w-5 text-foreground" />
+                    Pending Handoff
                   </CardTitle>
                   <CardDescription>
-                    ${stats.totalPending.toFixed(2)} pending from {pendingCash.length} payments
+                    ${stats.totalPending.toFixed(2)} from {pendingCash.length} payments
                   </CardDescription>
                 </div>
                 <ChevronDown
@@ -393,7 +505,7 @@ export default function CashReconciliationPage() {
                             </TableCell>
                             <TableCell className="font-medium">{cash.collected_by_name}</TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="capitalize">
+                              <Badge variant="muted" className="capitalize">
                                 {cash.payment_for}
                               </Badge>
                             </TableCell>
@@ -404,17 +516,18 @@ export default function CashReconciliationPage() {
                               ${parseFloat(cash.amount).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                onClick={() => handleHandoff(cash.id)}
-                                disabled={actionLoading === cash.id}
-                              >
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-sm text-muted-foreground">Collected</span>
                                 {actionLoading === cash.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                                 ) : (
-                                  "Mark Handed Off"
+                                  <Checkbox
+                                    checked={false}
+                                    onCheckedChange={() => handleHandoff(cash.id)}
+                                    className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 transition-all duration-200"
+                                  />
                                 )}
-                              </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -432,14 +545,14 @@ export default function CashReconciliationPage() {
       <Card>
         <Collapsible open={staffExpanded} onOpenChange={setStaffExpanded}>
           <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors">
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-600" />
-                    Cash by Staff Member
+                    <Users className="h-5 w-5 text-foreground" />
+                    By Staff
                   </CardTitle>
-                  <CardDescription>View cash totals per staff member</CardDescription>
+                  <CardDescription>Cash totals per staff member</CardDescription>
                 </div>
                 <ChevronDown
                   className={`h-5 w-5 text-muted-foreground transition-transform ${
@@ -506,8 +619,8 @@ export default function CashReconciliationPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle>Recent Cash Transactions</CardTitle>
-              <CardDescription>All cash payments across all staff</CardDescription>
+              <CardTitle>Cash Transactions</CardTitle>
+              <CardDescription>All cash payments</CardDescription>
             </div>
             <ExportButton
               data={filteredHistory.map((c) => ({
@@ -521,19 +634,19 @@ export default function CashReconciliationPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
+          {/* Filters Row 1: Search, Status, Limit */}
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by staff or description..."
+                placeholder="Search by staff, description, or date (YYYY-MM-DD)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -543,6 +656,87 @@ export default function CashReconciliationPage() {
                 <SelectItem value="deposited">Deposited</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={limitFilter} onValueChange={setLimitFilter}>
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="Show" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">Last 10</SelectItem>
+                <SelectItem value="50">Last 50</SelectItem>
+                <SelectItem value="100">Last 100</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filters Row 2: Date Filters */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <Select
+              value={monthFilter}
+              onValueChange={(val) => {
+                setMonthFilter(val)
+                // Clear custom date range when selecting month
+                if (val) {
+                  setDateStart("")
+                  setDateEnd("")
+                }
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Filter by month" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Months</SelectItem>
+                {monthOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Or date range:</span>
+              <Input
+                type="date"
+                value={dateStart}
+                onChange={(e) => {
+                  setDateStart(e.target.value)
+                  setMonthFilter("all") // Clear month when using custom range
+                }}
+                className="flex-1"
+                placeholder="Start date"
+              />
+              <span className="text-muted-foreground">to</span>
+              <Input
+                type="date"
+                value={dateEnd}
+                onChange={(e) => {
+                  setDateEnd(e.target.value)
+                  setMonthFilter("all") // Clear month when using custom range
+                }}
+                className="flex-1"
+                placeholder="End date"
+              />
+            </div>
+            {((monthFilter && monthFilter !== "all") || dateStart || dateEnd) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setMonthFilter("all")
+                  setDateStart("")
+                  setDateEnd("")
+                }}
+              >
+                Clear dates
+              </Button>
+            )}
+          </div>
+
+          {/* Results count */}
+          <div className="text-sm text-muted-foreground mb-4">
+            Showing {filteredHistory.length} of {recentHistory.length} transactions
           </div>
 
           {/* Table */}
@@ -593,10 +787,20 @@ export default function CashReconciliationPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewDetails(cash)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
                             {cash.status === "collected" && (
                               <DropdownMenuItem onClick={() => handleHandoff(cash.id)}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
                                 Mark Handed Off
+                              </DropdownMenuItem>
+                            )}
+                            {cash.status === "handed_off" && (
+                              <DropdownMenuItem onClick={() => handleUndoHandoff(cash.id)}>
+                                <Clock className="h-4 w-4 mr-2" />
+                                Undo Handoff
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -610,6 +814,91 @@ export default function CashReconciliationPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-foreground" />
+              Transaction Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedTransaction && (
+            <div className="space-y-4">
+              {/* Amount & Status */}
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <div className="text-3xl font-bold text-green-600">
+                    ${parseFloat(selectedTransaction.amount).toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted-foreground capitalize">
+                    {selectedTransaction.payment_for} Payment
+                  </div>
+                </div>
+                {getStatusBadge(selectedTransaction.status)}
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-xs text-muted-foreground">Collected By</div>
+                  <div className="font-medium">{selectedTransaction.collected_by_name}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Collected At</div>
+                  <div className="font-medium">
+                    {format(new Date(selectedTransaction.collected_at), "MMM d, yyyy 'at' h:mm a")}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-xs text-muted-foreground">Description</div>
+                  <div className="font-medium">{selectedTransaction.linked_item_description}</div>
+                </div>
+                {selectedTransaction.handed_off_to_name && (
+                  <>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Handed Off To</div>
+                      <div className="font-medium">{selectedTransaction.handed_off_to_name}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Handed Off At</div>
+                      <div className="font-medium">
+                        {selectedTransaction.handed_off_at &&
+                          format(new Date(selectedTransaction.handed_off_at), "MMM d, yyyy 'at' h:mm a")}
+                      </div>
+                    </div>
+                  </>
+                )}
+                {selectedTransaction.notes && (
+                  <div className="col-span-2">
+                    <div className="text-xs text-muted-foreground">Notes</div>
+                    <div className="font-medium">{selectedTransaction.notes}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                {selectedTransaction.status === "collected" && (
+                  <Button
+                    onClick={() => {
+                      handleHandoff(selectedTransaction.id)
+                      setDetailsOpen(false)
+                    }}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Mark Handed Off
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setDetailsOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

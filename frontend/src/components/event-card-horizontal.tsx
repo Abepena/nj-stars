@@ -103,7 +103,7 @@ export function EventCardHorizontal({
             <span className={cn(
               "inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1",
               typeConfig.bgClassName,
-              typeConfig.calendarText || "text-white"
+              typeConfig.calendarText || "text-foreground"
             )}>
               {typeConfig.label}
             </span>
@@ -112,18 +112,6 @@ export function EventCardHorizontal({
             <h3 className="font-semibold text-sm sm:text-base truncate pr-2">
               {event.title}
             </h3>
-
-            {/* Date & Time */}
-            <div className="flex items-center gap-3 text-xs sm:text-sm text-muted-foreground mt-1">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                {formattedDate}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {startTime}
-              </span>
-            </div>
 
             {/* Location */}
             {event.location && (
@@ -134,15 +122,33 @@ export function EventCardHorizontal({
             )}
           </div>
 
-          {/* Right Side - Price & Status */}
-          <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
-            <p className={cn(
-              "text-sm sm:text-base font-semibold",
+          {/* Right Side - Time, Price & Status */}
+          <div className="flex flex-col items-end gap-1 text-right">
+            {/* Time */}
+            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{startTime}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              to {endTime}
+            </div>
+
+            {/* Price with icon */}
+            <div className={cn(
+              "flex items-center gap-1 text-sm sm:text-base font-semibold mt-1",
               event.requires_payment ? "text-foreground" : "text-success"
             )}>
-              {event.requires_payment ? `$${event.price}` : 'FREE'}
-            </p>
+              {event.requires_payment ? (
+                <>
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>{event.price}</span>
+                </>
+              ) : (
+                <span>FREE</span>
+              )}
+            </div>
 
+            {/* Status */}
             {isRegistered ? (
               <span className="flex items-center gap-1 text-xs font-medium text-success">
                 <Check className="w-3.5 h-3.5" />
@@ -202,7 +208,7 @@ export function EventCardHorizontal({
                 <div className="flex items-center gap-2 text-muted-foreground col-span-2">
                   <DollarSign className="w-4 h-4" />
                   <span>
-                    {event.requires_payment ? `$${event.price}` : 'Free'} ·
+                    {event.requires_payment ? event.price : 'Free'} ·
                     {event.spots_remaining !== null
                       ? ` ${event.spots_remaining} of ${event.max_participants} spots available`
                       : ` ${event.max_participants} spots total`
@@ -221,8 +227,9 @@ export function EventCardHorizontal({
                 </div>
               ) : event.is_registration_open ? (
                 <Button
+                  variant="outline"
                   size="lg"
-                  className="flex-1 sm:flex-none min-w-[200px]"
+                  className="flex-1 sm:flex-none min-w-[200px] bg-muted/50 hover:bg-muted border-border text-foreground"
                   onClick={(e) => {
                     e.stopPropagation()
                     onRegisterClick()
@@ -230,15 +237,15 @@ export function EventCardHorizontal({
                 >
                   Register Now
                   {event.requires_payment && (
-                    <span className="ml-2 opacity-80">· ${event.price}</span>
+                    <span className="ml-2 opacity-70">· ${event.price}</span>
                   )}
                 </Button>
               ) : event.is_full ? (
-                <Button variant="secondary" size="lg" disabled className="flex-1 sm:flex-none">
+                <Button variant="outline" size="lg" disabled className="flex-1 sm:flex-none bg-muted/30 border-border">
                   Event Full
                 </Button>
               ) : (
-                <Button variant="secondary" size="lg" disabled className="flex-1 sm:flex-none">
+                <Button variant="outline" size="lg" disabled className="flex-1 sm:flex-none bg-muted/30 border-border">
                   Registration Closed
                 </Button>
               )}

@@ -19,3 +19,5 @@ Thumbs.db
 *.swo
 .history/
 .claude/
+# Google Service Account credentials
+backend/google-credentials.json

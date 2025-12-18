@@ -47,10 +47,10 @@ interface HandoffItem {
 
 // ==================== Status Config ====================
 
-const statusConfig: Record<HandoffStatus, { label: string; icon: React.ComponentType<any>; color: string; bgColor: string }> = {
-  pending: { label: 'Pending', icon: Clock, color: 'text-amber-500', bgColor: 'bg-amber-100 dark:bg-amber-900/50' },
-  ready: { label: 'Ready', icon: Package, color: 'text-blue-500', bgColor: 'bg-blue-100 dark:bg-blue-900/50' },
-  delivered: { label: 'Delivered', icon: CheckCircle2, color: 'text-emerald-500', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50' },
+const statusConfig: Record<HandoffStatus, { label: string; icon: React.ComponentType<any>; color: string; bgColor: string; badgeClass: string }> = {
+  pending: { label: 'Pending', icon: Clock, color: 'text-foreground', bgColor: 'bg-warning/30', badgeClass: 'bg-warning/30 text-foreground border-warning/40' },
+  ready: { label: 'Ready', icon: Package, color: 'text-foreground', bgColor: 'bg-info/40', badgeClass: 'bg-info/40 text-foreground border-info/50' },
+  delivered: { label: 'Delivered', icon: CheckCircle2, color: 'text-foreground', bgColor: 'bg-success/40', badgeClass: 'bg-success/40 text-foreground border-success/50' },
 }
 
 // ==================== Main Component ====================
@@ -322,7 +322,7 @@ export default function DeliveriesPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{item.product_name}</span>
-                            <Badge variant="outline" className={`${config.bgColor} ${config.color} border-0`}>
+                            <Badge variant="outline" className={config.badgeClass}>
                               <StatusIcon className="mr-1 h-3 w-3" />
                               {config.label}
                             </Badge>

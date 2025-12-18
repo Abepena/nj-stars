@@ -293,3 +293,108 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def contact_reply(request, pk):
+    """
+    Send a reply to a contact submission.
+
+    POST /api/contact/<id>/reply/
+    {
+        "message": "Thank you for reaching out..."
+    }
+    """
+    from .models import ContactSubmission
+    from .emails import send_contact_reply
+
+    # Check if user is staff
+    if not request.user.is_staff:
+        return Response(
+            {"error": "Permission denied"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    try:
+        submission = ContactSubmission.objects.get(pk=pk)
+    except ContactSubmission.DoesNotExist:
+        return Response(
+            {"error": "Submission not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    message = request.data.get("message", "").strip()
+    if not message:
+        return Response(
+            {"error": "Message is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Send the reply email
+    success = send_contact_reply(
+        submission=submission,
+        reply_message=message,
+        staff_user=request.user
+    )
+
+    if success:
+        # Update submission status to in_progress if it was new
+        if submission.status == "new":
+            submission.status = "in_progress"
+            submission.assigned_to = request.user
+            submission.save()
+
+        return Response({
+            "message": "Reply sent successfully",
+            "sent_to": submission.email
+        })
+    else:
+        return Response(
+            {"error": "Failed to send email. Please try again."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def contact_status_update(request, pk):
+    """
+    Update contact submission status.
+
+    PATCH /api/contact/<id>/status/
+    {
+        "status": "resolved"
+    }
+    """
+    from .models import ContactSubmission
+
+    # Check if user is staff
+    if not request.user.is_staff:
+        return Response(
+            {"error": "Permission denied"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    try:
+        submission = ContactSubmission.objects.get(pk=pk)
+    except ContactSubmission.DoesNotExist:
+        return Response(
+            {"error": "Submission not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    new_status = request.data.get("status")
+    if new_status not in ["new", "in_progress", "resolved", "closed"]:
+        return Response(
+            {"error": "Invalid status"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if new_status == "resolved":
+        submission.mark_resolved(request.user)
+    else:
+        submission.status = new_status
+        submission.save()
+
+    return Response({"status": submission.status})

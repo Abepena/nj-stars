@@ -257,7 +257,7 @@ export default function RegistrationsAdminPage() {
         <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Error</h2>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <Link href="/portal/dashboard">
+        <Link href="/portal/dashboard/admin">
           <Button>Go to Admin Dashboard</Button>
         </Link>
       </div>
@@ -267,7 +267,7 @@ export default function RegistrationsAdminPage() {
   return (
     <div className="space-y-6">
       <Link
-        href="/portal/dashboard"
+        href="/portal/dashboard/admin"
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />
@@ -477,7 +477,7 @@ export default function RegistrationsAdminPage() {
                             {registration.checked_in && (
                               <Badge
                                 variant="outline"
-                                className="bg-success/40 text-foreground border-success/50 w-fit"
+                                className="bg-green-500/10 text-green-600 border-green-500/30 w-fit"
                               >
                                 Checked In
                               </Badge>
@@ -485,7 +485,7 @@ export default function RegistrationsAdminPage() {
                             {registration.waiver_signed && (
                               <Badge
                                 variant="outline"
-                                className="bg-info/40 text-foreground border-info/50 w-fit"
+                                className="bg-blue-500/10 text-blue-600 border-blue-500/30 w-fit"
                               >
                                 Waiver Signed
                               </Badge>
@@ -505,7 +505,7 @@ export default function RegistrationsAdminPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem asChild>
                                 <Link
-                                  href={`/portal/dashboard/registrations/${registration.id}`}
+                                  href={`/portal/dashboard/admin/registrations/${registration.id}`}
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
@@ -520,7 +520,7 @@ export default function RegistrationsAdminPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem asChild>
                                 <Link
-                                  href={`/portal/dashboard/check-ins?event=${registration.event.slug}`}
+                                  href={`/portal/dashboard/admin/check-ins?event=${registration.event.slug}`}
                                 >
                                   <CheckCircle className="h-4 w-4 mr-2" />
                                   Go to Check-In
@@ -529,7 +529,7 @@ export default function RegistrationsAdminPage() {
                               {registration.payment_status === "paid" && (
                                 <DropdownMenuItem asChild>
                                   <Link
-                                    href={`/portal/dashboard/registrations/${registration.id}/refund`}
+                                    href={`/portal/dashboard/admin/registrations/${registration.id}/refund`}
                                   >
                                     <RefreshCcw className="h-4 w-4 mr-2" />
                                     Process Refund

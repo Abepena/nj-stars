@@ -237,17 +237,17 @@ function TransactionRow({ transaction: tx }: { transaction: Transaction }) {
   }
 
   const typeColors: Record<string, string> = {
-    charge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
-    payment: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
-    credit: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
-    refund: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400'
+    charge: 'bg-warning/30 text-foreground border-warning/40',
+    payment: 'bg-success/40 text-foreground border-success/50',
+    credit: 'bg-info/40 text-foreground border-info/50',
+    refund: 'bg-secondary/40 text-foreground border-secondary/50'
   }
 
   return (
     <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
-          isPositive ? 'bg-green-100 text-green-600 dark:bg-green-900/50' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/50'
+          isPositive ? 'bg-success/40 text-foreground' : 'bg-warning/30 text-foreground'
         }`}>
           <DollarSign className="h-5 w-5" />
         </div>

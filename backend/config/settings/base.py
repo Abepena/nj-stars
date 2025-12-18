@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'apps.payments',
     'apps.cms',
     'apps.portal',
+    'apps.export',
 ]
 
 MIDDLEWARE = [
@@ -334,3 +335,16 @@ EMAIL_CONTEXT = {
     'support_email': 'support@njstarselite.com',
     'site_url': FRONTEND_URL,
 }
+
+
+# Google Sheets Export
+# See documentation for setup instructions with Service Account
+GOOGLE_SHEETS_ENABLED = config('GOOGLE_SHEETS_ENABLED', default=False, cast=bool)
+GOOGLE_SERVICE_ACCOUNT_JSON = config('GOOGLE_SERVICE_ACCOUNT_JSON', default='')
+GOOGLE_SERVICE_ACCOUNT_FILE = config('GOOGLE_SERVICE_ACCOUNT_FILE', default='')
+
+
+# Google OAuth for Sheets Export (User-based OAuth)
+GOOGLE_OAUTH_CLIENT_ID = config('GOOGLE_OAUTH_CLIENT_ID', default='')
+GOOGLE_OAUTH_CLIENT_SECRET = config('GOOGLE_OAUTH_CLIENT_SECRET', default='')
+GOOGLE_OAUTH_REDIRECT_URI = config('GOOGLE_OAUTH_REDIRECT_URI', default='http://localhost:8000/api/export/google-sheets/callback/')

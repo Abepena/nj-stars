@@ -9,19 +9,24 @@ from .views import (
     contact_submit,
     contact_submissions_list,
     contact_submission_update,
+    contact_reply,
+    contact_status_update,
 )
 
 router = DefaultRouter()
-router.register(r'coaches', CoachViewSet, basename='coach')
-router.register(r'instagram', InstagramPostViewSet, basename='instagram')
+router.register(r"coaches", CoachViewSet, basename="coach")
+router.register(r"instagram", InstagramPostViewSet, basename="instagram")
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('dashboard/stats/', dashboard_stats, name='dashboard-stats'),
-    path('newsletter/subscribe/', newsletter_subscribe, name='newsletter-subscribe'),
-    path('newsletter/unsubscribe/', newsletter_unsubscribe, name='newsletter-unsubscribe'),
+    path("", include(router.urls)),
+    path("dashboard/stats/", dashboard_stats, name="dashboard-stats"),
+    path("newsletter/subscribe/", newsletter_subscribe, name="newsletter-subscribe"),
+    path("newsletter/unsubscribe/", newsletter_unsubscribe, name="newsletter-unsubscribe"),
     # Contact form
-    path('contact/', contact_submit, name='contact-submit'),
-    path('contact/admin/', contact_submissions_list, name='contact-admin-list'),
-    path('contact/admin/<int:pk>/', contact_submission_update, name='contact-admin-update'),
+    path("contact/", contact_submit, name="contact-submit"),
+    path("contact/admin/", contact_submissions_list, name="contact-admin-list"),
+    path("contact/admin/<int:pk>/", contact_submission_update, name="contact-admin-update"),
+    # Contact reply and status (for dashboard)
+    path("contact/<int:pk>/reply/", contact_reply, name="contact-reply"),
+    path("contact/<int:pk>/status/", contact_status_update, name="contact-status"),
 ]
