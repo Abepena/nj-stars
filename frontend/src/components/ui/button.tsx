@@ -57,6 +57,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         cta: "bg-foreground text-background font-bold hover:bg-primary hover:text-primary-foreground hover:scale-[1.02] transition-all duration-200 ease-in-out",
         accent: "bg-accent text-accent-foreground hover:bg-accent/90",
+        // Success variant - muted green with foreground text, used in admin dashboards
+        success: "bg-success/60 hover:bg-success/80 text-foreground",
       },
       size: {
         default: "h-10 px-4 py-2",

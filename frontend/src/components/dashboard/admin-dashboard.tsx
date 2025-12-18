@@ -41,6 +41,7 @@ import {
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { PrintifyAdminSection } from "@/components/admin/printify-section"
+import { DashboardStatCard, DashboardActionCard, DashboardLinkCard, DashboardSection } from "@/components/dashboard/dashboard-cards"
 import { PaymentLinkGenerator } from "@/components/payment-link-generator"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"

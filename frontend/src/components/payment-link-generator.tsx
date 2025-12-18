@@ -300,7 +300,7 @@ export function PaymentLinkGenerator({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="bg-secondary/80 hover:bg-secondary text-white">
+          <Button className="bg-success/60 hover:bg-success/80 text-foreground">
             <Link2 className="h-4 w-4 mr-2" />
             Generate Payment Link
           </Button>
@@ -309,7 +309,7 @@ export function PaymentLinkGenerator({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-secondary" />
+            <Link2 className="h-5 w-5 text-muted-foreground" />
             Generate Payment Link
           </DialogTitle>
           <DialogDescription>
@@ -320,7 +320,7 @@ export function PaymentLinkGenerator({
         {success && generatedLink ? (
           <div className="space-y-6 py-4">
             <div className="flex flex-col items-center justify-center">
-              <CheckCircle className="h-12 w-12 text-secondary mb-3" />
+              <CheckCircle className="h-12 w-12 text-success mb-3" />
               <p className="text-lg font-medium">Payment Link Generated!</p>
               <p className="text-sm text-muted-foreground">Scan the QR code or share the link below</p>
             </div>
@@ -357,14 +357,14 @@ export function PaymentLinkGenerator({
                   className="shrink-0"
                 >
                   {copied ? (
-                    <CheckCircle className="h-4 w-4 text-secondary" />
+                    <CheckCircle className="h-4 w-4 text-success" />
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
                 </Button>
               </div>
               {copied && (
-                <p className="text-xs text-secondary mt-2 text-center">Link copied to clipboard!</p>
+                <p className="text-xs text-foreground mt-2 text-center">Link copied to clipboard!</p>
               )}
             </div>
 
@@ -437,12 +437,12 @@ export function PaymentLinkGenerator({
                               key={product.id}
                               type="button"
                               onClick={() => handleSelectProduct(product)}
-                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-accent/50 transition-colors ${
+                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-muted transition-colors ${
                                 selectedProductId === product.id.toString() ? "bg-accent" : ""
                               }`}
                             >
                               <span className="truncate">{product.name}</span>
-                              <Badge variant="secondary" className="ml-2 shrink-0">
+                              <Badge variant="muted" className="ml-2 shrink-0">
                                 ${parseFloat(product.price).toFixed(2)}
                               </Badge>
                             </button>
@@ -470,7 +470,7 @@ export function PaymentLinkGenerator({
                       )}
                       <div className="flex-1">
                         <p className="font-medium">{selectedProduct.name}</p>
-                        <p className="text-2xl font-bold text-secondary">
+                        <p className="text-2xl font-bold text-foreground">
                           ${parseFloat(selectedProduct.price).toFixed(2)}
                         </p>
                       </div>
@@ -520,7 +520,7 @@ export function PaymentLinkGenerator({
                               key={event.id}
                               type="button"
                               onClick={() => handleSelectEvent(event)}
-                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-accent/50 transition-colors ${
+                              className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-muted transition-colors ${
                                 selectedEventId === event.id ? "bg-accent" : ""
                               }`}
                             >
@@ -530,7 +530,7 @@ export function PaymentLinkGenerator({
                                   {new Date(event.start_datetime).toLocaleDateString()}
                                 </span>
                               </div>
-                              <Badge variant="secondary" className="ml-2 shrink-0">
+                              <Badge variant="muted" className="ml-2 shrink-0">
                                 ${parseFloat(event.price!).toFixed(2)}
                               </Badge>
                             </button>
@@ -554,7 +554,7 @@ export function PaymentLinkGenerator({
                         {new Date(selectedEvent.start_datetime).toLocaleDateString()}
                       </p>
                       {selectedEvent.price && (
-                        <p className="text-2xl font-bold text-secondary mt-2">
+                        <p className="text-2xl font-bold text-foreground mt-2">
                           ${parseFloat(selectedEvent.price).toFixed(2)}
                         </p>
                       )}
@@ -609,7 +609,7 @@ export function PaymentLinkGenerator({
             {getPreviewAmount() > 0 && (
               <div className="bg-accent/50 rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground mb-1">Payment Amount</p>
-                <p className="text-3xl font-bold text-secondary">
+                <p className="text-3xl font-bold text-foreground">
                   ${getPreviewAmount().toFixed(2)}
                 </p>
               </div>
@@ -624,7 +624,7 @@ export function PaymentLinkGenerator({
 
             {/* Generate Button */}
             <Button
-              className="w-full bg-secondary hover:bg-secondary/90"
+              className="w-full bg-success/60 hover:bg-success/80 text-foreground"
               onClick={handleGenerate}
               disabled={loading || getPreviewAmount() <= 0}
             >

@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { PaymentLinkGenerator } from "@/components/payment-link-generator"
 import {
   Users,
   Calendar,
@@ -27,7 +28,8 @@ import {
   Clock,
   CheckCircle,
   Shield,
-  TrendingUp
+  TrendingUp,
+  Link2
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -144,7 +146,7 @@ function StaffDashboardSkeleton() {
           </Card>
         ))}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[...Array(2)].map((_, i) => (
           <Card key={i}>
             <CardContent className="p-6">
@@ -307,7 +309,7 @@ export default function StaffExamplePage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
           <CardContent className="flex items-center gap-4 p-6">
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
@@ -335,6 +337,33 @@ export default function StaffExamplePage() {
               </p>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </CardContent>
+        </Card>
+
+        {/* Payment Link Generator */}
+        <Card className="group hover:bg-muted/50 hover:border-foreground/20 transition-all h-full">
+          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 sm:p-6">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center shrink-0 transition-colors">
+                <Link2 className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
+              <div className="flex-1 min-w-0 sm:hidden">
+                <h3 className="font-semibold transition-colors">Payment Links</h3>
+                <p className="text-sm text-muted-foreground truncate">Create shareable links</p>
+              </div>
+            </div>
+            <div className="hidden sm:block flex-1 min-w-0">
+              <h3 className="font-semibold transition-colors">Generate Payment Link</h3>
+              <p className="text-sm text-muted-foreground">Create shareable payment links</p>
+            </div>
+            <PaymentLinkGenerator
+              trigger={
+                <Button variant="success" className="w-full sm:w-auto">
+                  <Link2 className="h-4 w-4 sm:mr-2" />
+                  <span className="sm:inline">Generate</span>
+                </Button>
+              }
+            />
           </CardContent>
         </Card>
       </div>

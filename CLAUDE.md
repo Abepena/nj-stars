@@ -313,6 +313,10 @@ stripe listen --forward-to localhost:8000/api/payments/webhook/stripe/
 - **Skeleton Loaders** - Loading states over spinners
 - **Nike-style Cards** - Image-centric, minimal text, no buttons on cards
 - **Graceful Degradation** - Fallback data when APIs fail, hide empty sections
+- **Muted Success for Admin UI** - Use `bg-success/30` hover states with `text-foreground` for dashboard cards
+- **Semantic Variants** - Prefer `variant="success"` on buttons over inline color classes
+
+> **Full Design System:** See `documentation/DESIGN_SYSTEM.md` for comprehensive UI patterns, color tokens, and component guidelines.
 
 ### Responsive Breakpoints
 
@@ -531,6 +535,7 @@ User.objects.create_superuser('admin', 'email@example.com', 'password')
 | `frontend/src/lib/wagtail-client.ts` | CMS client |
 | `frontend/src/lib/bag.tsx` | Shopping bag context |
 | `frontend/src/app/globals.css` | Theme variables & animations |
+| `documentation/DESIGN_SYSTEM.md` | UI patterns, color system, component guidelines |
 | `documentation/MVP/NEXT_STEPS.md` | Roadmap & priorities |
 | `documentation/CRITICAL.md` | Known issues & fixes |
 
