@@ -18,6 +18,7 @@ import {
   ToggleLeft,
   Package,
 } from "lucide-react"
+import { SubscriptionPlans } from "@/components/subscription-plans"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -280,6 +281,10 @@ export default function BillingPage() {
           </Card>
         </Link>
       </div>
+
+
+      {/* Subscription Plans */}
+      <SubscriptionPlans />
 
       {/* Auto-Pay Setting */}
       <Card>

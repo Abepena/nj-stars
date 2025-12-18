@@ -121,11 +121,78 @@ class ProductVariantInlineFormSet(BaseInlineFormSet):
 
 @admin.register(SubscriptionPlan)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display = ['name', 'price', 'billing_period', 'is_active', 'is_team_dues']
+    """
+    Admin for managing subscription plans.
+    
+    Price changes: Update the 'price' field here. The stripe_price_id must be
+    updated in Stripe Dashboard when changing prices (Stripe requires new Price objects).
+    """
+    list_display = ['name', 'price_display', 'billing_period', 'stripe_status', 'is_active', 'is_team_dues']
     list_filter = ['billing_period', 'is_active', 'is_team_dues']
+    list_editable = ['is_active']  # Quick toggle active status
     search_fields = ['name', 'description']
-    # Slug should derive from the plan name
     prepopulated_fields = {'slug': ('name',)}
+    ordering = ['price']
+    
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'slug', 'description'),
+        }),
+        ('💰 Pricing', {
+            'fields': ('price', 'billing_period'),
+            'description': '''
+                <strong>To change pricing:</strong><br/>
+                1. Update the price here<br/>
+                2. Create a new Price in <a href="https://dashboard.stripe.com/prices" target="_blank">Stripe Dashboard</a><br/>
+                3. Copy the new Price ID (starts with price_) to the Stripe section below
+            '''
+        }),
+        ('Team Dues Options', {
+            'fields': ('is_team_dues', 'payment_deadline'),
+            'classes': ('collapse',),
+            'description': 'For one-time team dues payments with a deadline.'
+        }),
+        ('Features', {
+            'fields': ('features', 'is_active'),
+            'description': 'List of features displayed to users. Format: ["Feature 1", "Feature 2"]'
+        }),
+        ('Stripe Integration', {
+            'fields': ('stripe_product_id', 'stripe_price_id'),
+            'description': '''
+                <strong>Required for checkout to work.</strong><br/>
+                <a href="https://dashboard.stripe.com/products" target="_blank">→ Stripe Products Dashboard</a><br/>
+                <em>Product ID</em> (prod_xxx): The Stripe Product for this plan<br/>
+                <em>Price ID</em> (price_xxx): The active Price for this plan
+            '''
+        }),
+    )
+    
+    def price_display(self, obj):
+        """Display price with billing period"""
+        period_label = {
+            'monthly': '/mo',
+            'seasonal': '/season',
+            'annual': '/yr',
+            'one_time': ' (one-time)',
+        }.get(obj.billing_period, '')
+        return format_html('<strong>${}{}</strong>', obj.price, period_label)
+    price_display.short_description = "Price"
+    price_display.admin_order_field = "price"
+    
+    def stripe_status(self, obj):
+        """Display Stripe configuration status"""
+        if obj.stripe_product_id and obj.stripe_price_id:
+            return format_html(
+                '<span style="color: #059669;">✓ Configured</span>'
+            )
+        elif obj.stripe_product_id:
+            return format_html(
+                '<span style="color: #f59e0b;">⚠ Missing Price ID</span>'
+            )
+        return format_html(
+            '<span style="color: #dc2626;">✗ Not configured</span>'
+        )
+    stripe_status.short_description = "Stripe"
 
 
 @admin.register(Subscription)

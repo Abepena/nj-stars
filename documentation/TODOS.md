@@ -1,3 +1,18 @@
+
+## Platform Business Model
+
+> **See full details:** [PLATFORM_FEE_STRUCTURE.md](./PLATFORM_FEE_STRUCTURE.md)
+
+**Quick Reference:**
+| Revenue Type | Starting Fee | At Scale (30+ tenants) |
+|--------------|--------------|------------------------|
+| Events | 20% | 5% + $0.30 |
+| Dues | 10% | 5% + $0.30 |
+| Shop | 10% | 5% + $0.30 |
+
+Fees reduce by **0.5% per active platform tenant** until floor is reached.
+
+---
 # LEAG Platform TODOs
 
 ## Authentication & User Roles
@@ -114,6 +129,14 @@
 - [ ] Consolidate icon sizing (w-4 h-4 default, w-5 h-5 medium, w-6 h-6 large)
 - [ ] Add consistent loading animations across portal pages
 - [ ] Replace hardcoded colors in billing page with semantic color variables
+### Shop Pricing Options
+- [ ] **At-Cost Pricing Mode** - Allow organizers to sell products without markup
+  - Use case: Friendly leagues or non-profit groups that don't want to profit from merch
+  - Product price = Printify base cost + LEAG platform fee only
+  - LEAG platform fee should be at least 5% above payment processing fees to remain sustainable
+  - Example: $15 Printify cost + ~3% Stripe fee + 5% LEAG fee = ~$16.20 final price
+  - Toggle per-product or org-wide setting in admin
+  - Clearly show "At Cost" badge on products using this mode
 ### In-Person Payment Collection (Research)
 - [ ] **Investigate tap-to-pay & QR code solutions for on-site payment collection**
   
@@ -157,35 +180,17 @@
   - Can we build a simple "collect payment" screen in our admin portal?
   - How do we handle refunds for in-person payments?
   
-  #### Platform Fee Structure (LEAG/TRNY Revenue Model)
+  #### Platform Fee Structure
   
-  | Revenue Type | Platform Fee | Notes |
-  |--------------|--------------|-------|
-  | Event Registrations | **20%** | Tryouts, camps, tournaments, open gyms |
-  | Dues / Subscriptions | **10%** | Monthly/seasonal membership fees |
-  | Third-Party Shop Products | **10%** | Merch from other designers/suppliers |
-  | NJ Stars Printify Products | **10%** | Custom merch (see designer royalty below) |
+  > **See full details:** [`PLATFORM_FEE_STRUCTURE.md`](./PLATFORM_FEE_STRUCTURE.md)
   
-  ##### Designer Royalty Model (Custom Printify Merch)
-  - **$1,000 upfront** paid to designer per merch drop (payment floor)
-  - Owner receives **100% of revenue** until $1,000 recovered
-  - After recovery: **5% royalty** to designer per sale
-  - Platform fee (10%) applies throughout
-  - Example flow for $40 hoodie ($14 profit margin):
-    - Sales 1-71: Owner keeps $14/sale → recovers $1,000
-    - Sale 72+: Owner keeps $9.10, Designer gets $2 (5%), Platform gets $4 (10%)
+  **Quick Reference:**
+  | Revenue Type | Starting Fee | At Scale (34+ users) |
+  |--------------|--------------|----------------------|
+  | Events | 20% | 5% + $0.30 |
+  | Dues | 10% | 5% + $0.30 |
+  | Shop | 10% | 5% + $0.30 |
   
-  ##### Profit Margins
-  - Shop products listed at **35-40% profit margin** on cost
-  - Ensures healthy margins after platform fees + Stripe fees
-  
-  ##### Fee Reduction Opportunities
-  - **Referral credit**: Lower fees for referring other teams/orgs to LEAG platform
-  - **Payout threshold**: Reduced rates after platform reaches specific revenue milestone
-  - Rates negotiable as partnership evolves
-  
-  > **Note**: NJ Stars is a founding partner receiving custom platform development 
-  > in exchange for revenue sharing. This model funds ongoing development and 
-  > support while giving the partner a fully-featured system at no upfront cost.
+  Fees reduce by **0.5% per active user** until floor is reached.
 
 

@@ -23,8 +23,10 @@ import {
   Settings,
   AlertTriangle,
   MessageCircle,
+  Link2,
 } from "lucide-react"
 import { PrintifyAdminSection } from "@/components/admin/printify-section"
+import { PaymentLinkGenerator } from "@/components/payment-link-generator"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -35,6 +37,7 @@ interface AdminStats {
   todays_events: number
   pending_payments: number
   check_ins_today: number
+  pending_cash_handoffs: number
 }
 
 interface PendingCheckIn {
@@ -248,7 +251,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Manage Check-Ins</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
                   {pending_check_ins.length} pending for today
                 </p>
               </div>
@@ -265,7 +268,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">View Roster</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
                   {admin_stats.total_players} active players
                 </p>
               </div>
@@ -282,7 +285,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Manage Events</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
                   View, edit, and manage all events
                 </p>
               </div>
@@ -299,8 +302,51 @@ export default function AdminDashboard() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Create Event</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
                   Add a new event to the calendar
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
+
+        {/* Payment Link Generator - Muted green button for testing */}
+        <Card className="hover:border-emerald-500/50 transition-colors h-full bg-emerald-500/5 border-emerald-500/20">
+          <CardContent className="flex items-center gap-4 p-6">
+            <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Link2 className="h-6 w-6 text-emerald-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Generate Payment Link</h3>
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                Create shareable payment links
+              </p>
+            </div>
+            <PaymentLinkGenerator />
+          </CardContent>
+        </Card>
+
+        {/* Cash Reconciliation */}
+        <Link href="/portal/dashboard/admin/cash">
+          <Card className={`hover:border-amber-500/50 transition-colors cursor-pointer h-full ${admin_stats.pending_cash_handoffs > 0 ? "border-amber-500/50 bg-amber-500/5" : ""}`}>
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                <DollarSign className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Cash Reconciliation</h3>
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  {admin_stats.pending_cash_handoffs > 0 ? (
+                    <>
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                        {admin_stats.pending_cash_handoffs} pending
+                      </Badge>
+                    </>
+                  ) : (
+                    "Track and reconcile cash payments"
+                  )}
                 </p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -410,7 +456,7 @@ export default function AdminDashboard() {
                 >
                   <div>
                     <p className="font-medium">{ci.participant_name}</p>
-                    <p className="text-sm text-muted-foreground">{ci.event_title}</p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">{ci.event_title}</p>
                   </div>
                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
                     Pending
@@ -446,7 +492,7 @@ export default function AdminDashboard() {
                       <p className="font-medium">
                         {reg.participant_first_name} {reg.participant_last_name}
                       </p>
-                      <p className="text-sm text-muted-foreground">{reg.event_title}</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">{reg.event_title}</p>
                     </div>
                   </div>
                   <span className="text-sm text-muted-foreground">

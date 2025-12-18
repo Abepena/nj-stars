@@ -27,7 +27,8 @@ import {
   CheckCircle,
   User,
   Star,
-  ChevronRight
+  ChevronRight,
+  History
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -505,8 +506,12 @@ export default function PlayerExamplePage() {
             </Card>
           }
         />
-
         <Card className="hover:border-muted-foreground/30 transition-colors cursor-pointer group">
+          <CardContent className="flex items-center gap-4 p-6">
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border group-hover:border-muted-foreground/30 transition-colors">
+              <History className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
               <h3 className="font-medium">View Dues History</h3>
               <p className="text-sm text-muted-foreground">See charges and payments</p>
             </div>

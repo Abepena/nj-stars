@@ -441,3 +441,178 @@ class HandoffUpdateSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Optional notes about the handoff"
     )
+
+
+# ============================================================================
+# Cash Payment Serializers
+# ============================================================================
+
+from .models import CashPayment
+
+
+class CashPaymentSerializer(serializers.ModelSerializer):
+    """Serializer for CashPayment model with related item info"""
+
+    collected_by_name = serializers.SerializerMethodField()
+    handed_off_to_name = serializers.SerializerMethodField()
+    linked_item_description = serializers.ReadOnlyField()
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CashPayment
+        fields = [
+            "id",
+            "collected_by",
+            "collected_by_name",
+            "collected_at",
+            "payment_for",
+            "event_registration",
+            "order",
+            "dues_account",
+            "linked_item_description",
+            "amount",
+            "status",
+            "status_display",
+            "handed_off_to",
+            "handed_off_to_name",
+            "handed_off_at",
+            "event",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "collected_at", "created_at", "updated_at"]
+
+    def get_collected_by_name(self, obj):
+        """Get full name of staff who collected cash"""
+        return obj.collected_by.get_full_name() or obj.collected_by.email
+
+    def get_handed_off_to_name(self, obj):
+        """Get full name of admin who received handoff"""
+        if obj.handed_off_to:
+            return obj.handed_off_to.get_full_name() or obj.handed_off_to.email
+        return None
+
+    def get_status_display(self, obj):
+        """Human-readable status"""
+        return obj.get_status_display()
+
+
+class CollectCashSerializer(serializers.Serializer):
+    """Serializer for collecting cash payment"""
+
+    payment_for = serializers.ChoiceField(
+        choices=CashPayment.PAYMENT_FOR_CHOICES,
+        help_text="Type of item being paid for"
+    )
+    registration_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Event registration ID (required if payment_for=registration)"
+    )
+    order_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Order ID (required if payment_for=product)"
+    )
+    dues_account_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Dues account ID (required if payment_for=dues)"
+    )
+    event_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Event ID for context (optional)"
+    )
+    notes = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Staff notes about this payment"
+    )
+
+    def validate(self, data):
+        """Validate that the correct ID is provided based on payment_for type"""
+        payment_for = data["payment_for"]
+
+        # Map payment_for to required field
+        type_to_field = {
+            "registration": "registration_id",
+            "product": "order_id",
+            "dues": "dues_account_id",
+        }
+
+        required_field = type_to_field.get(payment_for)
+        if not data.get(required_field):
+            raise serializers.ValidationError({
+                required_field: f"This field is required when payment_for is '{payment_for}'"
+            })
+
+        # Validate the linked item exists and isn't already paid
+        if payment_for == "registration":
+            from apps.registrations.models import EventRegistration
+            try:
+                reg = EventRegistration.objects.get(pk=data["registration_id"])
+                if reg.payment_status == "completed":
+                    raise serializers.ValidationError({
+                        "registration_id": "This registration is already paid"
+                    })
+                data["_registration"] = reg
+                data["_amount"] = reg.event.price or 0
+            except EventRegistration.DoesNotExist:
+                raise serializers.ValidationError({
+                    "registration_id": "Registration not found"
+                })
+
+        if payment_for == "product":
+            try:
+                order = Order.objects.get(pk=data["order_id"])
+                if order.status in ["paid", "delivered"]:
+                    raise serializers.ValidationError({
+                        "order_id": "This order is already paid"
+                    })
+                data["_order"] = order
+                data["_amount"] = order.total
+            except Order.DoesNotExist:
+                raise serializers.ValidationError({
+                    "order_id": "Order not found"
+                })
+
+        if payment_for == "dues":
+            from apps.portal.models import DuesAccount
+            try:
+                dues = DuesAccount.objects.get(pk=data["dues_account_id"])
+                if dues.balance <= 0:
+                    raise serializers.ValidationError({
+                        "dues_account_id": "This account has no outstanding balance"
+                    })
+                data["_dues_account"] = dues
+                data["_amount"] = dues.balance
+            except DuesAccount.DoesNotExist:
+                raise serializers.ValidationError({
+                    "dues_account_id": "Dues account not found"
+                })
+
+        return data
+
+
+class CashHandoffSerializer(serializers.Serializer):
+    """Serializer for marking cash as handed off to admin"""
+
+    notes = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Notes about the handoff"
+    )
+
+
+class CashByStaffSerializer(serializers.Serializer):
+    """Serializer for cash totals by staff member"""
+
+    staff_id = serializers.IntegerField()
+    staff_name = serializers.CharField()
+    staff_email = serializers.EmailField()
+    total_collected = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_handed_off = serializers.DecimalField(max_digits=10, decimal_places=2)
+    pending_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    pending_count = serializers.IntegerField()

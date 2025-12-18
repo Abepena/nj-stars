@@ -56,6 +56,21 @@ class EventRegistration(models.Model):
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+
+    # Payment method (for tracking cash vs online payments)
+    PAYMENT_METHOD_CHOICES = [
+        ("stripe", "Stripe"),
+        ("cash", "Cash"),
+        ("check", "Check"),
+        ("free", "Free Event"),
+    ]
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        default="stripe",
+        help_text="How this registration was paid"
+    )
+
     # Metadata
     registered_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

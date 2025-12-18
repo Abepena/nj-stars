@@ -641,6 +641,29 @@ class Order(models.Model):
     tracking_number = models.CharField(max_length=255, blank=True)
     tracking_url = models.URLField(max_length=500, blank=True)
 
+
+    # Payment method tracking (for cash/in-person payments)
+    PAYMENT_METHOD_CHOICES = [
+        ("stripe", "Stripe"),
+        ("cash", "Cash"),
+        ("check", "Check"),
+        ("handoff", "Staff Handoff"),
+    ]
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        default="stripe",
+        help_text="How this order was paid"
+    )
+    collected_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders_collected",
+        help_text="Staff member who collected cash/in-person payment"
+    )
+
     # Metadata
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -909,3 +932,165 @@ class BagItem(models.Model):
         # Update bag's updated_at timestamp
         super().save(*args, **kwargs)
         Bag.objects.filter(pk=self.bag_id).update(updated_at=timezone.now())
+
+
+class CashPayment(models.Model):
+    """
+    Track cash payments collected by staff for reconciliation.
+
+    Every cash payment MUST be linked to an existing registration, order, or dues account.
+    This prevents staff from creating "floating" payments and ensures accountability.
+    """
+
+    PAYMENT_FOR_CHOICES = [
+        ("registration", "Event Registration"),
+        ("product", "Product Purchase"),
+        ("dues", "Dues Payment"),
+    ]
+
+    STATUS_CHOICES = [
+        ("collected", "Collected by Staff"),
+        ("handed_off", "Handed Off to Admin"),
+        ("deposited", "Deposited to Bank"),
+    ]
+
+    # Who collected the cash
+    collected_by = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="cash_collected",
+        help_text="Staff/Coach who collected this cash payment"
+    )
+    collected_at = models.DateTimeField(auto_now_add=True)
+
+    # What was paid for (polymorphic reference - exactly one must be set)
+    payment_for = models.CharField(
+        max_length=20,
+        choices=PAYMENT_FOR_CHOICES,
+        help_text="Type of item being paid for"
+    )
+    event_registration = models.ForeignKey(
+        "registrations.EventRegistration",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cash_payments",
+        help_text="Link to event registration (if payment_for=registration)"
+    )
+    order = models.ForeignKey(
+        "payments.Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cash_payments",
+        help_text="Link to product order (if payment_for=product)"
+    )
+    dues_account = models.ForeignKey(
+        "portal.DuesAccount",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cash_payments",
+        help_text="Link to dues account (if payment_for=dues)"
+    )
+
+    # Amount (must match the linked item price - no partial payments)
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Cash amount collected (must match item price)"
+    )
+
+    # Reconciliation status
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="collected",
+        help_text="Current status in the reconciliation workflow"
+    )
+    handed_off_to = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cash_received",
+        help_text="Admin who received the cash handoff"
+    )
+    handed_off_at = models.DateTimeField(null=True, blank=True)
+
+    # Event context (for filtering/reporting)
+    event = models.ForeignKey(
+        "events.Event",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cash_payments",
+        help_text="Event where cash was collected (for context)"
+    )
+
+    # Notes and audit
+    notes = models.TextField(blank=True, help_text="Staff notes about this payment")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-collected_at"]
+        indexes = [
+            models.Index(fields=["collected_by", "status"]),
+            models.Index(fields=["status", "collected_at"]),
+            models.Index(fields=["event", "status"]),
+        ]
+
+    def __str__(self):
+        return f"Cash ${self.amount} by {self.collected_by.get_full_name() or self.collected_by.email} ({self.status})"
+
+    def clean(self):
+        """Validate that exactly one linked item is set based on payment_for type"""
+        from django.core.exceptions import ValidationError
+
+        # Map payment_for to the expected FK field
+        type_to_field = {
+            "registration": self.event_registration,
+            "product": self.order,
+            "dues": self.dues_account,
+        }
+
+        # Ensure the correct FK is set
+        expected_field = type_to_field.get(self.payment_for)
+        if expected_field is None:
+            raise ValidationError(
+                f"Missing linked item: {self.payment_for} requires the corresponding relationship to be set"
+            )
+
+        # Ensure no other FKs are set (prevents linking one cash payment to multiple items)
+        for payment_type, field in type_to_field.items():
+            if payment_type != self.payment_for and field is not None:
+                raise ValidationError(
+                    f"Only {self.payment_for} should be linked, but {payment_type} is also set"
+                )
+
+    @property
+    def linked_item(self):
+        """Return the linked item (registration, order, or dues account)"""
+        if self.payment_for == "registration":
+            return self.event_registration
+        elif self.payment_for == "product":
+            return self.order
+        elif self.payment_for == "dues":
+            return self.dues_account
+        return None
+
+    @property
+    def linked_item_description(self):
+        """Human-readable description of what was paid for"""
+        item = self.linked_item
+        if not item:
+            return "Unknown"
+
+        if self.payment_for == "registration":
+            return f"{item.event.title} - {item.participant_first_name} {item.participant_last_name}"
+        elif self.payment_for == "product":
+            return f"Order #{item.order_number}"
+        elif self.payment_for == "dues":
+            return f"Dues for {item.player.first_name} {item.player.last_name}"
+        return str(item)

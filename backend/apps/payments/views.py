@@ -323,6 +323,135 @@ def create_event_checkout(request):
         )
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_subscription_checkout(request):
+    """
+    Create Stripe Checkout session for subscription plans.
+    
+    Supports both recurring subscriptions (monthly, seasonal, annual) 
+    and one-time team dues payments.
+    
+    Request body:
+    - plan_id: SubscriptionPlan ID (required)
+    - player_id: Optional player ID to associate subscription with
+    - success_url: URL to redirect after successful payment
+    - cancel_url: URL to redirect if user cancels
+    """
+    try:
+        if not _stripe_key_configured():
+            return Response(
+                {"error": "Stripe is not configured"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        plan_id = request.data.get('plan_id')
+        player_id = request.data.get('player_id')
+        success_url = request.data.get('success_url')
+        cancel_url = request.data.get('cancel_url')
+
+        if not plan_id:
+            return Response(
+                {'error': 'plan_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not success_url or not cancel_url:
+            return Response(
+                {'error': 'success_url and cancel_url are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get subscription plan
+        try:
+            plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
+        except SubscriptionPlan.DoesNotExist:
+            return Response(
+                {'error': 'Subscription plan not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Validate Stripe IDs exist
+        if not plan.stripe_price_id:
+            return Response(
+                {'error': 'Plan not configured for payments'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get or create Stripe customer
+        user = request.user
+        stripe_customer_id = None
+
+        # Check if user has existing Stripe customer ID
+        from apps.portal.models import UserProfile
+        try:
+            profile = user.profile
+            stripe_customer_id = profile.stripe_customer_id
+        except UserProfile.DoesNotExist:
+            pass
+
+        if not stripe_customer_id:
+            # Create Stripe customer
+            customer = stripe.Customer.create(
+                email=user.email,
+                name=f"{user.first_name} {user.last_name}".strip() or user.email,
+                metadata={'user_id': str(user.id)}
+            )
+            stripe_customer_id = customer.id
+            
+            # Save to profile
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.stripe_customer_id = stripe_customer_id
+            profile.save()
+
+        # Build metadata
+        metadata = {
+            'plan_id': str(plan.id),
+            'user_id': str(user.id),
+            'type': 'subscription',
+        }
+        if player_id:
+            metadata['player_id'] = str(player_id)
+
+        # Determine mode based on billing period
+        if plan.billing_period == 'one_time':
+            mode = 'payment'
+        else:
+            mode = 'subscription'
+
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            customer=stripe_customer_id,
+            line_items=[{
+                'price': plan.stripe_price_id,
+                'quantity': 1,
+            }],
+            mode=mode,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            client_reference_id=f"subscription_{plan.id}_{user.id}",
+            metadata=metadata,
+        )
+
+        return Response({
+            'session_id': checkout_session.id,
+            'url': checkout_session.url,
+        })
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating subscription checkout: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.error(f"Error creating subscription checkout: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -2086,3 +2215,839 @@ class PrintifyDeleteProductView(PrintifyAdminView):
                 {'error': 'Failed to delete product'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+# ============================================================================
+# Cash Payment Views
+# ============================================================================
+
+from .models import CashPayment
+from .serializers import (
+    CashPaymentSerializer,
+    CollectCashSerializer,
+    CashHandoffSerializer,
+    CashByStaffSerializer,
+)
+from django.db.models import Sum, Count, Q
+from apps.events.models import Event
+
+
+def can_collect_cash(user):
+    """Check if user has permission to collect cash (staff, coach, or admin)"""
+    if user.is_superuser or user.is_staff:
+        return True
+    if hasattr(user, 'profile'):
+        return user.profile.role in ['admin', 'staff', 'coach']
+    return False
+
+
+def is_admin_user(user):
+    """Check if user is an admin"""
+    if user.is_superuser or user.is_staff:
+        return True
+    if hasattr(user, 'profile'):
+        return user.profile.role == 'admin'
+    return False
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def collect_cash(request):
+    """
+    Record a cash payment collected by staff.
+
+    Staff/coaches can collect cash for:
+    - Event registrations (payment_for=registration)
+    - Product orders (payment_for=product)
+    - Dues payments (payment_for=dues)
+
+    The amount is automatically determined from the linked item.
+    """
+    # Check permission
+    if not can_collect_cash(request.user):
+        return Response(
+            {"error": "You don't have permission to collect cash payments"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    serializer = CollectCashSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+
+    # Create the cash payment record
+    cash_payment = CashPayment.objects.create(
+        collected_by=request.user,
+        payment_for=data['payment_for'],
+        amount=data['_amount'],
+        notes=data.get('notes', ''),
+    )
+
+    # Link to the appropriate item and update its payment status
+    if data['payment_for'] == 'registration':
+        reg = data['_registration']
+        cash_payment.event_registration = reg
+        cash_payment.event = reg.event
+        # Update registration payment status
+        reg.payment_status = 'completed'
+        reg.payment_method = 'cash'
+        reg.amount_paid = data['_amount']
+        reg.save()
+
+    elif data['payment_for'] == 'product':
+        order = data['_order']
+        cash_payment.order = order
+        # Update order status
+        order.status = 'paid'
+        order.payment_method = 'cash'
+        order.collected_by = request.user
+        order.save()
+
+    elif data['payment_for'] == 'dues':
+        dues = data['_dues_account']
+        cash_payment.dues_account = dues
+        # Update dues balance
+        from apps.portal.models import DuesTransaction
+        DuesTransaction.objects.create(
+            dues_account=dues,
+            amount=-data['_amount'],  # Negative = payment
+            transaction_type='payment',
+            description='Cash payment',
+            processed_by=request.user,
+        )
+        dues.balance = max(0, dues.balance - data['_amount'])
+        dues.last_payment_date = timezone.now()
+        dues.save()
+
+    # Set event context if provided
+    if data.get('event_id'):
+        try:
+            cash_payment.event = Event.objects.get(pk=data['event_id'])
+        except Event.DoesNotExist:
+            pass
+
+    cash_payment.save()
+
+    return Response(
+        CashPaymentSerializer(cash_payment).data,
+        status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def pending_cash(request):
+    """
+    Get pending cash payments (not yet handed off).
+
+    Admin: See all pending cash
+    Staff/Coach: See only their own pending cash
+    """
+    if not can_collect_cash(request.user):
+        return Response(
+            {"error": "You don't have permission to view cash payments"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    queryset = CashPayment.objects.filter(status='collected')
+
+    # Filter by staff if not admin
+    if not is_admin_user(request.user):
+        queryset = queryset.filter(collected_by=request.user)
+
+    # Optional filters
+    event_id = request.query_params.get('event')
+    if event_id:
+        queryset = queryset.filter(event_id=event_id)
+
+    date_from = request.query_params.get('date_from')
+    if date_from:
+        queryset = queryset.filter(collected_at__date__gte=date_from)
+
+    date_to = request.query_params.get('date_to')
+    if date_to:
+        queryset = queryset.filter(collected_at__date__lte=date_to)
+
+    serializer = CashPaymentSerializer(queryset, many=True)
+    return Response({
+        'results': serializer.data,
+        'total_pending': queryset.aggregate(total=Sum('amount'))['total'] or 0,
+        'count': queryset.count(),
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cash_handoff(request, cash_id):
+    """
+    Mark cash as handed off to admin.
+
+    Only the staff member who collected the cash can initiate handoff.
+    Admin must confirm receipt (separate endpoint).
+    """
+    try:
+        cash_payment = CashPayment.objects.get(pk=cash_id)
+    except CashPayment.DoesNotExist:
+        return Response(
+            {"error": "Cash payment not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Only collector or admin can initiate handoff
+    if cash_payment.collected_by != request.user and not is_admin_user(request.user):
+        return Response(
+            {"error": "You can only hand off cash you collected"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    if cash_payment.status != 'collected':
+        return Response(
+            {"error": f"Cash is already {cash_payment.status}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    serializer = CashHandoffSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    # Update status
+    cash_payment.status = 'handed_off'
+    cash_payment.handed_off_at = timezone.now()
+    # For now, mark as handed off to the requesting admin, or leave null if staff initiated
+    if is_admin_user(request.user):
+        cash_payment.handed_off_to = request.user
+    if serializer.validated_data.get('notes'):
+        cash_payment.notes += f"\n[Handoff] {serializer.validated_data['notes']}"
+    cash_payment.save()
+
+    return Response(CashPaymentSerializer(cash_payment).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cash_by_staff(request):
+    """
+    Get cash totals grouped by staff member.
+
+    Admin only endpoint for reconciliation dashboard.
+    """
+    if not is_admin_user(request.user):
+        return Response(
+            {"error": "Admin access required"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Get aggregated data per staff member
+    staff_data = CashPayment.objects.values(
+        'collected_by__id',
+        'collected_by__email',
+        'collected_by__first_name',
+        'collected_by__last_name',
+    ).annotate(
+        total_collected=Sum('amount'),
+        total_handed_off=Sum('amount', filter=Q(status='handed_off')),
+        pending_amount=Sum('amount', filter=Q(status='collected')),
+        pending_count=Count('id', filter=Q(status='collected')),
+    ).order_by('-pending_amount')
+
+    results = []
+    for item in staff_data:
+        name = f"{item['collected_by__first_name']} {item['collected_by__last_name']}".strip()
+        results.append({
+            'staff_id': item['collected_by__id'],
+            'staff_name': name or item['collected_by__email'],
+            'staff_email': item['collected_by__email'],
+            'total_collected': item['total_collected'] or 0,
+            'total_handed_off': item['total_handed_off'] or 0,
+            'pending_amount': item['pending_amount'] or 0,
+            'pending_count': item['pending_count'] or 0,
+        })
+
+    return Response({'results': results})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cash_history(request):
+    """
+    Get cash payment history with filters.
+
+    Admin: All cash payments
+    Staff/Coach: Only their own
+    """
+    if not can_collect_cash(request.user):
+        return Response(
+            {"error": "You don't have permission to view cash payments"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    queryset = CashPayment.objects.all()
+
+    # Filter by staff if not admin
+    if not is_admin_user(request.user):
+        queryset = queryset.filter(collected_by=request.user)
+
+    # Filters
+    status_filter = request.query_params.get('status')
+    if status_filter:
+        queryset = queryset.filter(status=status_filter)
+
+    event_id = request.query_params.get('event')
+    if event_id:
+        queryset = queryset.filter(event_id=event_id)
+
+    staff_id = request.query_params.get('staff')
+    if staff_id and is_admin_user(request.user):
+        queryset = queryset.filter(collected_by_id=staff_id)
+
+    date_from = request.query_params.get('date_from')
+    if date_from:
+        queryset = queryset.filter(collected_at__date__gte=date_from)
+
+    date_to = request.query_params.get('date_to')
+    if date_to:
+        queryset = queryset.filter(collected_at__date__lte=date_to)
+
+    # Pagination
+    page_size = int(request.query_params.get('page_size', 50))
+    page = int(request.query_params.get('page', 1))
+    offset = (page - 1) * page_size
+
+    total_count = queryset.count()
+    queryset = queryset[offset:offset + page_size]
+
+    serializer = CashPaymentSerializer(queryset, many=True)
+    return Response({
+        'results': serializer.data,
+        'count': total_count,
+        'page': page,
+        'page_size': page_size,
+        'total_pages': (total_count + page_size - 1) // page_size,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cash_export(request):
+    """
+    Export cash payments as JSON for Google Sheets/CSV export.
+
+    Admin only.
+    """
+    if not is_admin_user(request.user):
+        return Response(
+            {"error": "Admin access required"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    queryset = CashPayment.objects.all()
+
+    # Same filters as cash_history
+    status_filter = request.query_params.get('status')
+    if status_filter:
+        queryset = queryset.filter(status=status_filter)
+
+    event_id = request.query_params.get('event')
+    if event_id:
+        queryset = queryset.filter(event_id=event_id)
+
+    staff_id = request.query_params.get('staff')
+    if staff_id:
+        queryset = queryset.filter(collected_by_id=staff_id)
+
+    date_from = request.query_params.get('date_from')
+    if date_from:
+        queryset = queryset.filter(collected_at__date__gte=date_from)
+
+    date_to = request.query_params.get('date_to')
+    if date_to:
+        queryset = queryset.filter(collected_at__date__lte=date_to)
+
+    # Build export data
+    export_data = []
+    for cash in queryset:
+        export_data.append({
+            'Date': cash.collected_at.strftime('%Y-%m-%d %H:%M'),
+            'Collected By': cash.collected_by.get_full_name() or cash.collected_by.email,
+            'Type': cash.get_payment_for_display(),
+            'Description': cash.linked_item_description,
+            'Amount': float(cash.amount),
+            'Status': cash.get_status_display(),
+            'Handed Off To': cash.handed_off_to.get_full_name() if cash.handed_off_to else '',
+            'Handed Off At': cash.handed_off_at.strftime('%Y-%m-%d %H:%M') if cash.handed_off_at else '',
+            'Notes': cash.notes,
+        })
+
+    return Response({
+        'data': export_data,
+        'columns': [
+            {'key': 'Date', 'label': 'Date'},
+            {'key': 'Collected By', 'label': 'Collected By'},
+            {'key': 'Type', 'label': 'Type'},
+            {'key': 'Description', 'label': 'Description'},
+            {'key': 'Amount', 'label': 'Amount'},
+            {'key': 'Status', 'label': 'Status'},
+            {'key': 'Handed Off To', 'label': 'Handed Off To'},
+            {'key': 'Handed Off At', 'label': 'Handed Off At'},
+            {'key': 'Notes', 'label': 'Notes'},
+        ],
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def fetch_stripe_price(request):
+    """
+    Fetch price details from Stripe API.
+    
+    Used by admin UI to validate Stripe IDs and auto-populate price info
+    before creating a subscription plan.
+    """
+    if not request.user.is_staff:
+        return Response(
+            {'error': 'Admin access required'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    if not _stripe_key_configured():
+        return Response(
+            {'error': 'Stripe is not configured'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+    price_id = request.data.get('price_id')
+    if not price_id:
+        return Response(
+            {'error': 'price_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Fetch price from Stripe
+        price = stripe.Price.retrieve(price_id, expand=['product'])
+        product = price.product
+        
+        # Determine billing period
+        billing_period = 'one_time'
+        if price.type == 'recurring':
+            interval = price.recurring.interval
+            interval_count = price.recurring.interval_count
+            if interval == 'month' and interval_count == 1:
+                billing_period = 'monthly'
+            elif interval == 'month' and interval_count == 3:
+                billing_period = 'seasonal'
+            elif interval == 'year':
+                billing_period = 'annual'
+        
+        return Response({
+            'price_id': price.id,
+            'product_id': product.id if hasattr(product, 'id') else product,
+            'product_name': product.name if hasattr(product, 'name') else '',
+            'product_description': product.description if hasattr(product, 'description') else '',
+            'amount': price.unit_amount / 100,  # Convert from cents
+            'currency': price.currency.upper(),
+            'billing_period': billing_period,
+            'interval': price.recurring.interval if price.recurring else None,
+            'interval_count': price.recurring.interval_count if price.recurring else None,
+        })
+    
+    except stripe.error.InvalidRequestError as e:
+        return Response(
+            {'error': f'Invalid Stripe ID: {str(e)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.error(f"Error fetching Stripe price: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_subscription_plan(request):
+    """
+    Create a new subscription plan from Stripe IDs.
+    
+    Validates the Stripe IDs and creates a local SubscriptionPlan record.
+    Price is fetched from Stripe API.
+    """
+    if not request.user.is_staff:
+        return Response(
+            {'error': 'Admin access required'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    if not _stripe_key_configured():
+        return Response(
+            {'error': 'Stripe is not configured'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+    price_id = request.data.get('stripe_price_id')
+    name = request.data.get('name')
+    description = request.data.get('description', '')
+    features = request.data.get('features', [])
+    is_team_dues = request.data.get('is_team_dues', False)
+    
+    if not price_id:
+        return Response(
+            {'error': 'stripe_price_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if plan with this price_id already exists
+    if SubscriptionPlan.objects.filter(stripe_price_id=price_id).exists():
+        return Response(
+            {'error': 'A plan with this Stripe Price ID already exists'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Fetch price from Stripe
+        price = stripe.Price.retrieve(price_id, expand=['product'])
+        product = price.product
+        
+        # Determine billing period
+        billing_period = 'one_time'
+        if price.type == 'recurring':
+            interval = price.recurring.interval
+            interval_count = price.recurring.interval_count
+            if interval == 'month' and interval_count == 1:
+                billing_period = 'monthly'
+            elif interval == 'month' and interval_count == 3:
+                billing_period = 'seasonal'
+            elif interval == 'year':
+                billing_period = 'annual'
+        
+        # Use provided name or fall back to Stripe product name
+        plan_name = name or (product.name if hasattr(product, 'name') else 'Subscription Plan')
+        plan_description = description or (product.description if hasattr(product, 'description') else '')
+        
+        # Create the subscription plan
+        plan = SubscriptionPlan.objects.create(
+            name=plan_name,
+            description=plan_description,
+            price=price.unit_amount / 100,
+            billing_period=billing_period,
+            stripe_price_id=price_id,
+            stripe_product_id=product.id if hasattr(product, 'id') else product,
+            features=features if features else [],
+            is_team_dues=is_team_dues,
+            is_active=True,
+        )
+        
+        return Response({
+            'id': plan.id,
+            'name': plan.name,
+            'slug': plan.slug,
+            'price': str(plan.price),
+            'billing_period': plan.billing_period,
+            'stripe_price_id': plan.stripe_price_id,
+            'stripe_product_id': plan.stripe_product_id,
+            'message': 'Subscription plan created successfully',
+        }, status=status.HTTP_201_CREATED)
+    
+    except stripe.error.InvalidRequestError as e:
+        return Response(
+            {'error': f'Invalid Stripe ID: {str(e)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.error(f"Error creating subscription plan: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_subscription_plans_admin(request):
+    """
+    List all subscription plans for admin management.
+    Includes inactive plans (unlike the public endpoint).
+    """
+    if not request.user.is_staff:
+        return Response(
+            {'error': 'Admin access required'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    plans = SubscriptionPlan.objects.all().order_by('price')
+    data = []
+    for plan in plans:
+        data.append({
+            'id': plan.id,
+            'name': plan.name,
+            'slug': plan.slug,
+            'description': plan.description,
+            'price': str(plan.price),
+            'billing_period': plan.billing_period,
+            'is_team_dues': plan.is_team_dues,
+            'is_active': plan.is_active,
+            'stripe_price_id': plan.stripe_price_id,
+            'stripe_product_id': plan.stripe_product_id,
+            'features': plan.features,
+            'created_at': plan.created_at.isoformat(),
+        })
+    
+    return Response({'results': data})
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_subscription_plan(request, plan_id):
+    """Update a subscription plan (name, description, features, active status)."""
+    if not request.user.is_staff:
+        return Response(
+            {'error': 'Admin access required'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        plan = SubscriptionPlan.objects.get(id=plan_id)
+    except SubscriptionPlan.DoesNotExist:
+        return Response(
+            {'error': 'Plan not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Update allowed fields
+    if 'name' in request.data:
+        plan.name = request.data['name']
+    if 'description' in request.data:
+        plan.description = request.data['description']
+    if 'features' in request.data:
+        plan.features = request.data['features']
+    if 'is_active' in request.data:
+        plan.is_active = request.data['is_active']
+    if 'is_team_dues' in request.data:
+        plan.is_team_dues = request.data['is_team_dues']
+    
+    plan.save()
+    
+    return Response({
+        'id': plan.id,
+        'name': plan.name,
+        'is_active': plan.is_active,
+        'message': 'Plan updated successfully',
+    })
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_subscription_plan(request, plan_id):
+    """Delete a subscription plan (only if no active subscriptions)."""
+    if not request.user.is_staff:
+        return Response(
+            {'error': 'Admin access required'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        plan = SubscriptionPlan.objects.get(id=plan_id)
+    except SubscriptionPlan.DoesNotExist:
+        return Response(
+            {'error': 'Plan not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Check for active subscriptions
+    from .models import Subscription
+    active_subs = Subscription.objects.filter(plan=plan, status='active').count()
+    if active_subs > 0:
+        return Response(
+            {'error': f'Cannot delete plan with {active_subs} active subscription(s). Deactivate the plan instead.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    plan_name = plan.name
+    plan.delete()
+    
+    return Response({
+        'message': f'Plan "{plan_name}" deleted successfully',
+    })
+
+
+# ============================================================================
+# Payment Link Generation
+# ============================================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_payment_link(request):
+    """
+    Generate a Stripe Payment Link for products, events, or custom payments.
+
+    Staff, coaches, and admins can generate payment links.
+    """
+    # Check permission
+    if not can_collect_cash(request.user):
+        return Response(
+            {"error": "You don't have permission to generate payment links"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    link_type = request.data.get('type')
+
+    if not _stripe_key_configured():
+        return Response(
+            {"error": "Stripe is not configured"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    try:
+        if link_type == 'product':
+            product_id = request.data.get('product_id')
+            if not product_id:
+                return Response(
+                    {"error": "product_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                product = Product.objects.get(pk=product_id, is_active=True)
+            except Product.DoesNotExist:
+                return Response(
+                    {"error": "Product not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Create Stripe Payment Link
+            payment_link = stripe.PaymentLink.create(
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(product.price * 100),
+                        'product_data': {
+                            'name': product.name,
+                            'description': product.description[:500] if product.description else None,
+                            'images': [product.primary_image_url] if product.primary_image_url else [],
+                        },
+                    },
+                    'quantity': 1,
+                }],
+                metadata={
+                    'type': 'product',
+                    'product_id': str(product.id),
+                    'generated_by': str(request.user.id),
+                },
+            )
+
+            return Response({
+                'url': payment_link.url,
+                'id': payment_link.id,
+            })
+
+        elif link_type == 'event':
+            event_id = request.data.get('event_id')
+            if not event_id:
+                return Response(
+                    {"error": "event_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            from apps.events.models import Event
+            try:
+                event = Event.objects.get(pk=event_id, is_public=True)
+            except Event.DoesNotExist:
+                return Response(
+                    {"error": "Event not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if not event.price:
+                return Response(
+                    {"error": "Event does not have a price"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create Stripe Payment Link
+            payment_link = stripe.PaymentLink.create(
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(event.price * 100),
+                        'product_data': {
+                            'name': f"{event.title} - Registration",
+                            'description': event.description[:500] if event.description else None,
+                        },
+                    },
+                    'quantity': 1,
+                }],
+                metadata={
+                    'type': 'event',
+                    'event_id': str(event.id),
+                    'generated_by': str(request.user.id),
+                },
+            )
+
+            return Response({
+                'url': payment_link.url,
+                'id': payment_link.id,
+            })
+
+        elif link_type == 'custom':
+            title = request.data.get('title')
+            description = request.data.get('description', '')
+            amount = request.data.get('amount')
+
+            if not title or not amount:
+                return Response(
+                    {"error": "title and amount are required for custom payments"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                amount = float(amount)
+                if amount <= 0:
+                    raise ValueError("Amount must be positive")
+            except (ValueError, TypeError):
+                return Response(
+                    {"error": "Invalid amount"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create Stripe Payment Link
+            payment_link = stripe.PaymentLink.create(
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(amount * 100),
+                        'product_data': {
+                            'name': title,
+                            'description': description[:500] if description else None,
+                        },
+                    },
+                    'quantity': 1,
+                }],
+                metadata={
+                    'type': 'custom',
+                    'title': title,
+                    'generated_by': str(request.user.id),
+                },
+            )
+
+            return Response({
+                'url': payment_link.url,
+                'id': payment_link.id,
+            })
+
+        else:
+            return Response(
+                {"error": "Invalid type. Must be 'product', 'event', or 'custom'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error generating payment link: {e}")
+        return Response(
+            {"error": f"Stripe error: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    except Exception as e:
+        logger.error(f"Error generating payment link: {e}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

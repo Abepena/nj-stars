@@ -5,6 +5,7 @@ from .views import (
     SubscriptionPlanViewSet,
     create_product_checkout,
     create_event_checkout,
+    create_subscription_checkout,
     stripe_webhook,
     printify_webhook,
     BagAPIView,
@@ -24,6 +25,21 @@ from .views import (
     PrintifySyncAndUnpublishView,
     PrintifyDeleteLocalView,
     PrintifyUnlockView,
+    # Cash payment views
+    collect_cash,
+    pending_cash,
+    cash_handoff,
+    cash_by_staff,
+    cash_history,
+    cash_export,
+    # Subscription admin views
+    fetch_stripe_price,
+    create_subscription_plan,
+    list_subscription_plans_admin,
+    update_subscription_plan,
+    delete_subscription_plan,
+    # Payment link generation
+    generate_payment_link,
 )
 
 router = DefaultRouter()
@@ -35,6 +51,7 @@ urlpatterns = [
     # Checkout endpoints
     path('checkout/product/', create_product_checkout, name='product-checkout'),
     path('checkout/event/', create_event_checkout, name='event-checkout'),
+    path('checkout/subscription/', create_subscription_checkout, name='subscription-checkout'),
     path('checkout/bag/', bag_checkout, name='bag-checkout'),
     path('checkout/session/<str:session_id>/', get_checkout_session, name='checkout-session'),
     # Bag endpoints
@@ -59,4 +76,19 @@ urlpatterns = [
     path('admin/printify/sync-and-unpublish/', PrintifySyncAndUnpublishView.as_view(), name='printify-sync-unpublish'),
     path('admin/printify/delete-local/', PrintifyDeleteLocalView.as_view(), name='printify-delete-local'),
     path('admin/printify/unlock/', PrintifyUnlockView.as_view(), name='printify-unlock'),
+    # Cash payment endpoints
+    path('cash/collect/', collect_cash, name='cash-collect'),
+    path('cash/pending/', pending_cash, name='cash-pending'),
+    path('cash/<int:cash_id>/handoff/', cash_handoff, name='cash-handoff'),
+    path('cash/by-staff/', cash_by_staff, name='cash-by-staff'),
+    path('cash/history/', cash_history, name='cash-history'),
+    path('cash/export/', cash_export, name='cash-export'),
+    # Subscription admin endpoints
+    path('admin/subscriptions/', list_subscription_plans_admin, name='subscription-plans-admin'),
+    path('admin/subscriptions/fetch-price/', fetch_stripe_price, name='fetch-stripe-price'),
+    path('admin/subscriptions/create/', create_subscription_plan, name='create-subscription-plan'),
+    path('admin/subscriptions/<int:plan_id>/', update_subscription_plan, name='update-subscription-plan'),
+    path('admin/subscriptions/<int:plan_id>/delete/', delete_subscription_plan, name='delete-subscription-plan'),
+    # Payment link generation
+    path('generate-link/', generate_payment_link, name='generate-payment-link'),
 ]

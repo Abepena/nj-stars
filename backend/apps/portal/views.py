@@ -25,7 +25,7 @@ from .serializers import (
 from .permissions import IsParentOrStaff, IsStaffMember, IsOwnerOrStaff
 from apps.registrations.models import EventRegistration
 from apps.registrations.serializers import EventRegistrationListSerializer
-from apps.payments.models import Order
+from apps.payments.models import Order, CashPayment
 from apps.payments.serializers import OrderSerializer
 from apps.events.models import Event
 
@@ -409,6 +409,9 @@ def staff_dashboard(request):
         ).count(),
         'pending_payments': DuesAccount.objects.filter(
             balance__gt=0
+        ).count(),
+        'pending_cash_handoffs': CashPayment.objects.filter(
+            status='collected'
         ).count(),
         'check_ins_today': EventCheckIn.objects.filter(
             checked_in_at__date=today

@@ -17,20 +17,20 @@
 
 ## Project Vision
 
-**NJ Stars Elite AAU Basketball** is the **proof-of-concept MVP** for **LEAG** (or **TRNY**), a multi-tenant youth sports platform owned by Stryder Labs LLC.
+**NJ Stars Elite AAU Basketball** is the **proof-of-concept MVP** for **LEAG** , a multi-tenant youth sports platform owned by Stryder Labs LLC.
 
 ### Platform Overview
 
 | | |
 |---|---|
-| **Platform Name** | LEAG (alternative: TRNY) |
-| **Platform Domains** | `leag.app`, `trny.app` (both owned) |
+| **Platform Name** | LEAG |
+| **Platform Domains** | `leag.app` |
 | **First Tenant** | NJ Stars Elite AAU Basketball |
 | **Tenant Domain** | `njstarselite.com` (primary), `njstarsbasketball.com` (secondary) |
 
 ### Vision
 
-LEAG/TRNY will be a SaaS platform serving AAU teams, youth sports leagues, travel teams, and athletic organizations. Each tenant gets:
+LEAG will be a SaaS platform serving AAU teams, youth sports leagues, travel teams, and athletic organizations. Each tenant gets:
 - Branded public website with CMS
 - E-commerce merch store
 - Event management & registration
