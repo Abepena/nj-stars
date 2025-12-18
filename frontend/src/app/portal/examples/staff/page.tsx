@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PaymentLinkGenerator } from "@/components/payment-link-generator"
+import { DualListPanel, DualListItem } from "@/components/dashboard/dual-list-panel"
 import {
   Users,
   Calendar,
@@ -183,6 +184,65 @@ export default function StaffExamplePage() {
   const [dashboard, setDashboard] = useState<StaffDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [usingMockData, setUsingMockData] = useState(false)
+  
+  // Check-in state management
+  const [pendingCheckIns, setPendingCheckIns] = useState<DualListItem[]>([])
+  const [activeCheckIns, setActiveCheckIns] = useState<DualListItem[]>([])
+  
+  // Initialize check-in lists when dashboard data loads
+  useEffect(() => {
+    if (dashboard) {
+      setPendingCheckIns(
+        dashboard.pending_check_ins.map((ci) => ({
+          id: ci.id,
+          title: ci.participant_name,
+          subtitle: ci.event_title,
+          icon: Clock,
+        }))
+      )
+      setActiveCheckIns(
+        dashboard.active_check_ins.map((ci) => ({
+          id: ci.id,
+          title: ci.participant_name,
+          subtitle: `In since ${new Date(ci.checked_in_at).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit'
+          })}`,
+          icon: CheckCircle,
+        }))
+      )
+    }
+  }, [dashboard])
+  
+  // Handle toggle check-in/check-out
+  const handleToggleCheckIn = (item: DualListItem, checked: boolean) => {
+    if (checked) {
+      // Check in: move from pending to active
+      setPendingCheckIns((prev) => prev.filter((i) => i.id !== item.id))
+      setActiveCheckIns((prev) => [
+        {
+          ...item,
+          subtitle: `In since ${new Date().toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit'
+          })}`,
+        },
+        ...prev,
+      ])
+      // #TODO: Call API to record check-in
+    } else {
+      // Check out: move from active to pending
+      setActiveCheckIns((prev) => prev.filter((i) => i.id !== item.id))
+      setPendingCheckIns((prev) => [
+        ...prev,
+        {
+          ...item,
+          subtitle: "Ready to check in",
+        },
+      ])
+      // #TODO: Call API to record check-out
+    }
+  }
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -417,98 +477,19 @@ export default function StaffExamplePage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Pending Check-ins */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                  Pending Check-Ins
-                </CardTitle>
-                <CardDescription>
-                  Awaiting check-in
-                </CardDescription>
-              </div>
-              <Button variant="outline" size="sm">View All</Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {staff.pending_check_ins.length > 0 ? (
-                staff.pending_check_ins.map((ci) => (
-                  <div
-                    key={ci.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center border border-border">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{ci.participant_name}</p>
-                        <p className="text-xs text-muted-foreground">{ci.event_title}</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="secondary" className="gap-1">
-                      <CheckCircle className="h-3 w-3 text-muted-foreground" />
-                      Check In
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No pending check-ins</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Check-ins */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success/80" />
-              Currently Checked In
-            </CardTitle>
-            <CardDescription>
-              Active participants
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {staff.active_check_ins.length > 0 ? (
-                staff.active_check_ins.map((ci) => (
-                  <div
-                    key={ci.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-success/10 text-success/80 flex items-center justify-center border border-success/30">
-                        <CheckCircle className="h-4 w-4 text-success/80" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{ci.participant_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          In since {new Date(ci.checked_in_at).toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="secondary" size="sm" className="text-success/90 border-success/40 hover:bg-success/10">
-                      Check Out
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No active check-ins</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Check-In Management - Dual List Panel */}
+      <DualListPanel
+        title="Check-In Management"
+        description="Tap the circle to check players in or out"
+        icon={ClipboardCheck}
+        leftLabel="Pending"
+        leftItems={pendingCheckIns}
+        leftEmptyMessage="No pending check-ins"
+        rightLabel="Checked In"
+        rightItems={activeCheckIns}
+        rightEmptyMessage="No active check-ins"
+        onToggleItem={handleToggleCheckIn}
+      />
 
       {/* Recent Registrations */}
       <Card>

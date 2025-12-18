@@ -221,10 +221,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-0">
+    <div className="space-y-0 overflow-x-hidden">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         {/* Tab Navigation - Pill Style */}
-        <TabsList className="h-auto p-1 bg-muted/50 rounded-lg gap-1 flex-wrap justify-start w-fit">
+        <TabsList className="h-auto p-1 bg-muted/50 rounded-lg gap-1 justify-start w-full overflow-x-auto no-scrollbar">
           {availableTabs.map((tab) => {
             const Icon = tab.icon
             return (
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                 key={tab.id}
                 value={tab.id}
                 className={`
-                  flex items-center gap-2 px-4 py-2 transition-all rounded-md
+                  flex items-center gap-2 px-4 py-2 transition-all rounded-md shrink-0 whitespace-nowrap
                   data-[state=active]:bg-success/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm
                   data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground
                   hover:text-foreground

@@ -348,11 +348,11 @@ export default function AdminDashboard() {
               <p className="text-2xl font-bold">${revenueData.mtd.toLocaleString()}</p>
               <div className="flex items-center gap-1 text-sm">
                 {revenueChange >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-foreground/60" />
+                  <TrendingUp className="h-4 w-4 text-success" />
                 ) : (
-                  <TrendingDown className="h-4 w-4 text-foreground/60" />
+                  <TrendingDown className="h-4 w-4 text-destructive" />
                 )}
-                <span className={revenueChange >= 0 ? "text-foreground/60" : "text-foreground/60"}>
+                <span className={revenueChange >= 0 ? "text-success" : "text-destructive"}>
                   {revenueChange >= 0 ? "+" : ""}{revenueChange.toFixed(1)}%
                 </span>
                 <span className="text-muted-foreground">vs last month</span>
