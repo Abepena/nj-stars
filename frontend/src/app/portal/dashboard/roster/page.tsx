@@ -24,7 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  ChevronLeft,
   Search,
   AlertCircle,
   Users,
@@ -32,6 +31,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react"
+import { BackToDashboard } from "@/components/back-to-dashboard"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -132,15 +132,8 @@ export default function RosterPage() {
   const inactivePlayers = filteredPlayers.filter(p => !p.is_active)
 
   return (
-    <div className="space-y-6 pt-4">
-      {/* Back Link */}
-      <Link
-        href="/portal/dashboard"
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Back to Admin Dashboard
-      </Link>
+    <div className="space-y-6">
+      <BackToDashboard />
 
       {/* Header */}
       <div>

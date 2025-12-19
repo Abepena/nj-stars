@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react"
+import { BackToDashboard } from "@/components/back-to-dashboard"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -192,13 +193,7 @@ export default function CheckInsAdminPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/portal/dashboard/admin"
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Back to Admin
-      </Link>
+      <BackToDashboard />
 
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">Event Check-Ins</h1>

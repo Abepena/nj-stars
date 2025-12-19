@@ -225,8 +225,7 @@ export default function DashboardPage() {
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         {/* Tab Navigation - Pill Style, Sticky below mobile navbar (58px header height) */}
         <div className="sticky top-[var(--portal-header-height,0px)] lg:top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-2 pb-1 lg:pt-4 lg:pb-2 mb-0 backdrop-blur-sm bg-[hsl(var(--bg-dashboard)/0.95)] border-b border-border/50">
-          <div className="flex justify-center">
-            <TabsList className="h-auto p-1 bg-muted rounded-lg gap-1 w-auto overflow-x-auto no-scrollbar">
+          <TabsList className="h-auto p-1 bg-muted/50 rounded-lg gap-0.5 sm:gap-1 justify-start w-full flex-wrap">
             {availableTabs.map((tab) => {
               const Icon = tab.icon
               return (
@@ -234,18 +233,22 @@ export default function DashboardPage() {
                   key={tab.id}
                   value={tab.id}
                   className={`
-                    flex items-center gap-2 px-3 sm:px-4 py-2 transition-all rounded-md shrink-0 whitespace-nowrap text-sm
+                    flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 transition-all rounded-md text-xs sm:text-sm
                     data-[state=active]:bg-success/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm
                     data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground
                     hover:text-foreground
                   `}
                 >
-                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="font-medium">{tab.label}</span>
                   {tab.id === "admin" && (
                     <Badge
                       variant="outline"
-                      className="ml-1 bg-muted text-foreground border-border text-sm hidden sm:inline-flex"
+                      className={`ml-0.5 sm:ml-1 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0 h-4 sm:h-5 hidden sm:inline-flex ${
+                        activeTab === "admin"
+                          ? "bg-muted/50 border-border text-muted-foreground"
+                          : "bg-success/30 border-success/50 text-foreground"
+                      }`}
                     >
                       Full Access
                     </Badge>
@@ -254,7 +257,6 @@ export default function DashboardPage() {
               )
             })}
           </TabsList>
-          </div>
         </div>
 
         {/* Tab Content - Connected to tabs */}

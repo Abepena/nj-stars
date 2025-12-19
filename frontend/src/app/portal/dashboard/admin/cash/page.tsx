@@ -64,6 +64,7 @@ import {
   CalendarIcon,
   Eye,
 } from "lucide-react"
+import { BackToDashboard } from "@/components/back-to-dashboard"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -447,12 +448,7 @@ export default function CashReconciliationPage() {
           <h1 className="text-2xl font-bold">Cash Reconciliation</h1>
           <p className="text-muted-foreground">Track and reconcile cash payments collected by staff</p>
         </div>
-        <Link href="/portal/dashboard/admin">
-          <Button variant="outline">
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Back to Admin
-          </Button>
-        </Link>
+        <BackToDashboard />
       </div>
 
       {error && (

@@ -9,12 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Users,
   Calendar,
   Package,
@@ -48,6 +42,7 @@ import { DualListPanel, DualListItem } from "@/components/dashboard/dual-list-pa
 import { PaymentLinkGenerator } from "@/components/payment-link-generator"
 import { MerchDropModal } from "@/components/admin/merch-drop-modal"
 import { CashReconciliationModal } from "@/components/admin/cash-reconciliation-modal"
+import { PriorityDropdown, type Priority } from "@/components/ui/priority-dropdown"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -90,7 +85,7 @@ interface ContactSubmission {
   category: string
   subject: string
   message: string
-  priority: string
+  priority: Priority
   status: string
   created_at: string
   time_since_created: string
@@ -112,14 +107,6 @@ const CATEGORY_ICONS: Record<string, typeof HelpCircle> = {
   technical: AlertTriangle,
   feedback: MessageSquare,
   other: HelpCircle,
-}
-
-// Priority colors - using semantic color tokens with muted backgrounds
-const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-muted text-foreground border-border",
-  normal: "bg-success/30 text-foreground border-success/40",
-  high: "bg-warning/30 text-foreground border-warning/40",
-  urgent: "bg-destructive/30 text-foreground border-destructive/40",
 }
 
 // #TODO: Styles for unimplemented features - change to normal styling once wired up
@@ -345,26 +332,31 @@ export default function AdminDashboard() {
     }
   }
 
-  // Update priority (optimistic update - UI updates immediately)
-  const handlePriorityChange = (submission: ContactSubmission, newPriority: string) => {
-    // Update UI immediately
-    setContactSubmissions(prev =>
-      prev.map(s =>
-        s.id === submission.id ? { ...s, priority: newPriority } : s
-      )
-    )
+  // Handle priority update
+  const handlePriorityUpdate = async (submissionId: number, newPriority: Priority) => {
+    if (!session) return
 
-    // Try to persist to backend (fire and forget)
-    if (session) {
+    try {
       const apiToken = (session as any)?.apiToken
-      fetch(`${API_BASE}/api/contact/${submission.id}/priority/`, {
+      const response = await fetch(`${API_BASE}/api/contact/admin/${submissionId}/`, {
         method: "PATCH",
         headers: {
           "Authorization": `Token ${apiToken || ""}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ priority: newPriority }),
-      }).catch(err => console.error("Failed to update priority:", err))
+      })
+
+      if (response.ok) {
+        // Update priority locally
+        setContactSubmissions(prev =>
+          prev.map(s =>
+            s.id === submissionId ? { ...s, priority: newPriority } : s
+          )
+        )
+      }
+    } catch (err) {
+      console.error("Failed to update priority:", err)
     }
   }
 
@@ -730,50 +722,12 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 sm:gap-2 ml-2 shrink-0">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              onClick={(e) => e.stopPropagation()}
-                              className="focus:outline-none"
-                            >
-                              <Badge
-                                variant="outline"
-                                className={`${PRIORITY_COLORS[submission.priority] || PRIORITY_COLORS.normal} text-[10px] sm:text-xs cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 min-w-[60px] sm:min-w-[70px] justify-center capitalize`}
-                              >
-                                {submission.priority}
-                                <ChevronDown className="h-3 w-3" />
-                              </Badge>
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'low')}>
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-muted" />
-                                Low
-                              </div>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'normal')}>
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-success" />
-                                Normal
-                              </div>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'high')}>
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-warning" />
-                                High
-                              </div>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'urgent')}>
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-destructive" />
-                                Urgent
-                              </div>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
+                      <div className="flex items-center gap-2 ml-2 shrink-0">
+                        <PriorityDropdown
+                          value={submission.priority}
+                          onChange={(newPriority) => handlePriorityUpdate(submission.id, newPriority)}
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {submission.time_since_created}
                         </span>
                         {isExpanded ? (
