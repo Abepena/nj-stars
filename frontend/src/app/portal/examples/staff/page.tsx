@@ -30,7 +30,6 @@ import {
   CheckCircle,
   Shield,
   TrendingUp,
-  Link2
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -401,31 +400,7 @@ export default function StaffExamplePage() {
         </Card>
 
         {/* Payment Link Generator */}
-        <Card className="group hover:bg-muted/50 hover:border-foreground/20 transition-all h-full">
-          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 sm:p-6">
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center shrink-0 transition-colors">
-                <Link2 className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </div>
-              <div className="flex-1 min-w-0 sm:hidden">
-                <h3 className="font-semibold transition-colors">Payment Links</h3>
-                <p className="text-sm text-muted-foreground truncate">Create shareable links</p>
-              </div>
-            </div>
-            <div className="hidden sm:block flex-1 min-w-0">
-              <h3 className="font-semibold transition-colors">Generate Payment Link</h3>
-              <p className="text-sm text-muted-foreground">Create shareable payment links</p>
-            </div>
-            <PaymentLinkGenerator
-              trigger={
-                <Button variant="success" className="w-full sm:w-auto">
-                  <Link2 className="h-4 w-4 sm:mr-2" />
-                  <span className="sm:inline">Generate</span>
-                </Button>
-              }
-            />
-          </CardContent>
-        </Card>
+        <PaymentLinkGenerator />
       </div>
 
       {/* Today's Events */}

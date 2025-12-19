@@ -10,6 +10,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs"
 import { ProductQuickView } from "@/components/product-quick-view"
 import { FilterSidebar, type FilterCategory, type FilterTag, type FilterColor, type SortOption } from "@/components/filter-sidebar"
 import { Button } from "@/components/ui/button"
+import { MerchDropHype } from "@/components/merch-drop-hype"
 import { getCategoryColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
 import { normalizeColors, productMatchesColorFilter, getColorHex } from "@/lib/color-utils"
@@ -446,6 +447,9 @@ export default function ShopPage() {
 
   return (
     <LayoutShell>
+      {/* Merch Drop Hype Section - Full viewport when active */}
+      <MerchDropHype fullHeight />
+
       <PageHeader
         title="The Locker Room"
         subtitle="Gear up with official NJ Stars merchandise."

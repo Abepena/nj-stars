@@ -1,45 +1,12 @@
 "use client"
 
-import * as React from "react"
 import { Moon, Sun } from "lucide-react"
-
+import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 
 export function ThemeToggle() {
-  const [theme, setThemeState] = React.useState<"dark" | "light">("dark")
-
-  // Initialize theme from DOM on mount
-  React.useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark")
-    const isLight = document.documentElement.classList.contains("light")
-    setThemeState(isLight ? "light" : "dark")
-
-    // Watch for theme changes
-    const observer = new MutationObserver(() => {
-      const isDark = document.documentElement.classList.contains("dark")
-      const isLight = document.documentElement.classList.contains("light")
-      setThemeState(isLight ? "light" : "dark")
-    })
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    })
-
-    return () => observer.disconnect()
-  }, [])
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark"
-    setThemeState(newTheme)
-
-    // Update localStorage
-    localStorage.setItem("nj-stars-theme", newTheme)
-
-    // Update DOM
-    document.documentElement.classList.remove("light", "dark")
-    document.documentElement.classList.add(newTheme)
-  }
+  const { theme = "dark", setTheme } = useTheme()
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark")
 
   return (
     <Button

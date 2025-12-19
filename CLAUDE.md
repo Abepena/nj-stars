@@ -329,45 +329,64 @@ stripe listen --forward-to localhost:8000/api/payments/webhook/stripe/
 
 ## Environment Variables
 
-### Backend (.env)
+> **Full Reference:** See `documentation/ENV_VARS.md` for comprehensive documentation.
+
+### Configuration Locations
+
+| Environment | Location |
+|-------------|----------|
+| **Local Docker** | `.env` (project root) - single source of truth |
+| **Railway (Backend)** | Railway dashboard → Variables |
+| **Vercel (Frontend)** | Vercel dashboard → Environment Variables |
+
+### Local Docker Setup
+
+```bash
+# Copy template and fill in your values
+cp .env.example .env
+
+# Start all services
+make up
+```
+
+### Key Variables (`.env`)
 
 ```bash
 # Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/njstars
+POSTGRES_USER=njstars
+POSTGRES_PASSWORD=<your-password>
+POSTGRES_DB=njstars
 
-# Security
+# Django
 SECRET_KEY=<generate-with-openssl-rand-hex-32>
-DJANGO_SETTINGS_MODULE=config.settings.development
 
-# Frontend URL (for CORS)
-FRONTEND_URL=http://localhost:3000
-
-# Stripe
+# Stripe (test keys)
 STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Instagram (optional - mock data available)
-INSTAGRAM_ACCESS_TOKEN=...
-INSTAGRAM_BUSINESS_ACCOUNT_ID=...
-```
-
-### Frontend (.env.local)
-
-```bash
-# API
-NEXT_PUBLIC_API_URL=http://localhost:8000
-INTERNAL_API_URL=http://backend:8000  # Docker internal
-
 # NextAuth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=<generate-with-openssl-rand-hex-32>
+NEXTAUTH_SECRET=<generate-with-openssl-rand-base64-32>
 
 # OAuth (optional)
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 
-# Stripe
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+# Google Sheets (credentials in backend/google-credentials.json)
+GOOGLE_SHEETS_ENABLED=true
+```
+
+### File Structure
+
+```
+nj-stars/
+├── .env                          # All local dev variables
+├── .env.example                  # Template with documentation
+├── backend/
+│   ├── google-credentials.json   # Google service account (gitignored)
+│   └── .env.example              # Backend reference
+└── frontend/
+    └── .env.example              # Frontend reference
 ```
 
 ---

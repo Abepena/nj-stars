@@ -8,6 +8,7 @@
     --bg-primary: 20 13% 9%;            /* #1a1614 - darkest background */
     --bg-secondary: 20 9.4% 12.5%;      /* card/elevated surfaces */
     --bg-tertiary: 20 7.1% 16.5%;       /* lightest background */
+    --bg-dashboard: 20 10% 12.5%;       /* #23201D - dashboard/admin background */
 
     --text-primary: 26.7 16.4% 89.2%;   /* #e8e3df - main text */
     --text-secondary: 38.8 6.8% 65%;    /* dimmed text - WCAG AA compliant */
@@ -41,6 +42,7 @@
     --input: 27.3 8% 26.9%;
     --ring: 331.7 78% 58%;               /* primary (hot pink) for focus */
     --radius: 0.5rem;
+    --portal-header-height: 0px;
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
@@ -58,6 +60,7 @@
     --bg-primary: 40 15% 92%;             /* Muted warm gray (#eae8e4) */
     --bg-secondary: 40 12% 95%;           /* Slightly lighter for cards */
     --bg-tertiary: 40 10% 88%;            /* Warmer gray for surfaces */
+    --bg-dashboard: 40 12% 94%;           /* Light dashboard background */
 
     --text-primary: 20 10% 15%;           /* Warm dark brown-black */
     --text-secondary: 20 8% 35%;          /* Warm dark gray for secondary */
@@ -293,6 +296,75 @@
   animation: pulse-highlight 0.6s ease-in-out 2;
 }
 
+/* Merch Drop Hype Animations */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animate-fade-in-up.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animate-fade-in-up.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animate-fade-in-up.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-pulse-slow.delay-1000 {
+  animation-delay: 1s;
+}
+
+.animate-pulse-slow.delay-2000 {
+  animation-delay: 2s;
+}
+
 /* ==========================================================================
    Badge Utility Classes
    Muted backgrounds with foreground text for consistent visual hierarchy
@@ -394,4 +466,31 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Accordion animations */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
 }

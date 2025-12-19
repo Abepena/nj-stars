@@ -42,7 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Checkbox } from "@/components/ui/checkbox"
+// Checkbox removed - using custom circle button instead
 import { ExportButton } from "@/components/ui/export-button"
 import {
   Dialog,
@@ -127,6 +127,7 @@ export default function CashReconciliationPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [selectedTransaction, setSelectedTransaction] = useState<CashPayment | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [animatingIds, setAnimatingIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -147,9 +148,9 @@ export default function CashReconciliationPage() {
     }
   }, [limitFilter])
 
-  const fetchData = async () => {
+  const fetchData = async (showLoading = true) => {
     if (!session) return
-    setLoading(true)
+    if (showLoading) setLoading(true)
     setError(null)
 
     try {
@@ -192,7 +193,7 @@ export default function CashReconciliationPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data")
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
@@ -223,7 +224,12 @@ export default function CashReconciliationPage() {
   }
 
   const handleHandoff = async (cashId: number) => {
-    setActionLoading(cashId)
+    // Start animation immediately
+    setAnimatingIds(prev => new Set(prev).add(cashId))
+
+    // Find the cash payment being updated
+    const cashPayment = pendingCash.find(c => c.id === cashId) || recentHistory.find(c => c.id === cashId)
+    const amount = cashPayment ? parseFloat(cashPayment.amount) : 0
 
     try {
       const apiToken = (session as any)?.apiToken
@@ -240,17 +246,75 @@ export default function CashReconciliationPage() {
         throw new Error("Failed to mark as handed off")
       }
 
-      // Refresh data
-      fetchData()
+      // Wait for animation to complete, then move item
+      setTimeout(() => {
+        // Remove from pending and update stats
+        setPendingCash(prev => prev.filter(c => c.id !== cashId))
+        setRecentHistory(prev => {
+          // Update existing or add to beginning
+          const exists = prev.some(c => c.id === cashId)
+          if (exists) {
+            return prev.map(c =>
+              c.id === cashId ? { ...c, status: "handed_off", status_display: "Handed Off" } : c
+            )
+          }
+          // Add the handed off item to the beginning of history
+          if (cashPayment) {
+            return [{ ...cashPayment, status: "handed_off", status_display: "Handed Off" }, ...prev]
+          }
+          return prev
+        })
+        setStats(prev => ({
+          ...prev,
+          totalPending: Math.max(0, prev.totalPending - amount),
+          totalHandedOff: prev.totalHandedOff + amount,
+          pendingCount: Math.max(0, prev.pendingCount - 1),
+        }))
+
+        // Clear animation state
+        setAnimatingIds(prev => {
+          const next = new Set(prev)
+          next.delete(cashId)
+          return next
+        })
+
+        // Refresh data in background to sync with server
+        fetchData(false)
+      }, 600) // Match animation duration
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update")
-    } finally {
-      setActionLoading(null)
+      // Clear animation on error
+      setAnimatingIds(prev => {
+        const next = new Set(prev)
+        next.delete(cashId)
+        return next
+      })
+      fetchData(false)
     }
   }
 
   const handleUndoHandoff = async (cashId: number) => {
     setActionLoading(cashId)
+
+    // Find the cash payment being updated
+    const cashPayment = recentHistory.find(c => c.id === cashId)
+    const amount = cashPayment ? parseFloat(cashPayment.amount) : 0
+
+    // Optimistic update - immediately update UI
+    if (cashPayment) {
+      const revertedPayment = { ...cashPayment, status: "collected", status_display: "Collected", handed_off_to: null, handed_off_to_name: null, handed_off_at: null }
+      setPendingCash(prev => [...prev, revertedPayment])
+      setRecentHistory(prev => prev.map(c =>
+        c.id === cashId ? revertedPayment : c
+      ))
+      setStats(prev => ({
+        ...prev,
+        totalPending: prev.totalPending + amount,
+        totalHandedOff: Math.max(0, prev.totalHandedOff - amount),
+        pendingCount: prev.pendingCount + 1,
+      }))
+    }
 
     try {
       const apiToken = (session as any)?.apiToken
@@ -267,10 +331,12 @@ export default function CashReconciliationPage() {
         throw new Error("Failed to undo handoff")
       }
 
-      // Refresh data
-      fetchData()
+      // Refresh data in background to sync with server
+      fetchData(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update")
+      // Revert on error - refetch to get correct state
+      fetchData(false)
     } finally {
       setActionLoading(null)
     }
@@ -499,7 +565,16 @@ export default function CashReconciliationPage() {
                       </TableHeader>
                       <TableBody>
                         {pendingCash.map((cash) => (
-                          <TableRow key={cash.id}>
+                          <TableRow
+                            key={cash.id}
+                            className={`
+                              transition-all duration-500
+                              ${animatingIds.has(cash.id)
+                                ? "bg-green-500/10 opacity-70"
+                                : ""
+                              }
+                            `}
+                          >
                             <TableCell className="text-sm">
                               {format(new Date(cash.collected_at), "MMM d, h:mm a")}
                             </TableCell>
@@ -516,17 +591,32 @@ export default function CashReconciliationPage() {
                               ${parseFloat(cash.amount).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <span className="text-sm text-muted-foreground">Collected</span>
-                                {actionLoading === cash.id ? (
-                                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                ) : (
-                                  <Checkbox
-                                    checked={false}
-                                    onCheckedChange={() => handleHandoff(cash.id)}
-                                    className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 transition-all duration-200"
+                              <div className="flex items-center justify-end gap-3">
+                                <span className="text-sm text-muted-foreground">
+                                  {animatingIds.has(cash.id) ? "Handed off!" : "Mark collected"}
+                                </span>
+                                <button
+                                  onClick={() => !animatingIds.has(cash.id) && handleHandoff(cash.id)}
+                                  disabled={animatingIds.has(cash.id)}
+                                  className={`
+                                    h-8 w-8 rounded-full flex items-center justify-center
+                                    transition-all duration-300 ease-out
+                                    ${animatingIds.has(cash.id)
+                                      ? "bg-green-500 border-2 border-green-500 scale-110"
+                                      : "bg-transparent border-2 border-muted-foreground/40 hover:border-green-500 hover:bg-green-500/10"
+                                    }
+                                  `}
+                                >
+                                  <CheckCircle
+                                    className={`
+                                      h-5 w-5 transition-all duration-300
+                                      ${animatingIds.has(cash.id)
+                                        ? "text-white scale-100 opacity-100"
+                                        : "text-muted-foreground/40 scale-75 opacity-0 group-hover:opacity-50"
+                                      }
+                                    `}
                                   />
-                                )}
+                                </button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -600,7 +690,7 @@ export default function CashReconciliationPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             {staff.pending_count > 0 && (
-                              <Badge variant="secondary">{staff.pending_count}</Badge>
+                              <Badge variant="outline" className="bg-warning/30 text-foreground border-warning/40">{staff.pending_count}</Badge>
                             )}
                           </TableCell>
                         </TableRow>

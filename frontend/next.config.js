@@ -43,6 +43,11 @@ const nextConfig = {
         hostname: 'localhost',
         port: '8000',
       },
+      // Placeholder images for development/seeding
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
     ],
   },
   env: {

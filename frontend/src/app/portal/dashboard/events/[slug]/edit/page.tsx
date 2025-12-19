@@ -475,7 +475,7 @@ export default function EditEventPage() {
                   Charge a registration fee
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 checked={formData.requires_payment}
                 onCheckedChange={(checked) => updateField("requires_payment", checked)}
               />
@@ -512,7 +512,7 @@ export default function EditEventPage() {
                   Show on public events page
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 checked={formData.is_public}
                 onCheckedChange={(checked) => updateField("is_public", checked)}
               />
@@ -525,7 +525,7 @@ export default function EditEventPage() {
                   Allow people to register
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 checked={formData.registration_open}
                 onCheckedChange={(checked) => updateField("registration_open", checked)}
               />

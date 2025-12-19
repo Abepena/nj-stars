@@ -11,7 +11,7 @@ from django.db import transaction
 import stripe
 import uuid
 
-from .models import Product, SubscriptionPlan, Payment, Bag, BagItem, Order, OrderItem
+from .models import Product, SubscriptionPlan, Payment, Bag, BagItem, Order, OrderItem, MerchDropSettings
 from .services.printify_client import get_printify_client, PrintifyError
 import logging
 
@@ -27,6 +27,7 @@ from .serializers import (
     OrderSerializer,
     HandoffItemSerializer,
     HandoffUpdateSerializer,
+    MerchDropSettingsSerializer,
 )
 
 # Initialize Stripe
@@ -1818,14 +1819,17 @@ class PrintifyProductsView(PrintifyAdminView):
 
 class PrintifySyncView(PrintifyAdminView):
     """
-    Manually sync a Printify product to local database.
+    Manually sync Printify products to local database.
 
     POST /api/payments/admin/printify/sync/
-    Body: { "product_id": "693b573a9164dbdf170252cd" }
+    Body (optional): { "product_id": "693b573a9164dbdf170252cd" }
+
+    If product_id is provided, syncs that specific product.
+    If no product_id, syncs all POD products with Printify IDs.
     """
 
     def post(self, request):
-        from .services.printify_sync import sync_product_variants
+        from .services.printify_sync import sync_product_variants, sync_all_pod_variants
 
         # Check superuser
         error = self._require_superuser(request)
@@ -1833,11 +1837,6 @@ class PrintifySyncView(PrintifyAdminView):
             return error
 
         product_id = request.data.get('product_id')
-        if not product_id:
-            return Response(
-                {'error': 'product_id is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
         client = get_printify_client()
         if not client or not client.is_configured:
@@ -1845,6 +1844,34 @@ class PrintifySyncView(PrintifyAdminView):
                 {'error': 'Printify API not configured'},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
+
+        # If no product_id provided, sync all POD products
+        if not product_id:
+            try:
+                results = sync_all_pod_variants()
+
+                # Build summary
+                total_created = sum(r['created'] for r in results.values())
+                total_updated = sum(r['updated'] for r in results.values())
+                total_errors = sum(len(r['errors']) for r in results.values())
+
+                return Response({
+                    'success': True,
+                    'message': f'Synced {len(results)} products',
+                    'summary': {
+                        'products_synced': len(results),
+                        'variants_created': total_created,
+                        'variants_updated': total_updated,
+                        'errors': total_errors
+                    },
+                    'results': results
+                })
+            except Exception as e:
+                logger.error(f"Error syncing all Printify products: {e}", exc_info=True)
+                return Response(
+                    {'error': f'Sync failed: {str(e)}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
         try:
             # Fetch product from Printify
@@ -2213,6 +2240,267 @@ class PrintifyDeleteProductView(PrintifyAdminView):
             logger.error(f"Error deleting Printify product: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to delete product'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyStatusView(PrintifyAdminView):
+    """
+    Check Printify connection status.
+
+    GET /api/payments/admin/printify/status/
+
+    Returns connection status and shop info if connected.
+    """
+
+    def get(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        from apps.core.models import IntegrationSettings
+        from .services.printify_client import get_printify_shops
+
+        try:
+            settings_obj = IntegrationSettings.get_instance()
+
+            # Check database settings first
+            if settings_obj.printify_configured:
+                return Response({
+                    'connected': True,
+                    'source': 'database',
+                    'shop_id': settings_obj.printify_shop_id,
+                    'shop_name': settings_obj.printify_shop_name or 'Unknown',
+                    'connected_at': settings_obj.printify_connected_at,
+                })
+
+            # Check environment variables as fallback
+            env_api_key = getattr(settings, 'PRINTIFY_API_KEY', '')
+            env_shop_id = getattr(settings, 'PRINTIFY_SHOP_ID', '')
+
+            if env_api_key and env_shop_id:
+                # Try to get shop name from API
+                shop_name = 'Unknown'
+                try:
+                    shops = get_printify_shops(env_api_key)
+                    for shop in shops:
+                        if str(shop.get('id')) == str(env_shop_id):
+                            shop_name = shop.get('title', 'Unknown')
+                            break
+                except Exception:
+                    pass
+
+                return Response({
+                    'connected': True,
+                    'source': 'environment',
+                    'shop_id': env_shop_id,
+                    'shop_name': shop_name,
+                    'connected_at': None,
+                })
+
+            # Not connected
+            return Response({
+                'connected': False,
+                'source': None,
+                'shop_id': None,
+                'shop_name': None,
+                'connected_at': None,
+            })
+
+        except Exception as e:
+            logger.error(f"Error checking Printify status: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to check connection status'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyShopsView(PrintifyAdminView):
+    """
+    Get available shops for a Printify API token.
+
+    POST /api/payments/admin/printify/shops/
+    Body: { "api_key": "eyJ..." }
+
+    Used during initial setup to list available shops.
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        from .services.printify_client import get_printify_shops
+
+        api_key = request.data.get('api_key')
+        if not api_key:
+            return Response(
+                {'error': 'api_key is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            shops = get_printify_shops(api_key)
+            return Response({
+                'shops': [
+                    {
+                        'id': shop.get('id'),
+                        'title': shop.get('title'),
+                        'sales_channel': shop.get('sales_channel'),
+                    }
+                    for shop in shops
+                ]
+            })
+
+        except PrintifyError as e:
+            if e.status_code == 401:
+                return Response(
+                    {'error': 'Invalid API token. Please check your token and try again.'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error fetching Printify shops: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to fetch shops'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyConnectView(PrintifyAdminView):
+    """
+    Connect/save Printify credentials.
+
+    POST /api/payments/admin/printify/connect/
+    Body: { "api_key": "eyJ...", "shop_id": "12345678" }
+
+    Validates the credentials and saves them to the database.
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        from apps.core.models import IntegrationSettings
+        from .services.printify_client import get_printify_shops, get_printify_client
+
+        api_key = request.data.get('api_key')
+        shop_id = request.data.get('shop_id')
+
+        if not api_key:
+            return Response(
+                {'error': 'api_key is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not shop_id:
+            return Response(
+                {'error': 'shop_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Validate by fetching shops
+            shops = get_printify_shops(api_key)
+            shop_name = None
+
+            # Find the selected shop
+            shop_id_str = str(shop_id)
+            for shop in shops:
+                if str(shop.get('id')) == shop_id_str:
+                    shop_name = shop.get('title')
+                    break
+
+            if not shop_name:
+                return Response(
+                    {'error': f'Shop ID {shop_id} not found in your Printify account'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Save to database
+            settings_obj = IntegrationSettings.get_instance()
+            settings_obj.printify_api_key = api_key
+            settings_obj.printify_shop_id = shop_id_str
+            settings_obj.printify_shop_name = shop_name
+            settings_obj.printify_connected_at = timezone.now()
+            settings_obj.save()
+
+            # Refresh the Printify client with new credentials
+            get_printify_client(force_refresh=True)
+
+            logger.info(f"Printify connected: shop_id={shop_id}, shop_name={shop_name}")
+
+            return Response({
+                'success': True,
+                'shop_id': shop_id_str,
+                'shop_name': shop_name,
+                'message': f'Successfully connected to {shop_name}',
+            })
+
+        except PrintifyError as e:
+            if e.status_code == 401:
+                return Response(
+                    {'error': 'Invalid API token'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Error connecting Printify: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to connect Printify'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PrintifyDisconnectView(PrintifyAdminView):
+    """
+    Disconnect Printify (clear saved credentials).
+
+    POST /api/payments/admin/printify/disconnect/
+
+    Clears the database credentials. Environment variables remain unaffected.
+    """
+
+    def post(self, request):
+        # Check superuser
+        error = self._require_superuser(request)
+        if error:
+            return error
+
+        from apps.core.models import IntegrationSettings
+        from .services.printify_client import get_printify_client
+
+        try:
+            settings_obj = IntegrationSettings.get_instance()
+            settings_obj.printify_api_key = ''
+            settings_obj.printify_shop_id = ''
+            settings_obj.printify_shop_name = ''
+            settings_obj.printify_connected_at = None
+            settings_obj.save()
+
+            # Refresh the Printify client
+            get_printify_client(force_refresh=True)
+
+            logger.info("Printify disconnected")
+
+            return Response({
+                'success': True,
+                'message': 'Printify disconnected',
+            })
+
+        except Exception as e:
+            logger.error(f"Error disconnecting Printify: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to disconnect Printify'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -3088,3 +3376,53 @@ def generate_payment_link(request):
             {"error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+class MerchDropSettingsView(APIView):
+    """
+    Merch Drop Settings API
+
+    GET: Get current merch drop settings (public)
+    PUT/PATCH: Update settings (admin only)
+    """
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get(self, request):
+        """Get current merch drop settings"""
+        settings_obj = MerchDropSettings.get_settings()
+        serializer = MerchDropSettingsSerializer(settings_obj)
+        return Response(serializer.data)
+
+    def put(self, request):
+        """Update merch drop settings (admin only)"""
+        if not request.user.is_staff:
+            return Response(
+                {"error": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        settings_obj = MerchDropSettings.get_settings()
+        serializer = MerchDropSettingsSerializer(settings_obj, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        """Partial update merch drop settings (admin only)"""
+        if not request.user.is_staff:
+            return Response(
+                {"error": "Admin access required"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        settings_obj = MerchDropSettings.get_settings()
+        serializer = MerchDropSettingsSerializer(settings_obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

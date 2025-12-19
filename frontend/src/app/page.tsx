@@ -3,6 +3,7 @@ import { Hero } from "@/components/hero";
 import { LayoutShell } from "@/components/layout-shell";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { FeaturedMerch } from "@/components/featured-merch";
+import { MerchDropHype } from "@/components/merch-drop-hype";
 import { FadeInSection } from "@/components/fade-in-section";
 import { AboutPreview } from "@/components/about-preview";
 import { ProgramsSection } from "@/components/programs-section";
@@ -29,7 +30,13 @@ export default function Home() {
         <ScheduleSection />
       </FadeInSection>
 
-      {/* The Locker Room - Featured Merch Section */}
+      {/* The Locker Room - Merch Drop Hype (when active) or Featured Merch */}
+      <FadeInSection direction="up" delay={0}>
+        <MerchDropHype
+          sectionTitle="The Locker Room"
+          showSectionHeader
+        />
+      </FadeInSection>
       <FadeInSection direction="up" delay={0}>
         <FeaturedMerch limit={6} showSeeMore wrapInSection />
       </FadeInSection>

@@ -23,6 +23,88 @@
 
 ---
 
+## Dashboard vs Website Design Philosophy
+
+The platform has two distinct visual contexts with different design approaches:
+
+### Website (Public-Facing)
+
+The public website uses **vibrant brand colors** to create energy and excitement:
+
+- **Primary colors** (hot pink, teal) used prominently for CTAs and highlights
+- **Higher contrast** backgrounds and accents
+- **Brand personality** expressed through color choices
+- **Marketing-focused** visual hierarchy
+
+### Dashboard (Admin/Portal)
+
+Admin dashboards and internal tools use **muted, professional tones**:
+
+- **Muted backgrounds** (`bg-muted`, `bg-muted/50`) instead of stark white or bright colors
+- **Subtle hover states** using `bg-success/30` rather than vivid colors
+- **Foreground text** on all interactive elements for readability
+- **Reduced visual noise** to support focus on data and actions
+- **Consistent icon containers** with muted backgrounds
+
+**Dashboard Card Headers Pattern:**
+```tsx
+<CardTitle className="flex items-center gap-2 text-foreground">
+  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+    <Icon className="h-4 w-4 text-muted-foreground" />
+  </div>
+  Section Title
+</CardTitle>
+```
+
+**Dashboard Page Headers Pattern:**
+```tsx
+<div className="flex items-center gap-3">
+  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
+    <Icon className="h-6 w-6 text-muted-foreground" />
+  </div>
+  <div>
+    <h1 className="text-2xl font-bold">Page Title</h1>
+    <p className="text-muted-foreground text-sm">Description</p>
+  </div>
+</div>
+```
+
+### Date & Time Inputs (Admin Forms)
+
+Date, time, and datetime-local inputs have special styling for admin dashboards:
+
+- **Muted background** (`bg-muted/50`) to blend with dashboard aesthetic
+- **Clean picker icon** - no background box, just the native icon
+- **Dark mode visibility** with `invert` filter on picker icon
+- **Subtle opacity** (70% default, 100% on hover)
+
+```tsx
+// Use DateTimeInput for datetime-local fields
+import { DateTimeInput } from "@/components/ui/datetime-input"
+
+<DateTimeInput
+  id="start_datetime"
+  value={startDate}
+  onChange={(e) => setStartDate(e.target.value)}
+/>
+
+// Regular Input handles date/time types automatically
+import { Input } from "@/components/ui/input"
+
+<Input type="date" value={date} onChange={...} />
+<Input type="time" value={time} onChange={...} />
+```
+
+**Key webkit pseudo-element styling:**
+```css
+[&::-webkit-calendar-picker-indicator]:cursor-pointer
+[&::-webkit-calendar-picker-indicator]:opacity-70
+[&::-webkit-calendar-picker-indicator]:hover:opacity-100
+dark:[&::-webkit-calendar-picker-indicator]:invert
+```
+
+---
+
 ## Color System
 
 ### Semantic Color Tokens (CSS Variables in globals.css)
@@ -317,6 +399,8 @@ Avoid animations that:
 | `frontend/src/app/globals.css` | CSS variables, theme tokens |
 | `frontend/src/components/ui/button.tsx` | Button variants |
 | `frontend/src/components/ui/badge.tsx` | Badge variants |
+| `frontend/src/components/ui/input.tsx` | Input with date/time type handling |
+| `frontend/src/components/ui/datetime-input.tsx` | Styled datetime-local input for admin forms |
 | `frontend/src/components/dashboard/dashboard-cards.tsx` | Reusable dashboard components |
 | `frontend/src/lib/utils.ts` | `cn()` utility for class merging |
 

@@ -25,6 +25,10 @@ from .views import (
     PrintifySyncAndUnpublishView,
     PrintifyDeleteLocalView,
     PrintifyUnlockView,
+    PrintifyStatusView,
+    PrintifyShopsView,
+    PrintifyConnectView,
+    PrintifyDisconnectView,
     # Cash payment views
     collect_cash,
     pending_cash,
@@ -41,6 +45,8 @@ from .views import (
     delete_subscription_plan,
     # Payment link generation
     generate_payment_link,
+    # Merch drop settings
+    MerchDropSettingsView,
 )
 
 router = DefaultRouter()
@@ -70,6 +76,10 @@ urlpatterns = [
     path('handoffs/', HandoffListView.as_view(), name='handoff-list'),
     path('handoffs/<int:item_id>/', HandoffUpdateView.as_view(), name='handoff-update'),
     # Printify admin (superuser only)
+    path('admin/printify/status/', PrintifyStatusView.as_view(), name='printify-status'),
+    path('admin/printify/shops/', PrintifyShopsView.as_view(), name='printify-shops'),
+    path('admin/printify/connect/', PrintifyConnectView.as_view(), name='printify-connect'),
+    path('admin/printify/disconnect/', PrintifyDisconnectView.as_view(), name='printify-disconnect'),
     path('admin/printify/products/', PrintifyProductsView.as_view(), name='printify-products'),
     path('admin/printify/publish/', PrintifyPublishView.as_view(), name='printify-publish'),
     path('admin/printify/unpublish/', PrintifyUnpublishView.as_view(), name='printify-unpublish'),
@@ -93,4 +103,6 @@ urlpatterns = [
     path('admin/subscriptions/<int:plan_id>/delete/', delete_subscription_plan, name='delete-subscription-plan'),
     # Payment link generation
     path('generate-link/', generate_payment_link, name='generate-payment-link'),
+    # Merch drop settings
+    path('merch-drop/', MerchDropSettingsView.as_view(), name='merch-drop-settings'),
 ]

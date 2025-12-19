@@ -299,7 +299,7 @@ export default function BillingPage() {
                 Automatically pay dues when they're charged
               </CardDescription>
             </div>
-            <Switch
+            <Switch variant="dashboardSwitch"
               checked={autoPayEnabled}
               onCheckedChange={handleAutoPayToggle}
               disabled={isUpdatingAutoPay || data.saved_cards.length === 0}

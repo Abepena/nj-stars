@@ -21,7 +21,7 @@
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Loader2, Shield, Briefcase, UserCircle, Gamepad2 } from "lucide-react"
+import { Loader2, Shield, Briefcase, UserCircle, PersonStanding } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 
@@ -66,7 +66,7 @@ const TAB_CONFIG: TabConfig[] = [
   { id: "admin", label: "Admin", icon: Shield, description: "Full system control" },
   { id: "staff", label: "Staff", icon: Briefcase, description: "Operations management" },
   { id: "parent", label: "Parent", icon: UserCircle, description: "Family dashboard" },
-  { id: "player", label: "Player", icon: Gamepad2, description: "My profile & schedule" },
+  { id: "player", label: "Player", icon: PersonStanding, description: "My profile & schedule" },
 ]
 
 // Get available tabs based on user role and profile settings
@@ -221,34 +221,41 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-0 overflow-x-hidden">
+    <div className="space-y-0">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        {/* Tab Navigation - Pill Style */}
-        <TabsList className="h-auto p-1 bg-muted/50 rounded-lg gap-1 justify-start w-full overflow-x-auto no-scrollbar">
-          {availableTabs.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className={`
-                  flex items-center gap-2 px-4 py-2 transition-all rounded-md shrink-0 whitespace-nowrap
-                  data-[state=active]:bg-success/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm
-                  data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground
-                  hover:text-foreground
-                `}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="font-medium">{tab.label}</span>
-                {tab.id === "admin" && (
-                  <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0 h-5 bg-success/30 border-success/50 text-foreground">
-                    Full Access
-                  </Badge>
-                )}
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+        {/* Tab Navigation - Pill Style, Sticky below mobile navbar (58px header height) */}
+        <div className="sticky top-[var(--portal-header-height,0px)] lg:top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-2 pb-1 lg:pt-4 lg:pb-2 mb-0 backdrop-blur-sm bg-[hsl(var(--bg-dashboard)/0.95)] border-b border-border/50">
+          <div className="flex justify-center">
+            <TabsList className="h-auto p-1 bg-muted rounded-lg gap-1 w-auto overflow-x-auto no-scrollbar">
+            {availableTabs.map((tab) => {
+              const Icon = tab.icon
+              return (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className={`
+                    flex items-center gap-2 px-3 sm:px-4 py-2 transition-all rounded-md shrink-0 whitespace-nowrap text-sm
+                    data-[state=active]:bg-success/40 data-[state=active]:text-foreground data-[state=active]:shadow-sm
+                    data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground
+                    hover:text-foreground
+                  `}
+                >
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="font-medium">{tab.label}</span>
+                  {tab.id === "admin" && (
+                    <Badge
+                      variant="outline"
+                      className="ml-1 bg-muted text-foreground border-border text-sm hidden sm:inline-flex"
+                    >
+                      Full Access
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+          </div>
+        </div>
 
         {/* Tab Content - Connected to tabs */}
         {availableTabs.map((tab) => (

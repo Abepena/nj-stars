@@ -34,10 +34,10 @@ export function ProgramsSection() {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="mb-10">
-          <p className="text-sm font-medium text-secondary uppercase tracking-wider mb-2">
+          <p className="text-sm font-medium text-info/80 uppercase tracking-wider mb-2">
             What We Offer
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
             Programs & Training
           </h2>
         </div>
@@ -51,7 +51,7 @@ export function ProgramsSection() {
               title={program.title}
               description={program.description}
               href={program.href}
-              accentColor="secondary"
+              accentColor="info"
             />
           ))}
         </div>

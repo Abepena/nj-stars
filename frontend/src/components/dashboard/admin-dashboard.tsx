@@ -9,9 +9,15 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Users,
   Calendar,
-  CalendarPlus,
+  Package,
   DollarSign,
   ClipboardCheck,
   ChevronRight,
@@ -25,7 +31,6 @@ import {
   Settings,
   AlertTriangle,
   MessageCircle,
-  Link2,
   TrendingUp,
   TrendingDown,
   ShoppingBag,
@@ -34,15 +39,15 @@ import {
   ExternalLink,
   Activity,
   Send,
-  X,
   Mail,
   Loader2,
   Check,
 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { PrintifyAdminSection } from "@/components/admin/printify-section"
-import { DashboardStatCard, DashboardActionCard, DashboardLinkCard, DashboardSection } from "@/components/dashboard/dashboard-cards"
+import { DualListPanel, DualListItem } from "@/components/dashboard/dual-list-panel"
 import { PaymentLinkGenerator } from "@/components/payment-link-generator"
+import { MerchDropModal } from "@/components/admin/merch-drop-modal"
+import { CashReconciliationModal } from "@/components/admin/cash-reconciliation-modal"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -61,6 +66,13 @@ interface PendingCheckIn {
   event_title: string
   participant_name: string
   event_date: string
+}
+
+interface ActiveCheckIn {
+  id: number
+  participant_name: string
+  event_title: string
+  checked_in_at: string
 }
 
 interface RecentRegistration {
@@ -87,6 +99,7 @@ interface ContactSubmission {
 interface StaffDashboardData {
   admin_stats: AdminStats
   pending_check_ins: PendingCheckIn[]
+  active_check_ins: ActiveCheckIn[]
   recent_registrations: RecentRegistration[]
 }
 
@@ -101,12 +114,12 @@ const CATEGORY_ICONS: Record<string, typeof HelpCircle> = {
   other: HelpCircle,
 }
 
-// Priority colors
+// Priority colors - using semantic color tokens with muted backgrounds
 const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-slate-100 text-slate-700 border-slate-200",
-  normal: "bg-blue-50 text-blue-700 border-blue-200",
-  high: "bg-muted text-foreground border-border",
-  urgent: "bg-red-50 text-red-700 border-red-200",
+  low: "bg-muted text-foreground border-border",
+  normal: "bg-success/30 text-foreground border-success/40",
+  high: "bg-warning/30 text-foreground border-warning/40",
+  urgent: "bg-destructive/30 text-foreground border-destructive/40",
 }
 
 // #TODO: Styles for unimplemented features - change to normal styling once wired up
@@ -130,6 +143,67 @@ export default function AdminDashboard() {
   const [replyText, setReplyText] = useState("")
   const [sendingReply, setSendingReply] = useState(false)
   const [replySuccess, setReplySuccess] = useState(false)
+
+  // Check-in management state
+  const [pendingCheckIns, setPendingCheckIns] = useState<DualListItem[]>([])
+  const [activeCheckIns, setActiveCheckIns] = useState<DualListItem[]>([])
+
+  // Initialize check-in lists when data loads
+  useEffect(() => {
+    if (data) {
+      setPendingCheckIns(
+        (data.pending_check_ins || []).map((ci) => ({
+          id: ci.id,
+          title: ci.participant_name,
+          subtitle: ci.event_title,
+          icon: Clock,
+        }))
+      )
+      setActiveCheckIns(
+        (data.active_check_ins || []).map((ci) => ({
+          id: ci.id,
+          title: ci.participant_name,
+          subtitle: `In since ${new Date(ci.checked_in_at).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit'
+          })}`,
+          icon: CheckCircle,
+        }))
+      )
+    }
+  }, [data])
+
+  // Handle toggle check-in/check-out
+  const handleToggleCheckIn = async (item: DualListItem, checked: boolean) => {
+    if (checked) {
+      // Check in: move from pending to active
+      setPendingCheckIns((prev) => prev.filter((i) => i.id !== item.id))
+      setActiveCheckIns((prev) => [
+        {
+          ...item,
+          subtitle: `In since ${new Date().toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit'
+          })}`,
+          icon: CheckCircle,
+        },
+        ...prev,
+      ])
+      // TODO: Call API to record check-in
+    } else {
+      // Check out: move from active to pending
+      setActiveCheckIns((prev) => prev.filter((i) => i.id !== item.id))
+      setPendingCheckIns((prev) => [
+        ...prev,
+        {
+          ...item,
+          subtitle: "Ready to check in",
+          icon: Clock,
+        },
+      ])
+      // TODO: Call API to record check-out
+    }
+  }
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -271,6 +345,29 @@ export default function AdminDashboard() {
     }
   }
 
+  // Update priority (optimistic update - UI updates immediately)
+  const handlePriorityChange = (submission: ContactSubmission, newPriority: string) => {
+    // Update UI immediately
+    setContactSubmissions(prev =>
+      prev.map(s =>
+        s.id === submission.id ? { ...s, priority: newPriority } : s
+      )
+    )
+
+    // Try to persist to backend (fire and forget)
+    if (session) {
+      const apiToken = (session as any)?.apiToken
+      fetch(`${API_BASE}/api/contact/${submission.id}/priority/`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Token ${apiToken || ""}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ priority: newPriority }),
+      }).catch(err => console.error("Failed to update priority:", err))
+    }
+  }
+
   if (loading) {
     return <AdminDashboardSkeleton />
   }
@@ -282,7 +379,7 @@ export default function AdminDashboard() {
         <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
         <p className="text-muted-foreground mb-4">{error}</p>
         <Link href="/portal/dashboard">
-          <Button>Go to Dashboard</Button>
+          <Button variant="outline">Go to Dashboard</Button>
         </Link>
       </div>
     )
@@ -320,7 +417,7 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">Admin Control Center</h1>
@@ -333,8 +430,10 @@ export default function AdminDashboard() {
       <Card className={TODO_CARD_STYLES}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+              <div className="h-8 w-8 rounded-md bg-rose-500/10 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-rose-400" />
+              </div>
               Revenue Overview
               <Badge variant="outline" className={TODO_BADGE}>#TODO</Badge>
             </CardTitle>
@@ -342,33 +441,33 @@ export default function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
             <div>
-              <p className="text-sm text-muted-foreground">Month to Date</p>
-              <p className="text-2xl font-bold">${revenueData.mtd.toLocaleString()}</p>
-              <div className="flex items-center gap-1 text-sm">
+              <p className="text-xs sm:text-sm text-muted-foreground">Month to Date</p>
+              <p className="text-xl sm:text-2xl font-bold">${revenueData.mtd.toLocaleString()}</p>
+              <div className="flex items-center gap-1 text-xs sm:text-sm">
                 {revenueChange >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
                 ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
+                  <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
                 )}
                 <span className={revenueChange >= 0 ? "text-success" : "text-destructive"}>
                   {revenueChange >= 0 ? "+" : ""}{revenueChange.toFixed(1)}%
                 </span>
-                <span className="text-muted-foreground">vs last month</span>
+                <span className="text-muted-foreground hidden sm:inline">vs last month</span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Last Month</p>
-              <p className="text-2xl font-bold">${revenueData.lastMonth.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Last Month</p>
+              <p className="text-xl sm:text-2xl font-bold">${revenueData.lastMonth.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Year to Date</p>
-              <p className="text-2xl font-bold">${revenueData.ytd.toLocaleString()}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Year to Date</p>
+              <p className="text-xl sm:text-2xl font-bold">${revenueData.ytd.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Active Subscriptions</p>
-              <p className="text-2xl font-bold">{revenueData.activeSubscriptions}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Active Subs</p>
+              <p className="text-xl sm:text-2xl font-bold">{revenueData.activeSubscriptions}</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -435,113 +534,110 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions Grid - Mix of working and TODO items */}
+      {/* Quick Actions */}
       <div>
         <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Working: Check-ins */}
-          <Link href="/portal/dashboard/check-ins" className="group">
+
+        {/* Action Buttons Row */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
+          <Link href="/portal/dashboard/check-ins" className="group block h-full">
             <Card className="hover:bg-muted/50 hover:border-foreground/20 transition-all cursor-pointer h-full">
-              <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center mb-3 transition-colors">
-                  <ClipboardCheck className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-muted flex items-center justify-center mb-2 sm:mb-3 transition-colors group-hover:bg-success/30">
+                  <ClipboardCheck className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </div>
-                <h3 className="font-semibold transition-colors">Check-Ins</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <h3 className="text-sm sm:text-base font-semibold transition-colors">Check-Ins</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {pending_check_ins.length} pending
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          {/* Working: Roster */}
-          <Link href="/portal/dashboard/roster" className="group">
+          <Link href="/portal/dashboard/roster" className="group block h-full">
             <Card className="hover:bg-muted/50 hover:border-foreground/20 transition-all cursor-pointer h-full">
-              <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center mb-3 transition-colors">
-                  <Users className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-muted flex items-center justify-center mb-2 sm:mb-3 transition-colors group-hover:bg-success/30">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </div>
-                <h3 className="font-semibold transition-colors">Roster</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <h3 className="text-sm sm:text-base font-semibold transition-colors">Roster</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {admin_stats.total_players} players
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          {/* Working: Events */}
-          <Link href="/portal/dashboard/events" className="group">
+          <Link href="/portal/dashboard/events" className="group block h-full">
             <Card className="hover:bg-muted/50 hover:border-foreground/20 transition-all cursor-pointer h-full">
-              <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center mb-3 transition-colors">
-                  <Calendar className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-muted flex items-center justify-center mb-2 sm:mb-3 transition-colors group-hover:bg-success/30">
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </div>
-                <h3 className="font-semibold transition-colors">Events</h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <h3 className="text-sm sm:text-base font-semibold transition-colors">Events</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Manage schedule
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          {/* Working: Create Event */}
-          <Link href="/portal/dashboard/events/new" className="group">
+          <Link href="/portal/dashboard/printify" className="group block h-full">
             <Card className="hover:bg-muted/50 hover:border-foreground/20 transition-all cursor-pointer h-full">
-              <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center mb-3 transition-colors">
-                  <CalendarPlus className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-muted flex items-center justify-center mb-2 sm:mb-3 transition-colors group-hover:bg-success/30">
+                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </div>
-                <h3 className="font-semibold transition-colors">Create Event</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Add new event
+                <h3 className="text-sm sm:text-base font-semibold transition-colors">Manage Products</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Printify sync & publish
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          {/* #TODO: User Management - wire up to user admin page */}
-          <Card className={`${TODO_CARD_STYLES} cursor-not-allowed h-full`}>
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className={`h-12 w-12 rounded-lg ${TODO_ICON_BG} flex items-center justify-center mb-3`}>
-                <Users className={`h-6 w-6 ${TODO_ICON_COLOR}`} />
-              </div>
-              <h3 className="font-semibold text-muted-foreground flex items-center gap-1">
-                User Mgmt
-                <Badge variant="outline" className={`${TODO_BADGE} text-xs`}>#TODO</Badge>
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Manage users
-              </p>
-            </CardContent>
-          </Card>
+          <Link href="/portal/dashboard/admin/users" className="group block h-full">
+            <Card className="hover:bg-muted/50 hover:border-foreground/20 transition-all cursor-pointer h-full">
+              <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-muted flex items-center justify-center mb-2 sm:mb-3 transition-colors group-hover:bg-success/30">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground transition-colors group-hover:text-foreground" />
+                </div>
+                <h3 className="text-sm sm:text-base font-semibold transition-colors">Manage Users</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Roles & guardians
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* #TODO: Billing Admin - wire up to billing admin page */}
           <Card className={`${TODO_CARD_STYLES} cursor-not-allowed h-full`}>
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className={`h-12 w-12 rounded-lg ${TODO_ICON_BG} flex items-center justify-center mb-3`}>
-                <CreditCard className={`h-6 w-6 ${TODO_ICON_COLOR}`} />
+            <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+              <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg ${TODO_ICON_BG} flex items-center justify-center mb-2 sm:mb-3`}>
+                <CreditCard className={`h-5 w-5 sm:h-6 sm:w-6 ${TODO_ICON_COLOR}`} />
               </div>
-              <h3 className="font-semibold text-muted-foreground flex items-center gap-1">
+              <h3 className="text-sm sm:text-base font-semibold text-muted-foreground flex flex-wrap items-center justify-center gap-1">
                 Billing
-                <Badge variant="outline" className={`${TODO_BADGE} text-xs`}>#TODO</Badge>
+                <Badge variant="outline" className={`${TODO_BADGE} text-[10px] sm:text-xs`}>#TODO</Badge>
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Invoices & payments
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                <span className="hidden sm:inline">Invoices & payments</span>
+                <span className="sm:hidden">Invoices</span>
               </p>
             </CardContent>
           </Card>
 
           {/* #TODO: Orders - wire up to orders management page */}
           <Card className={`${TODO_CARD_STYLES} cursor-not-allowed h-full`}>
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className={`h-12 w-12 rounded-lg ${TODO_ICON_BG} flex items-center justify-center mb-3`}>
-                <ShoppingBag className={`h-6 w-6 ${TODO_ICON_COLOR}`} />
+            <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+              <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg ${TODO_ICON_BG} flex items-center justify-center mb-2 sm:mb-3`}>
+                <ShoppingBag className={`h-5 w-5 sm:h-6 sm:w-6 ${TODO_ICON_COLOR}`} />
               </div>
-              <h3 className="font-semibold text-muted-foreground flex items-center gap-1">
+              <h3 className="text-sm sm:text-base font-semibold text-muted-foreground flex flex-wrap items-center justify-center gap-1">
                 Orders
-                <Badge variant="outline" className={`${TODO_BADGE} text-xs`}>#TODO</Badge>
+                <Badge variant="outline" className={`${TODO_BADGE} text-[10px] sm:text-xs`}>#TODO</Badge>
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Shop orders
               </p>
             </CardContent>
@@ -549,15 +645,15 @@ export default function AdminDashboard() {
 
           {/* #TODO: Reports - wire up to analytics/reports page */}
           <Card className={`${TODO_CARD_STYLES} cursor-not-allowed h-full`}>
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className={`h-12 w-12 rounded-lg ${TODO_ICON_BG} flex items-center justify-center mb-3`}>
-                <BarChart3 className={`h-6 w-6 ${TODO_ICON_COLOR}`} />
+            <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 text-center">
+              <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg ${TODO_ICON_BG} flex items-center justify-center mb-2 sm:mb-3`}>
+                <BarChart3 className={`h-5 w-5 sm:h-6 sm:w-6 ${TODO_ICON_COLOR}`} />
               </div>
-              <h3 className="font-semibold text-muted-foreground flex items-center gap-1">
+              <h3 className="text-sm sm:text-base font-semibold text-muted-foreground flex flex-wrap items-center justify-center gap-1">
                 Reports
-                <Badge variant="outline" className={`${TODO_BADGE} text-xs`}>#TODO</Badge>
+                <Badge variant="outline" className={`${TODO_BADGE} text-[10px] sm:text-xs`}>#TODO</Badge>
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Analytics
               </p>
             </CardContent>
@@ -566,57 +662,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* Secondary Actions Row - Working features */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Payment Link Generator - Working */}
-        <Card className="group hover:bg-muted/50 hover:border-foreground/20 transition-all h-full">
-          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 sm:p-6">
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center shrink-0 transition-colors">
-                <Link2 className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </div>
-              <div className="flex-1 min-w-0 sm:hidden">
-                <h3 className="font-semibold transition-colors">Payment Links</h3>
-                <p className="text-sm text-muted-foreground truncate">Create shareable links</p>
-              </div>
-            </div>
-            <div className="hidden sm:block flex-1 min-w-0">
-              <h3 className="font-semibold transition-colors">Generate Payment Link</h3>
-              <p className="text-sm text-muted-foreground">Create shareable payment links</p>
-            </div>
-            <PaymentLinkGenerator
-              trigger={
-                <Button className="w-full sm:w-auto bg-success/60 hover:bg-success/80 text-foreground">
-                  <Link2 className="h-4 w-4 sm:mr-2" />
-                  <span className="sm:inline">Generate</span>
-                </Button>
-              }
-            />
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {/* Merch Drop Settings - Modal */}
+        <MerchDropModal />
 
-        {/* Cash Reconciliation - Working */}
-        <Link href="/portal/dashboard/admin/cash" className="group">
-          <Card className={`hover:bg-muted/50 hover:border-foreground/20 transition-all cursor-pointer h-full ${admin_stats.pending_cash_handoffs > 0 ? "border-amber-500/30" : ""}`}>
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="h-12 w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center shrink-0 transition-colors">
-                <DollarSign className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold transition-colors">Cash Reconciliation</h3>
-                <p className="text-sm text-muted-foreground">
-                  {admin_stats.pending_cash_handoffs > 0 ? (
-                    <Badge variant="warning">
-                      {admin_stats.pending_cash_handoffs} pending
-                    </Badge>
-                  ) : (
-                    "Track and reconcile cash payments"
-                  )}
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-            </CardContent>
-          </Card>
-        </Link>
+        {/* Payment Link Generator - Working */}
+        <PaymentLinkGenerator />
+
+        {/* Cash Reconciliation - Modal */}
+        <div className="sm:col-span-2 lg:col-span-1">
+          <CashReconciliationModal pendingCount={admin_stats.pending_cash_handoffs} />
+        </div>
       </div>
 
 {/* Pending Issues (Contact Submissions) - Working with inline reply */}
@@ -625,15 +681,17 @@ export default function AdminDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  </div>
                   Pending Issues
                 </CardTitle>
                 <CardDescription>
                   Click to expand and reply directly
                 </CardDescription>
               </div>
-              <Badge variant="secondary" className="text-sm">
+              <Badge variant="outline" className="bg-muted text-foreground border-border text-sm">
                 {totalNewIssues} new
               </Badge>
             </div>
@@ -672,11 +730,50 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-2 shrink-0">
-                        <Badge variant="outline" className={PRIORITY_COLORS[submission.priority] || PRIORITY_COLORS.normal}>
-                          {submission.priority}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      <div className="flex items-center gap-1 sm:gap-2 ml-2 shrink-0">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={(e) => e.stopPropagation()}
+                              className="focus:outline-none"
+                            >
+                              <Badge
+                                variant="outline"
+                                className={`${PRIORITY_COLORS[submission.priority] || PRIORITY_COLORS.normal} text-[10px] sm:text-xs cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 min-w-[60px] sm:min-w-[70px] justify-center capitalize`}
+                              >
+                                {submission.priority}
+                                <ChevronDown className="h-3 w-3" />
+                              </Badge>
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'low')}>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-muted" />
+                                Low
+                              </div>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'normal')}>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-success" />
+                                Normal
+                              </div>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'high')}>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-warning" />
+                                High
+                              </div>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handlePriorityChange(submission, 'urgent')}>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-destructive" />
+                                Urgent
+                              </div>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
                           {submission.time_since_created}
                         </span>
                         {isExpanded ? (
@@ -749,6 +846,7 @@ export default function AdminDashboard() {
                                   onClick={() => handleSendReply(submission)}
                                   disabled={!replyText.trim() || sendingReply}
                                   className="flex-1"
+                                  variant="success"
                                 >
                                   {sendingReply ? (
                                     <>
@@ -789,8 +887,19 @@ export default function AdminDashboard() {
         </Card>
       )}
 
-{/* Shop / Printify - Working */}
-      <PrintifyAdminSection />
+{/* Check-In Management - Same as Staff Dashboard */}
+      <DualListPanel
+        title="Check-In Management"
+        description="Tap the circle to check players in or out"
+        icon={ClipboardCheck}
+        leftLabel="Pending"
+        leftItems={pendingCheckIns}
+        leftEmptyMessage="No pending check-ins"
+        rightLabel="Checked In"
+        rightItems={activeCheckIns}
+        rightEmptyMessage="No active check-ins"
+        onToggleItem={handleToggleCheckIn}
+      />
 
 {/* Two Column Layout: Top Events + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -799,8 +908,10 @@ export default function AdminDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+                  <div className="h-8 w-8 rounded-md bg-rose-500/10 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-rose-400" />
+                  </div>
                   Top Events
                   <Badge variant="outline" className={TODO_BADGE}>#TODO</Badge>
                 </CardTitle>
@@ -843,8 +954,10 @@ export default function AdminDashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+                  <div className="h-8 w-8 rounded-md bg-rose-500/10 flex items-center justify-center">
+                    <Activity className="h-4 w-4 text-rose-400" />
+                  </div>
                   Recent Activity
                   <Badge variant="outline" className={TODO_BADGE}>#TODO</Badge>
                 </CardTitle>
@@ -876,53 +989,16 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-{/* Pending Check-ins - Working */}
-      {pending_check_ins.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                  Pending Check-Ins
-                </CardTitle>
-                <CardDescription>
-                  Participants awaiting check-in for today&apos;s events
-                </CardDescription>
-              </div>
-              <Link href="/portal/dashboard/check-ins">
-                <Button variant="outline" size="sm">
-                  View All
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pending_check_ins.slice(0, 5).map((ci) => (
-                <div
-                  key={ci.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium">{ci.participant_name}</p>
-                    <p className="text-sm text-muted-foreground">{ci.event_title}</p>
-                  </div>
-                  <Badge variant="outline" className="bg-muted text-foreground border-border">
-                    Pending
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
 {/* Recent Registrations - Working */}
       {recent_registrations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Recent Registrations</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+              <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </div>
+              Recent Registrations
+            </CardTitle>
             <CardDescription>
               Latest event registrations
             </CardDescription>
@@ -996,8 +1072,8 @@ function AdminDashboardSkeleton() {
   return (
     <div className="space-y-6">
       <div>
-        <Skeleton className="h-8 w-64 mb-2" />
-        <Skeleton className="h-4 w-80" />
+        <Skeleton className="h-7 sm:h-8 w-48 sm:w-64 mb-2" />
+        <Skeleton className="h-4 w-64 sm:w-80" />
       </div>
 
       {/* Revenue Card Skeleton */}
@@ -1006,11 +1082,11 @@ function AdminDashboardSkeleton() {
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
             {[1, 2, 3, 4].map(i => (
               <div key={i}>
-                <Skeleton className="h-4 w-24 mb-1" />
-                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-3 sm:h-4 w-20 sm:w-24 mb-1" />
+                <Skeleton className="h-6 sm:h-8 w-16 sm:w-20" />
               </div>
             ))}
           </div>
@@ -1018,15 +1094,15 @@ function AdminDashboardSkeleton() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[1, 2, 3, 4].map(i => (
           <Card key={i}>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
+            <CardHeader className="pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+              <Skeleton className="h-3 sm:h-4 w-20 sm:w-24" />
             </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-12 mb-1" />
-              <Skeleton className="h-3 w-20" />
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+              <Skeleton className="h-6 sm:h-8 w-10 sm:w-12 mb-1" />
+              <Skeleton className="h-3 w-16 sm:w-20" />
             </CardContent>
           </Card>
         ))}
@@ -1034,27 +1110,27 @@ function AdminDashboardSkeleton() {
 
       <div>
         <Skeleton className="h-6 w-32 mb-3" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
             <Card key={i}>
-              <CardContent className="p-6 flex flex-col items-center">
-                <Skeleton className="h-12 w-12 rounded-lg mb-3" />
-                <Skeleton className="h-5 w-24 mb-1" />
-                <Skeleton className="h-4 w-16" />
+              <CardContent className="p-4 sm:p-6 flex flex-col items-center">
+                <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg mb-2 sm:mb-3" />
+                <Skeleton className="h-4 sm:h-5 w-20 sm:w-24 mb-1" />
+                <Skeleton className="h-3 sm:h-4 w-14 sm:w-16" />
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[1, 2].map(i => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {[1, 2, 3].map(i => (
           <Card key={i}>
-            <CardContent className="p-6 flex items-center gap-4">
-              <Skeleton className="h-12 w-12 rounded-lg" />
-              <div className="flex-1">
-                <Skeleton className="h-5 w-32 mb-1" />
-                <Skeleton className="h-4 w-24" />
+            <CardContent className="p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
+              <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg shrink-0" />
+              <div className="flex-1 min-w-0">
+                <Skeleton className="h-4 sm:h-5 w-28 sm:w-32 mb-1" />
+                <Skeleton className="h-3 sm:h-4 w-20 sm:w-24" />
               </div>
             </CardContent>
           </Card>
@@ -1064,16 +1140,19 @@ function AdminDashboardSkeleton() {
       <Card>
         <CardHeader>
           <Skeleton className="h-5 w-40 mb-1" />
-          <Skeleton className="h-4 w-56" />
+          <Skeleton className="h-4 w-48 sm:w-56" />
         </CardHeader>
         <CardContent className="space-y-2">
           {[1, 2, 3].map(i => (
             <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <Skeleton className="h-5 w-32 mb-1" />
-                <Skeleton className="h-4 w-24" />
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+                <div className="min-w-0">
+                  <Skeleton className="h-4 sm:h-5 w-28 sm:w-32 mb-1" />
+                  <Skeleton className="h-3 sm:h-4 w-32 sm:w-40" />
+                </div>
               </div>
-              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-5 sm:h-6 w-14 sm:w-16 shrink-0" />
             </div>
           ))}
         </CardContent>

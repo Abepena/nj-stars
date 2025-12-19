@@ -8,7 +8,7 @@ interface IconCardProps {
   description: string
   href?: string
   /** Accent color for hover states. Defaults to "primary" */
-  accentColor?: "primary" | "secondary" | "success" | "accent" | "none"
+  accentColor?: "primary" | "secondary" | "success" | "accent" | "info" | "none"
   className?: string
 }
 
@@ -37,6 +37,12 @@ const accentColorClasses = {
     iconText: "group-hover:text-accent",
     titleText: "group-hover:text-accent",
   },
+  info: {
+    border: "hover:border-info/50",
+    iconBg: "group-hover:bg-info/10",
+    iconText: "group-hover:text-info",
+    titleText: "group-hover:text-info",
+  },
   none: {
     border: "",
     iconBg: "",
@@ -53,7 +59,7 @@ export function IconCard({
   accentColor = "primary",
   className,
 }: IconCardProps) {
-  const colors = accentColorClasses[accentColor]
+  const colors = accentColorClasses[accentColor] ?? accentColorClasses.primary
 
   const content = (
     <>

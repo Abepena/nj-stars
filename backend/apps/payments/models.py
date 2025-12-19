@@ -422,7 +422,7 @@ class ProductImage(models.Model):
     image_url = models.URLField(
         max_length=500,
         blank=True,
-        help_text="Or paste an image URL (e.g., from Unsplash)"
+        help_text="Or paste an image URL for the product"
     )
     # Printify sync tracking - stores the original Printify image src
     printify_src = models.URLField(
@@ -1094,3 +1094,76 @@ class CashPayment(models.Model):
         elif self.payment_for == "dues":
             return f"Dues for {item.player.first_name} {item.player.last_name}"
         return str(item)
+
+
+class MerchDropSettings(models.Model):
+    """Singleton model for merch drop announcement settings.
+
+    Controls the hype/countdown section on the shop page and homepage.
+    Only one instance should exist - use MerchDropSettings.get_settings() to access.
+    """
+
+    is_active = models.BooleanField(
+        default=False,
+        help_text="Enable the merch drop announcement on shop and homepage"
+    )
+    drop_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the merch drop goes live"
+    )
+    headline = models.CharField(
+        max_length=100,
+        default="New Drop Incoming",
+        help_text="Main headline for the announcement"
+    )
+    subheadline = models.CharField(
+        max_length=200,
+        default="Get ready. Something big is coming.",
+        help_text="Secondary text below the headline"
+    )
+    teaser_text = models.TextField(
+        blank=True,
+        help_text="Optional additional teaser copy"
+    )
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Merch Drop Settings"
+        verbose_name_plural = "Merch Drop Settings"
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        if self.drop_date:
+            return f"Merch Drop ({status}) - {self.drop_date.strftime('%b %d, %Y %I:%M %p')}"
+        return f"Merch Drop ({status}) - No date set"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one instance exists (singleton pattern)
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Prevent deletion of singleton
+        pass
+
+    @classmethod
+    def get_settings(cls):
+        """Get or create the singleton settings instance"""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def is_countdown_active(self):
+        """Check if countdown should be shown (active and future date)"""
+        if not self.is_active or not self.drop_date:
+            return False
+        return self.drop_date > timezone.now()
+
+    @property
+    def has_dropped(self):
+        """Check if the drop date has passed"""
+        if not self.drop_date:
+            return False
+        return self.drop_date <= timezone.now()

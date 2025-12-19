@@ -18,7 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  Link2,
   Loader2,
   CheckCircle,
   Copy,
@@ -29,6 +28,7 @@ import {
   Sparkles,
   Search,
   X,
+  ChevronRight,
 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 
@@ -60,17 +60,12 @@ interface GeneratedLink {
 
 interface PaymentLinkGeneratorProps {
   /**
-   * Custom trigger button. If not provided, uses default green button.
-   */
-  trigger?: React.ReactNode
-  /**
    * Callback when a link is successfully generated
    */
   onLinkGenerated?: (link: GeneratedLink) => void
 }
 
 export function PaymentLinkGenerator({
-  trigger,
   onLinkGenerated,
 }: PaymentLinkGeneratorProps) {
   const { data: session } = useSession()
@@ -299,17 +294,25 @@ export function PaymentLinkGenerator({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || (
-          <Button className="bg-success/60 hover:bg-success/80 text-foreground">
-            <Link2 className="h-4 w-4 mr-2" />
-            Generate Payment Link
-          </Button>
-        )}
+        <Card className="group hover:bg-muted/50 hover:border-foreground/20 transition-all cursor-pointer h-full">
+          <CardContent className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 h-full">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-muted group-hover:bg-success/30 flex items-center justify-center shrink-0 transition-colors">
+              <QrCode className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold transition-colors">Payment Links</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                Create shareable links
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+          </CardContent>
+        </Card>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5 text-muted-foreground" />
+            <QrCode className="h-5 w-5 text-muted-foreground" />
             Generate Payment Link
           </DialogTitle>
           <DialogDescription>

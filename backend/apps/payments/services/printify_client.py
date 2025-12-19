@@ -412,7 +412,102 @@ class PrintifyClient:
 
 
     # -------------------------------------------------------------------------
-    # Webhook Verification (for future webhook handling)
+    # Webhook Management
+    # -------------------------------------------------------------------------
+
+    def list_webhooks(self) -> list[dict]:
+        """
+        List all registered webhooks for the shop.
+
+        Returns:
+            List of webhook dicts with id, topic, url, secret
+        """
+        return self._request("GET", "/webhooks.json")
+
+    def create_webhook(self, topic: str, url: str, secret: str = None) -> dict:
+        """
+        Register a new webhook subscription.
+
+        Args:
+            topic: Event type (e.g., 'order:shipment:created', 'product:publish:started')
+            url: Your webhook endpoint URL
+            secret: Optional shared secret for signature verification
+
+        Available topics:
+            - product:publish:started
+            - product:publish:succeeded
+            - product:publish:failed
+            - product:deleted
+            - order:created
+            - order:updated
+            - order:sent-to-production
+            - order:shipment:created
+            - order:shipment:delivered
+            - shop:disconnected
+
+        Returns:
+            Created webhook dict with id, topic, url
+        """
+        data = {
+            "topic": topic,
+            "url": url,
+        }
+        if secret:
+            data["secret"] = secret
+
+        logger.info(f"Registering Printify webhook: {topic} -> {url}")
+        return self._request("POST", "/webhooks.json", data=data)
+
+    def delete_webhook(self, webhook_id: str) -> dict:
+        """
+        Delete a webhook subscription.
+
+        Args:
+            webhook_id: The webhook ID to delete
+
+        Returns:
+            Empty dict on success
+        """
+        logger.info(f"Deleting Printify webhook: {webhook_id}")
+        return self._request("DELETE", f"/webhooks/{webhook_id}.json")
+
+    def register_all_webhooks(self, base_url: str, secret: str = None) -> list[dict]:
+        """
+        Register all recommended webhooks for full integration.
+
+        Args:
+            base_url: Your API base URL (e.g., 'https://api.njstarselite.com')
+            secret: Shared secret for signature verification
+
+        Returns:
+            List of created webhook dicts
+        """
+        webhook_url = f"{base_url.rstrip('/')}/api/payments/webhook/printify/"
+
+        topics = [
+            "product:publish:started",
+            "product:deleted",
+            "order:sent-to-production",
+            "order:shipment:created",
+            "order:shipment:delivered",
+        ]
+
+        created = []
+        for topic in topics:
+            try:
+                result = self.create_webhook(topic, webhook_url, secret)
+                created.append(result)
+                logger.info(f"Registered webhook: {topic}")
+            except PrintifyError as e:
+                if "already exists" in str(e).lower():
+                    logger.info(f"Webhook already exists: {topic}")
+                else:
+                    logger.error(f"Failed to register webhook {topic}: {e}")
+
+        return created
+
+    # -------------------------------------------------------------------------
+    # Webhook Signature Verification
     # -------------------------------------------------------------------------
 
     @staticmethod
@@ -447,9 +542,14 @@ class PrintifyClient:
 _client: Optional[PrintifyClient] = None
 
 
-def get_printify_client() -> PrintifyClient:
+def get_printify_client(force_refresh: bool = False) -> PrintifyClient:
     """
     Get the singleton Printify client instance.
+
+    Checks database settings first, then falls back to environment variables.
+
+    Args:
+        force_refresh: If True, recreate the client (useful after credentials change)
 
     Usage:
         from apps.payments.services import get_printify_client
@@ -457,6 +557,72 @@ def get_printify_client() -> PrintifyClient:
         shipping = client.calculate_shipping(...)
     """
     global _client
-    if _client is None:
-        _client = PrintifyClient()
+    if _client is None or force_refresh:
+        # Check database first
+        api_key = None
+        shop_id = None
+        try:
+            from apps.core.models import IntegrationSettings
+            settings_obj = IntegrationSettings.get_instance()
+            if settings_obj.printify_configured:
+                api_key = settings_obj.printify_api_key
+                shop_id = settings_obj.printify_shop_id
+        except Exception as e:
+            logger.debug(f"Could not load IntegrationSettings: {e}")
+
+        # Fall back to environment variables
+        if not api_key:
+            api_key = getattr(settings, 'PRINTIFY_API_KEY', '')
+        if not shop_id:
+            shop_id = getattr(settings, 'PRINTIFY_SHOP_ID', '')
+
+        _client = PrintifyClient(api_key=api_key, shop_id=shop_id)
     return _client
+
+
+def get_printify_shops(api_key: str) -> list[dict]:
+    """
+    Get list of shops for an API key (for initial setup).
+
+    This doesn't require a shop_id, used during connection setup.
+
+    Args:
+        api_key: Printify API token
+
+    Returns:
+        List of shop dicts with id, title, sales_channel
+
+    Raises:
+        PrintifyError: If API call fails
+    """
+    url = "https://api.printify.com/v1/shops.json"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json;charset=utf-8",
+        "Accept": "application/json",
+    }
+
+    try:
+        response = requests.request(
+            method="GET",
+            url=url,
+            headers=headers,
+            timeout=30,
+        )
+
+        if response.status_code == 401:
+            raise PrintifyError("Invalid API token", status_code=401)
+
+        if response.status_code >= 400:
+            error_data = response.json() if response.content else {}
+            raise PrintifyError(
+                message=error_data.get('message', f"HTTP {response.status_code}"),
+                status_code=response.status_code,
+                response=error_data,
+            )
+
+        return response.json() if response.content else []
+
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch Printify shops: {e}")
+        raise PrintifyError(f"Request failed: {str(e)}")

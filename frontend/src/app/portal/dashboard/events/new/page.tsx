@@ -190,19 +190,26 @@ export default function NewEventPage() {
       <BackToDashboard />
 
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Create New Event</h1>
-        <p className="text-muted-foreground mt-1">
-          Add a new event to the calendar
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
+          <Calendar className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Create New Event</h1>
+          <p className="text-muted-foreground mt-1">
+            Add a new event to the calendar
+          </p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </div>
               Event Details
             </CardTitle>
           </CardHeader>
@@ -250,8 +257,10 @@ export default function NewEventPage() {
         {/* Date & Location */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+              </div>
               Date, Time & Location
             </CardTitle>
           </CardHeader>
@@ -296,8 +305,10 @@ export default function NewEventPage() {
         {/* Registration & Payment */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </div>
               Registration & Payment
             </CardTitle>
           </CardHeader>
@@ -309,7 +320,7 @@ export default function NewEventPage() {
                   Require payment to register
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 id="requires_payment"
                 checked={formData.requires_payment}
                 onCheckedChange={(checked) => handleChange("requires_payment", checked)}
@@ -355,7 +366,7 @@ export default function NewEventPage() {
                   Allow users to register for this event
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 id="registration_open"
                 checked={formData.registration_open}
                 onCheckedChange={(checked) => handleChange("registration_open", checked)}
@@ -369,7 +380,7 @@ export default function NewEventPage() {
                   Show on public events calendar
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 id="is_public"
                 checked={formData.is_public}
                 onCheckedChange={(checked) => handleChange("is_public", checked)}

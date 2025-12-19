@@ -13,43 +13,80 @@ import re
 
 
 class Command(BaseCommand):
-    help = 'Import all published products from Printify'
+    help = 'Import all products from Printify (fetches dynamically from API)'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--product-id',
+            type=str,
+            help='Import a specific Printify product ID only',
+        )
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='Show what would be imported without making changes',
+        )
 
     def handle(self, *args, **options):
         client = PrintifyClient()
+
+        if not client.is_configured:
+            self.stdout.write(self.style.ERROR(
+                "Printify is not configured. Set PRINTIFY_API_KEY and PRINTIFY_SHOP_ID in .env"
+            ))
+            return
 
         self.stdout.write("=" * 60)
         self.stdout.write("  Importing products from Printify")
         self.stdout.write("=" * 60)
 
-        # Known Printify product IDs (fetched via API earlier)
-        # These are the currently published products in the shop
-        product_ids = [
-            "693b2a78344381147d0315a1",  # NJ Stars Team Backpack
-            "693b02117909e1cde809a3f2",  # NJ Stars Long Sleeve Tee
-            "693a89c86bfaf12deb03cee4",  # NJ Stars Pigment-Dyed Hoodie
-            "690aa3af11566e84f6045c8f",  # NJ Stars Elite Oversized Tee
-            "690aa319af1cb82d8d09fdd7",  # NJ Stars Street Wear Hoodie
-        ]
+        dry_run = options.get('dry_run', False)
+        specific_id = options.get('product_id')
 
-        if not product_ids:
-            self.stdout.write(self.style.WARNING("No products configured"))
+        if dry_run:
+            self.stdout.write(self.style.WARNING("  DRY RUN - no changes will be made\n"))
+
+        # Fetch all products from Printify API (or specific one)
+        if specific_id:
+            self.stdout.write(f"  Fetching product {specific_id}...")
+            product_data = client.get_product(specific_id)
+            if product_data:
+                products = [product_data]
+            else:
+                self.stdout.write(self.style.ERROR(f"  Could not fetch product {specific_id}"))
+                return
+        else:
+            self.stdout.write("  Fetching all products from Printify API...")
+            products = client.get_products()
+
+        if not products:
+            self.stdout.write(self.style.WARNING("  No products found in Printify"))
             return
+
+        self.stdout.write(f"  Found {len(products)} products\n")
 
         created_count = 0
         updated_count = 0
+        skipped_count = 0
 
-        for printify_id in product_ids:
-            self.stdout.write(f"\n  Fetching product {printify_id}...")
+        for product_data in products:
+            printify_id = product_data.get('id')
+            title = product_data.get('title', 'Unknown')
 
-            # Fetch full product details
-            full_product = client.get_product(printify_id)
-            if not full_product:
-                self.stdout.write(self.style.ERROR(f"    Could not fetch details for {printify_id}"))
+            self.stdout.write(f"\n  Processing: {title}")
+            self.stdout.write(f"    Printify ID: {printify_id}")
+
+            if dry_run:
+                # Just show what would happen
+                try:
+                    existing = Product.objects.get(printify_product_id=printify_id)
+                    self.stdout.write(f"    Would update existing product: {existing.slug}")
+                except Product.DoesNotExist:
+                    self.stdout.write(f"    Would create new product")
                 continue
 
             # Create or update product
-            product, was_created = self._create_or_update_product(full_product)
+            product, was_created = self._create_or_update_product(product_data)
 
             if was_created:
                 created_count += 1
@@ -64,8 +101,11 @@ class Command(BaseCommand):
             self.stdout.write(f"    Images: {variant_result.get('images_created', 0)} created, {variant_result.get('images_updated', 0)} updated")
 
         self.stdout.write("\n" + "=" * 60)
-        self.stdout.write(f"  Created: {created_count} products")
-        self.stdout.write(f"  Updated: {updated_count} products")
+        if dry_run:
+            self.stdout.write(f"  DRY RUN complete - {len(products)} products would be processed")
+        else:
+            self.stdout.write(f"  Created: {created_count} products")
+            self.stdout.write(f"  Updated: {updated_count} products")
         self.stdout.write("=" * 60)
 
     def _create_or_update_product(self, product_data):

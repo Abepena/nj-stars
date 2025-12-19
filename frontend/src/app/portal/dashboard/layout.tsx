@@ -1,8 +1,9 @@
 "use client"
 
-import { ReactNode, useState } from "react"
+import { ReactNode, useEffect, useRef, useState } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter, usePathname } from "next/navigation"
+import { useTheme } from "@/components/theme-provider"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ThemeLogo } from "@/components/ui/theme-logo"
@@ -22,6 +23,8 @@ import {
   ChevronLeft,
   Crown,
   LayoutTemplate,
+  Moon,
+  Sun,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -54,6 +57,29 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const headerRef = useRef<HTMLElement | null>(null)
+
+  // Keep a CSS variable in sync with the mobile header height for sticky offsets
+  useEffect(() => {
+    if (!headerRef.current) return
+
+    const updateHeaderHeight = () => {
+      const h = headerRef.current?.getBoundingClientRect().height || 0
+      document.documentElement.style.setProperty("--portal-header-height", `${h}px`)
+    }
+
+    updateHeaderHeight()
+
+    const observer = new ResizeObserver(() => updateHeaderHeight())
+    observer.observe(headerRef.current)
+
+    window.addEventListener("resize", updateHeaderHeight)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", updateHeaderHeight)
+    }
+  }, [])
 
   // Check user roles
   const userRole = session?.user?.role || (session?.user as any)?.role || ""
@@ -91,9 +117,12 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[hsl(var(--bg-dashboard))]">
       {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header
+        ref={headerRef}
+        className="lg:hidden sticky top-0 z-50 border-b backdrop-blur bg-[hsl(var(--bg-dashboard)/0.95)]"
+      >
         <div className="flex items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <ChevronLeft className="h-4 w-4 text-muted-foreground" />
@@ -111,7 +140,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
         {/* Mobile Navigation Dropdown */}
         {mobileNavOpen && (
-          <nav className="border-t px-4 py-4 space-y-1 bg-background">
+          <nav className="border-t px-4 py-4 space-y-1 bg-[hsl(var(--bg-dashboard))]">
             {parentNavItems.map((item) => (
               <NavLink key={item.href} item={item} />
             ))}
@@ -143,7 +172,15 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
               </>
             )}
 
-            <div className="pt-4 border-t mt-4">
+            <div className="pt-4 border-t mt-4 space-y-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </Button>
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-3 px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -159,7 +196,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
       <div className="flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r bg-background">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r bg-[hsl(var(--bg-dashboard))]">
           <div className="flex flex-col flex-1 overflow-y-auto">
             {/* Logo */}
             <div className="p-6 border-b">
@@ -219,8 +256,16 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
               )}
             </nav>
 
-            {/* Sign Out */}
-            <div className="p-4 border-t">
+            {/* Theme Toggle & Sign Out */}
+            <div className="p-4 border-t space-y-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-muted"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </Button>
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -234,8 +279,8 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 lg:pl-64">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <main className="flex-1 lg:pl-64 min-w-0">
+          <div className="px-4 sm:px-6 lg:px-8 pt-0 pb-8 max-w-7xl mx-auto">
             {children}
           </div>
         </main>
@@ -246,7 +291,7 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
 
 function PortalLoadingSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#23201D' }}>
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
         <p className="mt-4 text-muted-foreground">Loading portal...</p>

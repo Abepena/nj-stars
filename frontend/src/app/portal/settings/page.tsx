@@ -479,7 +479,7 @@ export default function SettingsPage() {
                     Create a player profile for adult leagues and tournaments
                   </p>
                 </div>
-                <Switch
+                <Switch variant="dashboardSwitch"
                   id="player-profile"
                   checked={dashboardSettings.playerProfileEnabled}
                   onCheckedChange={handlePlayerProfileToggle}
@@ -510,7 +510,7 @@ export default function SettingsPage() {
                     Access parent features to manage family registrations
                   </p>
                 </div>
-                <Switch
+                <Switch variant="dashboardSwitch"
                   id="parent-dashboard"
                   checked={dashboardSettings.showParentDashboard}
                   onCheckedChange={handleParentDashboardToggle}
@@ -615,7 +615,7 @@ export default function SettingsPage() {
                   Get notified about events you&apos;re registered for
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 id="email-events"
                 checked={notifications.emailEvents}
                 onCheckedChange={() => handleNotificationChange("emailEvents")}
@@ -629,7 +629,7 @@ export default function SettingsPage() {
                   Shipping confirmations and order status changes
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 id="email-orders"
                 checked={notifications.emailOrders}
                 onCheckedChange={() => handleNotificationChange("emailOrders")}
@@ -643,7 +643,7 @@ export default function SettingsPage() {
                   Team news, announcements, and promotions
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 id="email-newsletter"
                 checked={notifications.emailNewsletter}
                 onCheckedChange={() => handleNotificationChange("emailNewsletter")}
@@ -667,7 +667,7 @@ export default function SettingsPage() {
                   Reminders before your registered events
                 </p>
               </div>
-              <Switch
+              <Switch variant="dashboardSwitch"
                 id="push-reminders"
                 checked={notifications.pushReminders}
                 onCheckedChange={() => handleNotificationChange("pushReminders")}
@@ -703,7 +703,7 @@ export default function SettingsPage() {
                 Allow other team members to see your profile
               </p>
             </div>
-            <Switch
+            <Switch variant="dashboardSwitch"
               id="show-profile"
               checked={privacy.showProfile}
               onCheckedChange={() => handlePrivacyChange("showProfile")}
@@ -717,7 +717,7 @@ export default function SettingsPage() {
                 Display your player on the public team roster
               </p>
             </div>
-            <Switch
+            <Switch variant="dashboardSwitch"
               id="show-roster"
               checked={privacy.showOnRoster}
               onCheckedChange={() => handlePrivacyChange("showOnRoster")}

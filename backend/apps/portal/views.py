@@ -418,17 +418,43 @@ def staff_dashboard(request):
         ).count(),
     }
 
-    # Get pending check-ins for today's events
-    pending_check_ins = EventCheckIn.objects.filter(
+    # Get pending check-ins: registrations for today's events WITHOUT a check-in record
+    pending_registrations = EventRegistration.objects.filter(
+        event__start_datetime__date=today,
+        check_in__isnull=True  # No associated EventCheckIn
+    ).select_related('event')[:20]
+
+    # Get active check-ins: registrations that HAVE been checked in today
+    active_check_ins = EventCheckIn.objects.filter(
         event_registration__event__start_datetime__date=today,
-        checked_in_at__isnull=True
+        checked_in_at__isnull=False,
+        checked_out_at__isnull=True  # Still checked in (not checked out)
     ).select_related('event_registration__event')[:20]
 
     # Get recent registrations
     recent_registrations = EventRegistration.objects.order_by('-registered_at')[:10]
 
     data['admin_stats'] = admin_stats
-    data['pending_check_ins'] = EventCheckInSerializer(pending_check_ins, many=True).data
+    # Format pending check-ins from registrations
+    data['pending_check_ins'] = [
+        {
+            'id': reg.id,
+            'participant_name': f"{reg.participant_first_name} {reg.participant_last_name}",
+            'event_title': reg.event.title,
+            'event_date': reg.event.start_datetime.isoformat(),
+        }
+        for reg in pending_registrations
+    ]
+    # Format active check-ins
+    data['active_check_ins'] = [
+        {
+            'id': ci.id,
+            'participant_name': f"{ci.event_registration.participant_first_name} {ci.event_registration.participant_last_name}",
+            'event_title': ci.event_registration.event.title,
+            'checked_in_at': ci.checked_in_at.isoformat() if ci.checked_in_at else None,
+        }
+        for ci in active_check_ins
+    ]
     data['recent_registrations'] = EventRegistrationListSerializer(recent_registrations, many=True).data
 
     return Response(data)

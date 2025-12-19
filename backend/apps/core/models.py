@@ -243,3 +243,61 @@ class ContactSubmission(models.Model):
         self.resolved_at = timezone.now()
         self.resolved_by = user
         self.save()
+
+
+class IntegrationSettings(models.Model):
+    """
+    Singleton model for storing third-party integration credentials.
+
+    Designed for multi-tenancy: in the future, add a tenant FK.
+    For now, we use a single instance (enforced in save()).
+    """
+
+    # Printify Integration
+    printify_api_key = models.TextField(
+        blank=True,
+        help_text="Printify API token from Account > Connections"
+    )
+    printify_shop_id = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Printify Shop ID"
+    )
+    printify_shop_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Printify Shop name (for display)"
+    )
+    printify_connected_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When Printify was connected"
+    )
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Integration Settings'
+        verbose_name_plural = 'Integration Settings'
+
+    def __str__(self):
+        return "Integration Settings"
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton pattern
+        if not self.pk and IntegrationSettings.objects.exists():
+            raise ValueError("Only one IntegrationSettings instance allowed")
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_instance(cls):
+        """Get or create the singleton instance"""
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return instance
+
+    @property
+    def printify_configured(self):
+        """Check if Printify credentials are set"""
+        return bool(self.printify_api_key and self.printify_shop_id)

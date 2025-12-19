@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs shell-backend shell-frontend seed test clean
+.PHONY: help build up down restart logs shell-backend shell-frontend seed seed-clean test clean
 
 # Use docker-compose if available, otherwise fall back to docker compose
 DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi)
@@ -17,7 +17,8 @@ help:
 	@echo "  make logs-frontend  - View frontend logs"
 	@echo ""
 	@echo "Database:"
-	@echo "  make seed           - Seed database with test data"
+	@echo "  make seed           - Seed all data (core + CMS + teams + test data)"
+	@echo "  make seed-clean     - Remove test data (keeps core data like plans/events)"
 	@echo "  make db-shell       - Open PostgreSQL shell"
 	@echo "  make db-reset       - Reset database (WARNING: deletes all data)"
 	@echo ""
@@ -66,8 +67,26 @@ logs-postgres:
 
 # Database commands
 seed:
+	@echo "Seeding core data (plans, events, coaches, Instagram)..."
 	$(DOCKER_COMPOSE) exec backend python manage.py seed_data
+	@echo ""
+	@echo "Seeding CMS pages (homepage, blog, team)..."
 	$(DOCKER_COMPOSE) exec backend python manage.py seed_wagtail
+	@echo ""
+	@echo "Seeding test teams, players, and parents..."
+	$(DOCKER_COMPOSE) exec backend python manage.py seed_test_teams
+	@echo ""
+	@echo "Seeding dashboard test data (contacts, dues, cash payments)..."
+	$(DOCKER_COMPOSE) exec backend python manage.py seed_test_data
+	@echo ""
+	@echo "✓ All seed data loaded!"
+
+seed-clean:
+	@echo "Removing test data..."
+	$(DOCKER_COMPOSE) exec backend python manage.py cleanup_test_data
+	$(DOCKER_COMPOSE) exec backend python manage.py seed_test_teams --delete
+	@echo ""
+	@echo "✓ Test data removed (core data like plans, events, coaches preserved)"
 
 db-shell:
 	$(DOCKER_COMPOSE) exec postgres psql -U njstars -d njstars

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, ProductVariant, SubscriptionPlan, Bag, BagItem, Order, OrderItem
+from .models import Product, ProductImage, ProductVariant, SubscriptionPlan, Bag, BagItem, Order, OrderItem, MerchDropSettings
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -616,3 +616,24 @@ class CashByStaffSerializer(serializers.Serializer):
     total_handed_off = serializers.DecimalField(max_digits=10, decimal_places=2)
     pending_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     pending_count = serializers.IntegerField()
+
+
+class MerchDropSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for merch drop announcement settings"""
+
+    is_countdown_active = serializers.BooleanField(read_only=True)
+    has_dropped = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = MerchDropSettings
+        fields = [
+            'is_active',
+            'drop_date',
+            'headline',
+            'subheadline',
+            'teaser_text',
+            'is_countdown_active',
+            'has_dropped',
+            'updated_at',
+        ]
+        read_only_fields = ['updated_at']

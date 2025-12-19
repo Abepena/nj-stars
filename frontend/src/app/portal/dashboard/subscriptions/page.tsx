@@ -401,7 +401,7 @@ export default function SubscriptionsAdminPage() {
                       <Label htmlFor="team-dues">Team Dues (One-Time Payment)</Label>
                       <p className="text-xs text-muted-foreground">Mark this if it is a one-time dues payment to secure team spot</p>
                     </div>
-                    <Switch id="team-dues" checked={isTeamDues} onCheckedChange={setIsTeamDues} />
+                    <Switch variant="dashboardSwitch" id="team-dues" checked={isTeamDues} onCheckedChange={setIsTeamDues} />
                   </div>
 
                   <Button onClick={handleCreatePlan} disabled={creating} className="w-full">
@@ -444,7 +444,7 @@ export default function SubscriptionsAdminPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Active</span>
-                      <Switch checked={plan.is_active} onCheckedChange={(checked) => handleToggleActive(plan.id, checked)} />
+                      <Switch variant="dashboardSwitch" checked={plan.is_active} onCheckedChange={(checked) => handleToggleActive(plan.id, checked)} />
                     </div>
                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeletePlan(plan.id)}>
                       <Trash2 className="h-4 w-4" />

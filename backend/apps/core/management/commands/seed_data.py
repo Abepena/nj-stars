@@ -250,7 +250,7 @@ class Command(BaseCommand):
     def create_coaches(self):
         self.stdout.write('Creating coaches...')
 
-        placeholder_photo = 'https://placehold.co/320x320?text=Coach'
+        placeholder_photo = 'https://placehold.co/320x320.png?text=Coach'
 
         # Real coach data from NJ Stars Elite
         coaches = [
@@ -315,7 +315,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_001',
                 'caption': '🏀 Tryouts are coming! U14 and U16 teams - registration is now open. Elite training awaits our next generation of stars. Link in bio! #NJStarsElite #AAABasketball #BergenCounty',
                 'media_type': 'IMAGE',
-                'media_url': 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Tryouts',
                 'permalink': 'https://www.instagram.com/p/sample001/',
                 'timestamp': now - timedelta(days=2),
             },
@@ -323,7 +323,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_002',
                 'caption': '💪 Championship mentality! Our U16 team showing out at the MLK Tournament. Proud of the dedication and hard work these athletes put in every single day. #NJStarsElite #BasketballLife #Champions',
                 'media_type': 'IMAGE',
-                'media_url': 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Tournament',
                 'permalink': 'https://www.instagram.com/p/sample002/',
                 'timestamp': now - timedelta(days=5),
             },
@@ -331,7 +331,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_003',
                 'caption': '🔥 Game day highlights! Swipe to see the best plays from last nights W. These young athletes are putting in the work and it shows on the court. #GameDay #NJStars #YouthBasketball',
                 'media_type': 'CAROUSEL_ALBUM',
-                'media_url': 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Game+Day',
                 'permalink': 'https://www.instagram.com/p/sample003/',
                 'timestamp': now - timedelta(days=7),
             },
@@ -339,7 +339,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_004',
                 'caption': '⭐ Meet Coach Mike - 15 years of experience developing elite basketball talent. Former Division I player bringing professional training to Bergen County. #CoachingStaff #EliteTraining #NJStarsElite',
                 'media_type': 'IMAGE',
-                'media_url': 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Coaching+Staff',
                 'permalink': 'https://www.instagram.com/p/sample004/',
                 'timestamp': now - timedelta(days=10),
             },
@@ -347,7 +347,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_005',
                 'caption': '🎯 Skills development session! Working on ball handling and shooting mechanics. The fundamentals matter - building strong foundations for elite players. #SkillsDevelopment #BasketballTraining #Youth',
                 'media_type': 'VIDEO',
-                'media_url': 'https://images.unsplash.com/photo-1608245449230-4ac19066d2d0?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Skills+Training',
                 'permalink': 'https://www.instagram.com/p/sample005/',
                 'timestamp': now - timedelta(days=12),
             },
@@ -355,7 +355,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_006',
                 'caption': '🏆 Tournament champions! Our U14 squad brought home the hardware this weekend. The future is bright for NJ Stars! Proud coach moment 💙⭐ #Champions #TournamentWin #AAU',
                 'media_type': 'IMAGE',
-                'media_url': 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Champions',
                 'permalink': 'https://www.instagram.com/p/sample006/',
                 'timestamp': now - timedelta(days=15),
             },
@@ -363,7 +363,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_007',
                 'caption': '📸 Behind the scenes at practice. These athletes show up ready to work every single day. Discipline, dedication, and teamwork - thats the NJ Stars way. #PracticeMakesPerfect #TeamWork #Basketball',
                 'media_type': 'CAROUSEL_ALBUM',
-                'media_url': 'https://images.unsplash.com/photo-1559692048-79a3f837883d?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Practice',
                 'permalink': 'https://www.instagram.com/p/sample007/',
                 'timestamp': now - timedelta(days=18),
             },
@@ -371,7 +371,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_008',
                 'caption': '🔊 Open gym tonight! All skill levels welcome. Come work on your game in a competitive environment. 6-8 PM at our facility. See you on the court! 🏀 #OpenGym #BasketballCommunity #BergenCounty',
                 'media_type': 'IMAGE',
-                'media_url': 'https://images.unsplash.com/photo-1515523110800-9415d13b84a8?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Open+Gym',
                 'permalink': 'https://www.instagram.com/p/sample008/',
                 'timestamp': now - timedelta(days=20),
             },
@@ -379,7 +379,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_009',
                 'caption': '💯 New merch alert! Official NJ Stars gear now available. Rep your team in style. Link in bio to shop! #TeamMerch #NJStars #BasketballApparel',
                 'media_type': 'IMAGE',
-                'media_url': 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=New+Merch',
                 'permalink': 'https://www.instagram.com/p/sample009/',
                 'timestamp': now - timedelta(days=23),
             },
@@ -387,7 +387,7 @@ class Command(BaseCommand):
                 'instagram_id': 'njstars_post_010',
                 'caption': '🌟 Spring season registration is OPEN! Dont miss your chance to be part of something special. Elite coaching, competitive games, and a family atmosphere. Sign up today! #SpringBasketball #Registration #NJStarsElite',
                 'media_type': 'IMAGE',
-                'media_url': 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800',
+                'media_url': 'https://placehold.co/800x800/1a1a2e/fff.png?text=Registration',
                 'permalink': 'https://www.instagram.com/p/sample010/',
                 'timestamp': now - timedelta(days=25),
             },
