@@ -33,7 +33,7 @@ const defaults = {
 // Local hero video from brand assets
 const HERO_VIDEO_URL = "/brand/assets/videos/hero.mp4";
 const HERO_IMAGE_URL = "/brand/assets/images/hero-dunk.jpeg";
-const USE_HERO_VIDEO = false;
+const USE_HERO_VIDEO = true;
 
 export function Hero({
   heading,
