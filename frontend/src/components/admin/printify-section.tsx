@@ -490,7 +490,7 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
             <p className="font-medium text-sm">{syncSummary.message}</p>
             {Object.keys(syncSummary.summary || {}).length > 0 && (
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                {Object.entries(syncSummary.summary).map(([key, value]) => (
+                {Object.entries(syncSummary.summary || {}).map(([key, value]) => (
                   <Badge key={key} variant="outline">
                     {key.replace(/_/g, " ")}: {String(value)}
                   </Badge>
