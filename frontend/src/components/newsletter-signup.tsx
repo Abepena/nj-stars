@@ -146,8 +146,8 @@ export function NewsletterSignup({
   }
 
   return (
-    <section className={cn("py-16 bg-card border-t border-border", className)}>
-      <div className="container mx-auto px-4">
+    <section className={cn("py-16 md:py-20 section-seamless", className)}>
+      <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-2xl mx-auto text-center">
           {formContent}
         </div>

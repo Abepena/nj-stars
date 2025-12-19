@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Stars Card Variations - Programs & Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: hsl(230, 15%, 7%);
+            --bg-secondary: hsl(230, 12%, 11%);
+            --bg-tertiary: hsl(230, 10%, 15%);
+            --text-primary: hsl(0, 0%, 100%);
+            --text-secondary: hsl(0, 0%, 80%);
+            --text-tertiary: hsl(0, 0%, 60%);
+            --border: hsl(27.3, 8%, 26.9%);
+
+            --neon-pink: hsl(331.7, 95%, 60%);
+            --neon-cyan: hsl(188.7, 100%, 55%);
+            --neon-purple: hsl(270, 100%, 65%);
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 0px rgba(0, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+        }
+
+        @keyframes slide-in {
+            from { border-left-width: 0; }
+            to { border-left-width: 4px; }
+        }
+
+        @keyframes icon-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 span {
+            color: var(--neon-pink);
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.3);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        main {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .section-title span {
+            color: var(--neon-cyan);
+        }
+
+        .section-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        /* ============================================
+           CARD OPTION 1: Clean Outline + Icon Top
+           ============================================ */
+        .card-v1 {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-v1:hover {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 255, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .card-v1-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            transition: all 300ms ease;
+        }
+
+        .card-v1:hover .card-v1-icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .card-v1 h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            transition: color 300ms ease;
+        }
+
+        .card-v1:hover h3 {
+            color: var(--neon-cyan);
+        }
+
+        .card-v1 p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .card-v1-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        /* ============================================
+           CARD OPTION 2: Left Accent Border
+           ============================================ */
+        .card-v2 {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--neon-pink);
+            border-radius: 8px;
+            padding: 1.5rem;
+            background: rgba(255, 20, 147, 0.02);
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        .card-v2:hover {
+            border-left-color: var(--neon-cyan);
+            background: rgba(0, 255, 255, 0.05);
+            transform: translateX(4px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.15);
+        }
+
+        .card-v2-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            display: inline-block;
+        }
+
+        .card-v2 h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .card-v2 p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .card-v2-count {
+            display: inline-block;
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-cyan);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* ============================================
+           CARD OPTION 3: Gradient Outline
+           ============================================ */
+        .card-v3 {
+            background: var(--bg-secondary);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 1.5rem;
+            background-image:
+                linear-gradient(var(--bg-secondary), var(--bg-secondary)),
+                linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            transition: all 300ms ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card-v3:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.3), 0 0 40px rgba(255, 20, 147, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .card-v3-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-v3 h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .card-v3 p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           CARD OPTION 4: Icon Circle + Content
+           ============================================ */
+        .card-v4 {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .card-v4:hover {
+            border-color: var(--neon-pink);
+            background: rgba(255, 20, 147, 0.05);
+        }
+
+        .card-v4-icon-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            transition: all 300ms ease;
+        }
+
+        .card-v4:hover .card-v4-icon-circle {
+            background: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            color: var(--bg-primary);
+            transform: scale(1.1);
+        }
+
+        .card-v4-content h3 {
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+        }
+
+        .card-v4-content p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-v4-stat {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--neon-cyan);
+        }
+
+        /* ============================================
+           CARD OPTION 5: Corner Accent
+           ============================================ */
+        .card-v5 {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-v5::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 60px 60px 0;
+            border-color: transparent var(--neon-pink) transparent transparent;
+            transition: all 300ms ease;
+        }
+
+        .card-v5:hover {
+            border-color: var(--neon-pink);
+            background: rgba(255, 20, 147, 0.03);
+        }
+
+        .card-v5:hover::before {
+            border-width: 0 80px 80px 0;
+        }
+
+        .card-v5-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-v5 h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .card-v5 p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           CARD OPTION 6: Icon Glow + Outline
+           ============================================ */
+        .card-v6 {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .card-v6:hover {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 255, 255, 0.05);
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.25);
+        }
+
+        .card-v6-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            transition: all 300ms ease;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.2));
+        }
+
+        .card-v6:hover .card-v6-icon {
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.6));
+            transform: scale(1.15) rotateZ(-5deg);
+        }
+
+        .card-v6 h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .card-v6 p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           CARD OPTION 7: Minimal with Bottom Accent
+           ============================================ */
+        .card-v7 {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1.5rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        .card-v7:hover {
+            border-bottom-color: var(--neon-cyan);
+            background: rgba(0, 255, 255, 0.03);
+            transform: translateY(-3px);
+        }
+
+        .card-v7-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-v7 h3 {
+            font-size: 1.05rem;
+            margin-bottom: 0.35rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-v7 p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* ============================================
+           CARD OPTION 8: Large Icon with Overlay
+           ============================================ */
+        .card-v8 {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            background: radial-gradient(circle at top right, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            transition: all 300ms ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-v8::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            transition: all 300ms ease;
+            pointer-events: none;
+        }
+
+        .card-v8:hover {
+            border-color: var(--neon-cyan);
+            background: radial-gradient(circle at top right, rgba(0, 255, 255, 0.15) 0%, transparent 70%);
+        }
+
+        .card-v8:hover::after {
+            top: -30%;
+            right: -30%;
+        }
+
+        .card-v8-icon {
+            font-size: 3.5rem;
+            opacity: 0.15;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+
+        .card-v8-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-v8 h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .card-v8 p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           CARD OPTION 9: Double Border
+           ============================================ */
+        .card-v9 {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 20, 147, 0.05));
+            transition: all 300ms ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card-v9-inner {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 11px;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+        }
+
+        .card-v9:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 20, 147, 0.1));
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .card-v9-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-v9 h3 {
+            font-size: 1.05rem;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+        }
+
+        .card-v9 p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .variant-label {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-cyan);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Card <span>Variations</span></h1>
+        <p class="subtitle">9 Different Approaches for Programs & Training Section</p>
+    </header>
+
+    <main>
+        <!-- OPTION 1 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 1:</span> Clean Outline + Icon Top</h2>
+            <p class="section-description">Large icon at top, simple outline, hover expands glow and changes text color. Most minimalist approach.</p>
+            <div class="cards-grid">
+                <div class="card-v1">
+                    <div class="variant-label">V1</div>
+                    <div class="card-v1-icon">🏀</div>
+                    <h3>Elite Training</h3>
+                    <p>High-intensity competitive training sessions for serious players</p>
+                    <div class="card-v1-meta">
+                        <span>3x/week</span>
+                        <span>Ages 14-18</span>
+                    </div>
+                </div>
+                <div class="card-v1">
+                    <div class="variant-label">V1</div>
+                    <div class="card-v1-icon">💪</div>
+                    <h3>Skills Development</h3>
+                    <p>Focus on ball handling, shooting, and defensive fundamentals</p>
+                    <div class="card-v1-meta">
+                        <span>2x/week</span>
+                        <span>Ages 12-16</span>
+                    </div>
+                </div>
+                <div class="card-v1">
+                    <div class="variant-label">V1</div>
+                    <div class="card-v1-icon">🎯</div>
+                    <h3>Game Strategy</h3>
+                    <p>Team plays, offensive sets, and defensive formations</p>
+                    <div class="card-v1-meta">
+                        <span>1x/week</span>
+                        <span>Ages 16+</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 2 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 2:</span> Left Accent Border + Icon Badge</h2>
+            <p class="section-description">Neon left border that animates on hover, small icon accent. Compact and directional.</p>
+            <div class="cards-grid">
+                <div class="card-v2">
+                    <div class="variant-label">V2</div>
+                    <div class="card-v2-icon">🏀</div>
+                    <h3>Elite Training</h3>
+                    <p>High-intensity competitive training sessions for serious players</p>
+                    <span class="card-v2-count">3x/week</span>
+                </div>
+                <div class="card-v2">
+                    <div class="variant-label">V2</div>
+                    <div class="card-v2-icon">💪</div>
+                    <h3>Skills Development</h3>
+                    <p>Focus on ball handling, shooting, and defensive fundamentals</p>
+                    <span class="card-v2-count">2x/week</span>
+                </div>
+                <div class="card-v2">
+                    <div class="variant-label">V2</div>
+                    <div class="card-v2-icon">🎯</div>
+                    <h3>Game Strategy</h3>
+                    <p>Team plays, offensive sets, and defensive formations</p>
+                    <span class="card-v2-count">1x/week</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 3 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 3:</span> Gradient Outline Border</h2>
+            <p class="section-description">Subtle gradient outline (cyan to pink) with deep hover glow. Premium feel, not too loud.</p>
+            <div class="cards-grid">
+                <div class="card-v3">
+                    <div class="variant-label">V3</div>
+                    <div class="card-v3-icon">🏀</div>
+                    <h3>Elite Training</h3>
+                    <p>High-intensity competitive training sessions for serious players</p>
+                </div>
+                <div class="card-v3">
+                    <div class="variant-label">V3</div>
+                    <div class="card-v3-icon">💪</div>
+                    <h3>Skills Development</h3>
+                    <p>Focus on ball handling, shooting, and defensive fundamentals</p>
+                </div>
+                <div class="card-v3">
+                    <div class="variant-label">V3</div>
+                    <div class="card-v3-icon">🎯</div>
+                    <h3>Game Strategy</h3>
+                    <p>Team plays, offensive sets, and defensive formations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 4 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 4:</span> Icon Circle + Flex Layout</h2>
+            <p class="section-description">Icon in rounded square on left, content on right. Compact and scannable.</p>
+            <div class="cards-grid">
+                <div class="card-v4">
+                    <div class="variant-label">V4</div>
+                    <div class="card-v4-icon-circle">🏀</div>
+                    <div class="card-v4-content">
+                        <h3>Elite Training</h3>
+                        <p>High-intensity competitive training</p>
+                        <span class="card-v4-stat">3x/week • 18+ spots</span>
+                    </div>
+                </div>
+                <div class="card-v4">
+                    <div class="variant-label">V4</div>
+                    <div class="card-v4-icon-circle">💪</div>
+                    <div class="card-v4-content">
+                        <h3>Skills Development</h3>
+                        <p>Ball handling & shooting drills</p>
+                        <span class="card-v4-stat">2x/week • 25+ spots</span>
+                    </div>
+                </div>
+                <div class="card-v4">
+                    <div class="variant-label">V4</div>
+                    <div class="card-v4-icon-circle">🎯</div>
+                    <div class="card-v4-content">
+                        <h3>Game Strategy</h3>
+                        <p>Offensive & defensive formations</p>
+                        <span class="card-v4-stat">1x/week • 12+ spots</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 5 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 5:</span> Corner Accent Triangle</h2>
+            <p class="section-description">Neon triangle accent expands on hover. Playful and eye-catching.</p>
+            <div class="cards-grid">
+                <div class="card-v5">
+                    <div class="variant-label">V5</div>
+                    <div class="card-v5-icon">🏀</div>
+                    <h3>Elite Training</h3>
+                    <p>High-intensity competitive training sessions for serious players</p>
+                </div>
+                <div class="card-v5">
+                    <div class="variant-label">V5</div>
+                    <div class="card-v5-icon">💪</div>
+                    <h3>Skills Development</h3>
+                    <p>Focus on ball handling, shooting, and defensive fundamentals</p>
+                </div>
+                <div class="card-v5">
+                    <div class="variant-label">V5</div>
+                    <div class="card-v5-icon">🎯</div>
+                    <h3>Game Strategy</h3>
+                    <p>Team plays, offensive sets, and defensive formations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 6 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 6:</span> Icon with Drop Shadow Glow</h2>
+            <p class="section-description">Large centered icon with glowing drop-shadow effect. Simple, clean, icon-focused.</p>
+            <div class="cards-grid">
+                <div class="card-v6">
+                    <div class="variant-label">V6</div>
+                    <div class="card-v6-icon">🏀</div>
+                    <h3>Elite Training</h3>
+                    <p>High-intensity competitive training sessions</p>
+                </div>
+                <div class="card-v6">
+                    <div class="variant-label">V6</div>
+                    <div class="card-v6-icon">💪</div>
+                    <h3>Skills Development</h3>
+                    <p>Ball handling, shooting, and defensive fundamentals</p>
+                </div>
+                <div class="card-v6">
+                    <div class="variant-label">V6</div>
+                    <div class="card-v6-icon">🎯</div>
+                    <h3>Game Strategy</h3>
+                    <p>Team plays, offensive sets, and defensive formations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 7 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 7:</span> Minimal Bottom Border</h2>
+            <p class="section-description">Single line bottom border. Extremely minimal, most similar to current shop design.</p>
+            <div class="cards-grid">
+                <div class="card-v7">
+                    <div class="variant-label">V7</div>
+                    <div class="card-v7-icon">🏀</div>
+                    <h3>Elite Training</h3>
+                    <p>High-intensity competitive training sessions for serious players</p>
+                </div>
+                <div class="card-v7">
+                    <div class="variant-label">V7</div>
+                    <div class="card-v7-icon">💪</div>
+                    <h3>Skills Development</h3>
+                    <p>Focus on ball handling, shooting, and defensive fundamentals</p>
+                </div>
+                <div class="card-v7">
+                    <div class="variant-label">V7</div>
+                    <div class="card-v7-icon">🎯</div>
+                    <h3>Game Strategy</h3>
+                    <p>Team plays, offensive sets, and defensive formations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 8 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 8:</span> Large Icon Background + Radial Overlay</h2>
+            <p class="section-description">Large icon watermark in background with radial gradient. Elegant and sophisticated.</p>
+            <div class="cards-grid">
+                <div class="card-v8">
+                    <div class="variant-label">V8</div>
+                    <div class="card-v8-icon">🏀</div>
+                    <div class="card-v8-content">
+                        <h3>Elite Training</h3>
+                        <p>High-intensity competitive training sessions for serious players</p>
+                    </div>
+                </div>
+                <div class="card-v8">
+                    <div class="variant-label">V8</div>
+                    <div class="card-v8-icon">💪</div>
+                    <div class="card-v8-content">
+                        <h3>Skills Development</h3>
+                        <p>Focus on ball handling, shooting, and defensive fundamentals</p>
+                    </div>
+                </div>
+                <div class="card-v8">
+                    <div class="variant-label">V8</div>
+                    <div class="card-v8-icon">🎯</div>
+                    <div class="card-v8-content">
+                        <h3>Game Strategy</h3>
+                        <p>Team plays, offensive sets, and defensive formations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION 9 -->
+        <div class="section">
+            <h2 class="section-title"><span>Option 9:</span> Double Border + Subtle Gradient</h2>
+            <p class="section-description">Outer gradient border, inner solid border. Refined and layered approach.</p>
+            <div class="cards-grid">
+                <div class="card-v9">
+                    <div class="card-v9-inner">
+                        <div class="variant-label">V9</div>
+                        <div class="card-v9-icon">🏀</div>
+                        <h3>Elite Training</h3>
+                        <p>High-intensity competitive training sessions for serious players</p>
+                    </div>
+                </div>
+                <div class="card-v9">
+                    <div class="card-v9-inner">
+                        <div class="variant-label">V9</div>
+                        <div class="card-v9-icon">💪</div>
+                        <h3>Skills Development</h3>
+                        <p>Focus on ball handling, shooting, and defensive fundamentals</p>
+                    </div>
+                </div>
+                <div class="card-v9">
+                    <div class="card-v9-inner">
+                        <div class="variant-label">V9</div>
+                        <div class="card-v9-icon">🎯</div>
+                        <h3>Game Strategy</h3>
+                        <p>Team plays, offensive sets, and defensive formations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECOMMENDATIONS -->
+        <div class="section">
+            <h2 class="section-title"><span>Our</span> Recommendations</h2>
+            <p class="section-description">Based on your feedback (like outline approach, clean shop design):</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem;">
+                <div style="background: rgba(0, 255, 255, 0.05); border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: var(--neon-cyan); margin-bottom: 1rem; font-size: 1.1rem;">🏆 Best Choice: Option 2</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Left Accent Border</strong> - Combines your love of clean outlines with visual interest. The neon left border adds energy without being flashy. Small icons keep it minimal like the shop. On hover, the border color animates and content highlights. Perfect balance.
+                    </p>
+                </div>
+
+                <div style="background: rgba(255, 20, 147, 0.05); border: 1px solid rgba(255, 20, 147, 0.3); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: var(--neon-pink); margin-bottom: 1rem; font-size: 1.1rem;">✨ Runner-up: Option 7</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Minimal Bottom Border</strong> - If you want <em>extremely</em> minimal and closest to current shop. Single cyan border on bottom, slides up on hover. Maintains clean aesthetic while adding subtle interactivity.
+                    </p>
+                </div>
+
+                <div style="background: rgba(270, 100%, 65%, 0.05); border: 1px solid rgba(270, 100%, 65%, 0.3); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: var(--neon-purple); margin-bottom: 1rem; font-size: 1.1rem;">🎨 Also Consider: Option 4</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Icon Circle + Flex</strong> - Different layout approach (horizontal instead of vertical). Good for scanability. Icon in colored square on left, content on right. More compact than current cards.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>🎨 9 Card Variations for Programs & Training Section</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">All hover over any card to see the interactive effects</p>
+    </footer>
+</body>
+</html>

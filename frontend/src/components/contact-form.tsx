@@ -136,8 +136,8 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
 
     if (wrapInSection) {
       return (
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/30">
-          <div className="max-w-7xl mx-auto">{content}</div>
+        <section className="py-16 px-4 sm:px-6 lg:px-8 section-seamless">
+          <div className="max-w-7xl mx-auto relative z-10">{content}</div>
         </section>
       )
     }
@@ -275,8 +275,8 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
 
     if (wrapInSection) {
       return (
-        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-muted/30">
-          <div className="max-w-7xl mx-auto">{compactContent}</div>
+        <section className="py-12 px-4 sm:px-6 lg:px-8 section-seamless">
+          <div className="max-w-7xl mx-auto relative z-10">{compactContent}</div>
         </section>
       )
     }
@@ -451,8 +451,8 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
 
   if (wrapInSection) {
     return (
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/30">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 section-seamless">
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold mb-3">Get in Touch</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">

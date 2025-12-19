@@ -3,14 +3,22 @@
 import type { ReactNode } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { Footer } from "@/components/footer"
+import { cn } from "@/lib/utils"
 
 interface LayoutShellProps {
   children: ReactNode
+  /** Background style variant */
+  background?: "default" | "gradient-grid"
 }
 
-export function LayoutShell({ children }: LayoutShellProps) {
+export function LayoutShell({ children, background = "default" }: LayoutShellProps) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div
+      className={cn(
+        "min-h-screen flex flex-col",
+        background === "gradient-grid" && "gradient-grid-bg"
+      )}
+    >
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#main-content"

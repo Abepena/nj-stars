@@ -243,6 +243,11 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
   )
 }
 
+interface MerchDropSettings {
+  is_active: boolean
+  has_dropped: boolean
+}
+
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
@@ -254,6 +259,25 @@ export default function ShopPage() {
   const [selectedColors, setSelectedColors] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<SortOption>("featured")
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null)
+  const [merchHypeActive, setMerchHypeActive] = useState(false)
+
+  // Fetch merch drop settings to control visibility
+  useEffect(() => {
+    async function fetchMerchDropSettings() {
+      try {
+        const response = await fetch(`${API_BASE}/api/payments/merch-drop/`)
+        if (response.ok) {
+          const data: MerchDropSettings = await response.json()
+          // Hide locker room if merch hype is active but hasn't dropped yet
+          setMerchHypeActive(data.is_active && !data.has_dropped)
+        }
+      } catch {
+        // Silently fail - show regular shop content
+        setMerchHypeActive(false)
+      }
+    }
+    fetchMerchDropSettings()
+  }, [])
 
   useEffect(() => {
     async function fetchProducts() {
@@ -450,105 +474,110 @@ export default function ShopPage() {
       {/* Merch Drop Hype Section - Full viewport when active */}
       <MerchDropHype fullHeight />
 
-      <PageHeader
-        title="The Locker Room"
-        subtitle="Gear up with official NJ Stars merchandise."
-      />
-
-      <section className="py-8">
-        <div className="container mx-auto px-4">
-          <Breadcrumbs
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Shop" },
-            ]}
+      {/* Only show Locker Room content when merch hype is NOT active */}
+      {!merchHypeActive && (
+        <>
+          <PageHeader
+            title="The Locker Room"
+            subtitle="Gear up with official NJ Stars merchandise."
           />
 
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sticky Sidebar Filters */}
-            <FilterSidebar
-              title="Filters"
-              searchPlaceholder="Search products..."
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              categories={categories}
-              selectedCategories={selectedCategories}
-              onCategoryToggle={toggleCategory}
-              tags={tags}
-              selectedTags={selectedTags}
-              onTagToggle={toggleTag}
-              colors={filterColors}
-              selectedColors={selectedColors}
-              onColorToggle={toggleColor}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              onClearFilters={clearFilters}
-              totalCount={products.length}
-              filteredCount={filteredProducts.length}
-              getCategoryColor={getCategoryColor}
-            />
+          <section className="py-8">
+            <div className="container mx-auto px-4">
+              <Breadcrumbs
+                items={[
+                  { label: "Home", href: "/" },
+                  { label: "Shop" },
+                ]}
+              />
 
-            {/* Products Grid */}
-            <main className="flex-1">
-              {error && (
-                <div className="mb-8">
-                  <ErrorMessage error={error} />
-                </div>
-              )}
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Sticky Sidebar Filters */}
+                <FilterSidebar
+                  title="Filters"
+                  searchPlaceholder="Search products..."
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  categories={categories}
+                  selectedCategories={selectedCategories}
+                  onCategoryToggle={toggleCategory}
+                  tags={tags}
+                  selectedTags={selectedTags}
+                  onTagToggle={toggleTag}
+                  colors={filterColors}
+                  selectedColors={selectedColors}
+                  onColorToggle={toggleColor}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  onClearFilters={clearFilters}
+                  totalCount={products.length}
+                  filteredCount={filteredProducts.length}
+                  getCategoryColor={getCategoryColor}
+                />
 
-              {loading ? (
-                <div role="status" aria-label="Loading products" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
-                  <span className="sr-only">Loading products...</span>
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <ProductCardSkeleton key={i} />
-                  ))}
-                </div>
-              ) : !error && filteredProducts.length === 0 ? (
-                <div className="text-center py-16">
-                  <p className="text-lg text-muted-foreground mb-4">
-                    {searchQuery || selectedCategories.length > 0 || selectedTags.length > 0
-                      ? "No products match your filters."
-                      : "No products available at the moment. Check back soon!"}
-                  </p>
-                  {(searchQuery || selectedCategories.length > 0 || selectedTags.length > 0) && (
-                    <>
-                      <Button variant="outline" onClick={clearFilters}>
-                        Clear Filters
-                      </Button>
-                      <p className="text-sm text-muted-foreground mt-4">
-                        or check out our{" "}
-                        <button
-                          onClick={() => {
-                            clearFilters()
-                            toggleTag("featured")
-                          }}
-                          className="text-secondary underline hover:text-secondary/80"
-                        >
-                          featured items
-                        </button>
-                      </p>
-                    </>
+                {/* Products Grid */}
+                <main className="flex-1">
+                  {error && (
+                    <div className="mb-8">
+                      <ErrorMessage error={error} />
+                    </div>
                   )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
-                  {filteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onClick={() => setQuickViewProduct(product)}
-                      onTagClick={toggleTag}
-                      onCategoryClick={toggleCategory}
-                      selectedTags={selectedTags}
-                      selectedCategories={selectedCategories}
-                    />
-                  ))}
-                </div>
-              )}
-            </main>
-          </div>
-        </div>
-      </section>
+
+                  {loading ? (
+                    <div role="status" aria-label="Loading products" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+                      <span className="sr-only">Loading products...</span>
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <ProductCardSkeleton key={i} />
+                      ))}
+                    </div>
+                  ) : !error && filteredProducts.length === 0 ? (
+                    <div className="text-center py-16">
+                      <p className="text-lg text-muted-foreground mb-4">
+                        {searchQuery || selectedCategories.length > 0 || selectedTags.length > 0
+                          ? "No products match your filters."
+                          : "No products available at the moment. Check back soon!"}
+                      </p>
+                      {(searchQuery || selectedCategories.length > 0 || selectedTags.length > 0) && (
+                        <>
+                          <Button variant="outline" onClick={clearFilters}>
+                            Clear Filters
+                          </Button>
+                          <p className="text-sm text-muted-foreground mt-4">
+                            or check out our{" "}
+                            <button
+                              onClick={() => {
+                                clearFilters()
+                                toggleTag("featured")
+                              }}
+                              className="text-secondary underline hover:text-secondary/80"
+                            >
+                              featured items
+                            </button>
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+                      {filteredProducts.map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onClick={() => setQuickViewProduct(product)}
+                          onTagClick={toggleTag}
+                          onCategoryClick={toggleCategory}
+                          selectedTags={selectedTags}
+                          selectedCategories={selectedCategories}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </main>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* Quick View Modal */}
       {quickViewProduct && (

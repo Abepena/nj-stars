@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Stars - Updated Homepage with Gradient Border Cards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: hsl(230, 15%, 7%);
+            --bg-secondary: hsl(230, 12%, 11%);
+            --bg-tertiary: hsl(230, 10%, 15%);
+            --text-primary: hsl(0, 0%, 100%);
+            --text-secondary: hsl(0, 0%, 80%);
+            --text-tertiary: hsl(0, 0%, 60%);
+            --border: hsl(27.3, 8%, 26.9%);
+
+            --neon-pink: hsl(331.7, 95%, 60%);
+            --neon-cyan: hsl(188.7, 100%, 55%);
+            --neon-purple: hsl(270, 100%, 65%);
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+        }
+
+        /* ============================================
+           HERO SECTION
+           ============================================ */
+        .hero {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.08;
+            background-image:
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        .hero h1 span {
+            color: var(--neon-pink);
+            text-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.8rem 1.6rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 200ms ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary {
+            background: var(--neon-pink);
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 25px rgba(255, 20, 147, 0.8);
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: var(--neon-cyan);
+            color: var(--bg-primary);
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+
+        /* ============================================
+           MAIN LAYOUT
+           ============================================ */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: 4rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title span {
+            color: var(--neon-cyan);
+        }
+
+        .section-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section-underline {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            margin: 1.5rem auto 0;
+            border-radius: 2px;
+        }
+
+        /* ============================================
+           ABOUT SECTION
+           ============================================ */
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .about-text h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--neon-cyan);
+        }
+
+        .about-text p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.8;
+        }
+
+        .about-values {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .value {
+            background: rgba(0, 255, 255, 0.05);
+            border-left: 4px solid var(--neon-cyan);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .value strong {
+            color: var(--neon-cyan);
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .value p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           PROGRAMS SECTION (GRADIENT BORDER CARDS)
+           ============================================ */
+        .programs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .program-card {
+            background: var(--bg-secondary);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 2rem;
+            background-image:
+                linear-gradient(var(--bg-secondary), var(--bg-secondary)),
+                linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            transition: all 300ms ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .program-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            background: radial-gradient(circle at top right, rgba(0, 255, 255, 0.1), transparent);
+            transition: opacity 300ms ease;
+            pointer-events: none;
+        }
+
+        .program-card:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), 0 0 50px rgba(255, 20, 147, 0.15);
+            transform: translateY(-6px);
+            background-image:
+                linear-gradient(var(--bg-secondary), var(--bg-secondary)),
+                linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+        }
+
+        .program-card::before {
+            opacity: 1;
+        }
+
+        .program-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .program-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .program-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .program-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        .program-meta span {
+            color: var(--text-tertiary);
+        }
+
+        .program-cta {
+            color: var(--neon-cyan);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .program-cta:hover {
+            color: var(--neon-pink);
+        }
+
+        /* ============================================
+           FEATURED PRODUCTS SECTION (MINIMAL)
+           ============================================ */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .product-content {
+            padding: 1.5rem;
+        }
+
+        .product-tag {
+            display: inline-block;
+            background: rgba(255, 20, 147, 0.2);
+            color: var(--neon-pink);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .product-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+            color: var(--text-primary);
+        }
+
+        .product-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+        }
+
+        /* ============================================
+           NEWS SECTION (ULTRA MINIMAL)
+           ============================================ */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .news-card {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 3px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 1.5rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        .news-card:hover {
+            border-bottom-color: var(--neon-pink);
+            background: rgba(255, 20, 147, 0.03);
+            transform: translateY(-3px);
+        }
+
+        .news-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .news-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .news-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .news-date {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ============================================
+           EVENTS SECTION (LEFT BORDER - VARIATION)
+           ============================================ */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .event-card {
+            border-left: 4px solid var(--neon-cyan);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--neon-cyan);
+            border-radius: 8px;
+            padding: 1.5rem;
+            background: rgba(0, 255, 255, 0.02);
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        .event-card:hover {
+            border-left-color: var(--neon-pink);
+            background: rgba(255, 20, 147, 0.05);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
+            transform: translateX(4px);
+        }
+
+        .event-icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+            color: var(--text-primary);
+        }
+
+        .event-card p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .event-meta {
+            display: inline-block;
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-cyan);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ============================================
+           CTA SECTION
+           ============================================ */
+        .cta-section {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 20, 147, 0.05));
+            border: 2px solid transparent;
+            border-image: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink)) 1;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .cta-section h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .cta-section p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.6rem;
+            }
+
+            .about-content,
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .about-content {
+                grid-template-columns: 1fr;
+            }
+
+            .programs-grid,
+            .products-grid,
+            .news-grid,
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-section {
+                padding: 2rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== HERO ========== -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Elite Training. <span>Built for Rising Stars.</span></h1>
+            <p>Focused training and real competition for players serious about their game.</p>
+            <div class="hero-buttons">
+                <button class="btn-primary">Get in the Game →</button>
+                <button class="btn-secondary">Ball With Us</button>
+            </div>
+        </div>
+    </section>
+
+    <main>
+        <!-- ========== ABOUT PREVIEW ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Who We <span>Are</span></h2>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>NJ Stars Elite AAU Basketball</h3>
+                    <p>We're a premier AAU basketball organization dedicated to developing elite young athletes. Our mission is to provide world-class training, real competition, and a pathway to collegiate opportunities.</p>
+                    <p>Every player. Every practice. Every game. Matters.</p>
+
+                    <div class="about-values">
+                        <div class="value">
+                            <strong>Excellence</strong>
+                            <p>Highest standards in training</p>
+                        </div>
+                        <div class="value">
+                            <strong>Community</strong>
+                            <p>Supportive team culture</p>
+                        </div>
+                        <div class="value">
+                            <strong>Growth</strong>
+                            <p>Continuous development</p>
+                        </div>
+                        <div class="value">
+                            <strong>Opportunity</strong>
+                            <p>College recruiting exposure</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary)); border-radius: 12px; padding: 3rem; display: flex; align-items: center; justify-content: center; font-size: 4rem; border: 1px solid rgba(0, 255, 255, 0.2);">
+                    🏀
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== PROGRAMS SECTION (GRADIENT BORDER - PRIMARY) ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Training <span>Programs</span></h2>
+                <p class="section-subtitle">Specialized programs designed for different skill levels and competitive goals</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="programs-grid">
+                <div class="program-card">
+                    <div class="program-icon">🏀</div>
+                    <h3>Elite Training</h3>
+                    <p>High-intensity competitive training for serious players. Focus on advanced techniques, game IQ, and championship preparation.</p>
+                    <div class="program-meta">
+                        <span>3x/week • Ages 14-18</span>
+                        <span class="program-cta">Learn More →</span>
+                    </div>
+                </div>
+
+                <div class="program-card">
+                    <div class="program-icon">💪</div>
+                    <h3>Skills Development</h3>
+                    <p>Master the fundamentals. Ball handling, shooting, defensive footwork, and conditioning designed for all skill levels.</p>
+                    <div class="program-meta">
+                        <span>2x/week • Ages 12-16</span>
+                        <span class="program-cta">Learn More →</span>
+                    </div>
+                </div>
+
+                <div class="program-card">
+                    <div class="program-icon">🎯</div>
+                    <h3>Game Strategy</h3>
+                    <p>Team plays, offensive sets, defensive formations, and in-game decision making for competitive teams and tournaments.</p>
+                    <div class="program-meta">
+                        <span>1x/week • Ages 16+</span>
+                        <span class="program-cta">Learn More →</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== FEATURED MERCH (CLEAN - VARIATION) ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">The Locker <span>Room</span></h2>
+                <p class="section-subtitle">Official NJ Stars gear and apparel</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="products-grid">
+                <div class="product-card">
+                    <div class="product-image">👕</div>
+                    <div class="product-content">
+                        <span class="product-tag">New Drop</span>
+                        <h4>Elite Jersey 2025</h4>
+                        <p>Premium mesh jersey with embroidered logo</p>
+                        <div class="product-footer">
+                            <span class="product-price">$49.99</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">🏀</div>
+                    <div class="product-content">
+                        <span class="product-tag">Featured</span>
+                        <h4>Court Ball</h4>
+                        <p>Official tournament basketball</p>
+                        <div class="product-footer">
+                            <span class="product-price">$79.99</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">👟</div>
+                    <div class="product-content">
+                        <span class="product-tag">Limited</span>
+                        <h4>Performance Sneaker</h4>
+                        <p>Engineered for court dominance</p>
+                        <div class="product-footer">
+                            <span class="product-price">$139.99</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">🧢</div>
+                    <div class="product-content">
+                        <span class="product-tag">Classic</span>
+                        <h4>Snapback Cap</h4>
+                        <p>Embroidered logo cap</p>
+                        <div class="product-footer">
+                            <span class="product-price">$24.99</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">🎽</div>
+                    <div class="product-content">
+                        <span class="product-tag">Sale</span>
+                        <h4>Training Tank</h4>
+                        <p>Breathable training apparel</p>
+                        <div class="product-footer">
+                            <span class="product-price">$29.99</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-image">🎒</div>
+                    <div class="product-content">
+                        <span class="product-tag">New</span>
+                        <h4>Elite Backpack</h4>
+                        <p>Durable team backpack</p>
+                        <div class="product-footer">
+                            <span class="product-price">$59.99</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== UPCOMING EVENTS (LEFT BORDER - VARIATION) ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Upcoming <span>Events</span></h2>
+                <p class="section-subtitle">Mark your calendar for these key events</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="events-grid">
+                <div class="event-card">
+                    <div class="event-icon">📅</div>
+                    <h4>Spring Tryouts</h4>
+                    <p>March 15 @ 6:00 PM • Elite Training Center</p>
+                    <span class="event-meta">$25 • Register</span>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">🏆</div>
+                    <h4>Regional Championship</h4>
+                    <p>April 5-7 • Multi-court Venue</p>
+                    <span class="event-meta">$0 • Free</span>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">💪</div>
+                    <h4>Open Gym Friday</h4>
+                    <p>Every Friday @ 7:00 PM • Drop-in</p>
+                    <span class="event-meta">$10 • Join</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== NEWS SECTION (MINIMAL - VARIATION) ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">The <span>Huddle</span></h2>
+                <p class="section-subtitle">Latest news and updates from NJ Stars</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="news-grid">
+                <div class="news-card">
+                    <div class="news-icon">📰</div>
+                    <h4>New Coach Announced</h4>
+                    <p>Meet Coach Davis, our new Head of Player Development with 15 years of AAU experience.</p>
+                    <div class="news-date">March 10, 2025</div>
+                </div>
+
+                <div class="news-card">
+                    <div class="news-icon">🏆</div>
+                    <h4>Championship Victory</h4>
+                    <p>Elite 14U team wins regional tournament, advancing to nationals in June.</p>
+                    <div class="news-date">March 8, 2025</div>
+                </div>
+
+                <div class="news-card">
+                    <div class="news-icon">📣</div>
+                    <h4>Early Registration Open</h4>
+                    <p>Spring training programs now open for enrollment. Limited spots available for elite track.</p>
+                    <div class="news-date">March 5, 2025</div>
+                </div>
+
+                <div class="news-card">
+                    <div class="news-icon">🎓</div>
+                    <h4>College Commits</h4>
+                    <p>5 athletes sign letters of intent to D1 and D2 schools this year.</p>
+                    <div class="news-date">March 1, 2025</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== CTA SECTION ========== -->
+        <section style="padding: 4rem 0;">
+            <div class="cta-section">
+                <h3>Ready to Join the Elite?</h3>
+                <p>Take your game to the next level with NJ Stars Elite AAU Basketball</p>
+                <button class="btn-primary" style="margin: 0 auto; display: block;">Register for Tryouts</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>🏀 NJ Stars Elite AAU Basketball • 2025</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Homepage mockup with gradient border cards for programs section</p>
+    </footer>
+</body>
+</html>

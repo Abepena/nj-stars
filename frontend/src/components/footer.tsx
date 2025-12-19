@@ -39,7 +39,7 @@ export function Footer() {
     : "brightness(0) saturate(100%) invert(85%) sepia(18%) saturate(747%) hue-rotate(88deg) brightness(101%) contrast(87%)"
 
   return (
-    <footer className="bg-muted py-8 border-t border-border">
+    <footer className="bg-background py-8 border-t border-border">
       <div className="container mx-auto px-4 space-y-6">
         {/* Footer Links */}
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">

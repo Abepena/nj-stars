@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button"
 import { ErrorMessage } from "@/components/error-message"
 import { NewsCardSkeleton } from "@/components/skeletons/news-card-skeleton"
 import { format } from "date-fns"
+import {
+  Newspaper,
+  UserPlus,
+  Tent,
+  Trophy,
+  ShoppingBag,
+  Tag,
+  Megaphone,
+  Instagram
+} from "lucide-react"
 
 interface InstagramPost {
   id: number
@@ -53,16 +63,19 @@ interface FeedItem {
   media_type?: string
 }
 
-// Category tag colors - clean text colors for Nike-style
-const CATEGORY_CONFIG: Record<BlogCategory | 'instagram', { label: string; className: string }> = {
-  news: { label: 'News', className: 'text-info' },
-  tryouts: { label: 'Tryouts', className: 'text-warning' },
-  camp: { label: 'Camp', className: 'text-success' },
-  tournament: { label: 'Tournament', className: 'text-secondary' },
-  merch: { label: 'Merch', className: 'text-primary' },
-  sale: { label: 'Sale', className: 'text-tertiary' },
-  announcement: { label: 'Announcement', className: 'text-accent' },
-  instagram: { label: 'Instagram', className: 'text-primary' },
+// Category config with icons - clean monochrome styling
+const CATEGORY_CONFIG: Record<BlogCategory | 'instagram', {
+  label: string;
+  icon: typeof Newspaper;
+}> = {
+  news: { label: 'News', icon: Newspaper },
+  tryouts: { label: 'Tryouts', icon: UserPlus },
+  camp: { label: 'Camp', icon: Tent },
+  tournament: { label: 'Tournament', icon: Trophy },
+  merch: { label: 'Merch', icon: ShoppingBag },
+  sale: { label: 'Sale', icon: Tag },
+  announcement: { label: 'Announcement', icon: Megaphone },
+  instagram: { label: 'Instagram', icon: Instagram },
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -176,12 +189,12 @@ export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: 
 
     if (wrapInSection) {
       return (
-        <section className="py-16 md:py-20 bg-muted/30">
-          <div className="container mx-auto px-4">
+        <section className="py-16 md:py-20 section-depth-light">
+          <div className="container mx-auto px-4 relative z-10">
             {/* Section Header Skeleton */}
-            <div className="mb-10">
-              <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-10 w-40 bg-muted animate-pulse rounded" />
+            <div className="mb-12">
+              <div className="h-4 w-24 bg-bg-secondary animate-pulse rounded mb-2" />
+              <div className="h-10 w-40 bg-bg-secondary animate-pulse rounded" />
             </div>
             {skeletonContent}
           </div>
@@ -241,14 +254,14 @@ export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: 
 
   if (wrapInSection) {
     return (
-      <section className="py-16 md:py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
+      <section className="py-16 md:py-20 section-depth-light">
+        <div className="container mx-auto px-4 relative z-10">
           {/* Section Header - matching Programs & Schedule style */}
-          <div className="mb-10">
-            <p className="text-sm font-medium text-tertiary uppercase tracking-wider mb-2">
+          <div className="mb-12">
+            <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2">
               Stay Updated
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               The Huddle
             </h2>
           </div>
@@ -261,7 +274,7 @@ export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: 
   return content
 }
 
-// Clean Nike-style feed card
+// Clean editorial-style feed card
 function FeedCard({ item }: { item: FeedItem }) {
   const formattedDate = format(new Date(item.published_date), "MMM dd, yyyy")
 
@@ -270,50 +283,41 @@ function FeedCard({ item }: { item: FeedItem }) {
     if (item.type === "instagram") {
       return CATEGORY_CONFIG.instagram
     }
-    // For huddle posts, use the category or default to 'news'
     const category = item.category || "news"
     return CATEGORY_CONFIG[category] || CATEGORY_CONFIG.news
   }
 
   const tagConfig = getTagConfig()
+  const IconComponent = tagConfig.icon
 
   const cardContent = (
-    <article className="flex flex-col cursor-pointer group">
-      {/* Image - rounded corners, no card border */}
-      <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-muted">
-        {item.image_url ? (
-          <Image
-            src={item.image_url}
-            alt={item.title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center p-8 relative">
-            <Image
-              src="/brand/logos/logo square thick muted.svg"
-              alt={item.title}
-              fill
-              className="opacity-30 object-contain p-8"
-            />
+    <article className="flex flex-col cursor-pointer group h-full">
+      {/* Clean card - subtle border, no heavy gradients */}
+      <div className="h-full rounded-lg bg-bg-secondary/60 border border-white/[0.06] p-4 flex flex-col transition-all duration-200 hover:bg-bg-secondary/80 hover:border-white/[0.1]">
+        {/* Top row: Icon + Category */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-md bg-white/[0.06] flex items-center justify-center">
+            <IconComponent className="w-4 h-4 text-text-tertiary" />
           </div>
-        )}
-      </div>
-
-      {/* Content - Nike style: tag, title, date */}
-      <div className="flex flex-col pt-3 space-y-1">
-        {/* Tag label */}
-        <span className={`text-xs font-medium ${tagConfig.className}`}>
-          {tagConfig.label}
-        </span>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
+            {tagConfig.label}
+          </span>
+        </div>
 
         {/* Title */}
-        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-white transition-colors mb-2">
           {item.title}
         </h3>
 
-        {/* Date */}
-        <p className="text-xs text-muted-foreground">
+        {/* Excerpt if available */}
+        {item.excerpt && (
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
+            {item.excerpt}
+          </p>
+        )}
+
+        {/* Date - muted, at bottom */}
+        <p className="text-xs text-text-tertiary mt-auto">
           {formattedDate}
         </p>
       </div>

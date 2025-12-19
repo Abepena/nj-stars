@@ -1,5 +1,5 @@
 import { Users, Dumbbell, Trophy, Target } from "lucide-react"
-import { IconCard } from "@/components/ui/icon-card"
+import { PremiumIconCard } from "@/components/ui/premium-icon-card"
 
 const programs = [
   {
@@ -30,11 +30,11 @@ const programs = [
 
 export function ProgramsSection() {
   return (
-    <section className="py-16 md:py-20 bg-muted/30">
-      <div className="container mx-auto px-4">
+    <section className="py-16 md:py-20 section-depth-light">
+      <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
-        <div className="mb-10">
-          <p className="text-sm font-medium text-info/80 uppercase tracking-wider mb-2">
+        <div className="mb-12">
+          <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2">
             What We Offer
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
@@ -43,15 +43,17 @@ export function ProgramsSection() {
         </div>
 
         {/* Programs Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {programs.map((program) => (
-            <IconCard
+            <PremiumIconCard
               key={program.title}
               icon={program.icon}
               title={program.title}
               description={program.description}
               href={program.href}
-              accentColor="info"
+              accentColor="primary"
+              iconSize={64}
+              variant="merch"
             />
           ))}
         </div>

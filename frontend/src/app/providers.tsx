@@ -9,7 +9,7 @@ import { GoogleMapsProvider } from "@/components/google-maps-provider"
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <ThemeProvider defaultTheme="dark" storageKey="nj-stars-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="nj-stars-theme" forcedTheme="dark">
         <ToastProvider>
           <BagProvider>
             <GoogleMapsProvider>

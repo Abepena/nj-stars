@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { ShootingStars } from "@/components/ui/shooting-stars"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -98,104 +97,116 @@ export function MerchDropHype({
   }
 
   const showCountdown = settings.is_countdown_active && timeLeft
+  const layoutClassName = showCountdown
+    ? "lg:grid-cols-[1.1fr_0.9fr]"
+    : "lg:grid-cols-1"
+  const kickerText = !showSectionHeader ? (sectionTitle ?? "Merch Drop") : null
 
   return (
     <section
-      className={`relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/30 ${
+      className={`relative overflow-hidden section-glow-spot ${
         fullHeight
           ? "min-h-[calc(100vh-4rem)] flex items-center"
           : "py-16 md:py-24"
       }`}
     >
-      {/* Animated background elements */}
+      {/* Pink-dominant ambient glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Floating orbs */}
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 md:w-96 md:h-96 rounded-full bg-primary/5 blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 md:w-72 md:h-72 rounded-full bg-secondary/5 blur-3xl animate-pulse-slow delay-1000" />
-        <div className="absolute top-1/2 right-1/3 w-32 h-32 md:w-48 md:h-48 rounded-full bg-tertiary/5 blur-2xl animate-pulse-slow delay-2000" />
-
-        {/* Shooting stars layer */}
-        <ShootingStars starCount={12} minSpeed={3} maxSpeed={7} className="opacity-60" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,hsl(var(--bg-primary)/0.6)_100%)]" />
-
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px),
-                             linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
-            backgroundSize: '4rem 4rem',
-          }}
-        />
+        <div className="absolute -top-40 -left-32 h-72 w-72 rounded-full bg-[hsl(var(--primary)/0.08)] blur-[140px]" />
+        <div className="absolute -bottom-40 -right-32 h-80 w-80 rounded-full bg-[hsl(var(--primary)/0.12)] blur-[160px]" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Section Header (for homepage) */}
         {showSectionHeader && sectionTitle && (
-          <div className="mb-10">
-            <p className="text-sm font-medium text-primary uppercase tracking-wider mb-2">
+          <div className="mb-10 text-center lg:text-left">
+            <p className="text-xs font-medium text-white/60 uppercase tracking-[0.4em] mb-3">
               Coming Soon
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               {sectionTitle}
             </h2>
           </div>
         )}
 
-        <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
-          {/* Main headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 md:mb-8 animate-fade-in-up">
-            <span className="relative inline-block pb-3 md:pb-4">
-              {settings.headline}
-              <span className="absolute left-0 bottom-0 h-1 w-full rounded-full bg-gradient-to-r from-primary/90 via-primary/60 to-transparent shadow-[0_0_18px_hsl(var(--primary)/0.35)]" />
-            </span>
-          </h1>
+        <div className="relative mx-auto max-w-6xl">
+          {/* Pink-focused gradient border */}
+          <div className="rounded-3xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.6)] via-[hsl(var(--neon-pink)/0.3)] to-[hsl(var(--neon-pink)/0.1)]">
+            {/* Panel with pink glow */}
+            <div className="relative overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl border border-white/[0.05] shadow-[0_0_60px_hsl(var(--neon-pink)/0.15)]">
+              {/* Inner ambient glows - pink only */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-24 -right-20 h-52 w-52 rounded-full bg-[hsl(var(--neon-pink)/0.15)] blur-3xl" />
+                <div className="absolute -bottom-28 -left-24 h-64 w-64 rounded-full bg-[hsl(var(--neon-pink)/0.1)] blur-3xl" />
+              </div>
 
-          {/* Subheadline */}
-          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-8 md:mb-12 max-w-xl animate-fade-in-up delay-100">
-            {settings.subheadline}
-          </p>
+              <div className="relative px-6 py-10 md:px-10 md:py-14">
+                <div className={`grid gap-10 items-center ${layoutClassName}`}>
+                  <div className="text-center lg:text-left">
+                    {kickerText && (
+                      <div className="inline-flex items-center gap-3 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-[10px] uppercase tracking-[0.35em] text-foreground/80 mb-6">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.8)]" />
+                        <span>{kickerText}</span>
+                      </div>
+                    )}
 
-          {/* Countdown */}
-          {showCountdown && (
-            <div className="w-full max-w-lg mb-8 md:mb-12 animate-fade-in-up delay-200">
-              <div className="grid grid-cols-4 gap-2 sm:gap-4">
-                <CountdownUnit value={timeLeft.days} label="Days" />
-                <CountdownUnit value={timeLeft.hours} label="Hours" />
-                <CountdownUnit value={timeLeft.minutes} label="Mins" />
-                <CountdownUnit value={timeLeft.seconds} label="Secs" />
+                    {/* Main headline with extreme chromatic glitch effect */}
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 md:mb-8 animate-fade-in-up">
+                      <span
+                        className="chromatic-extreme relative inline-block pb-3 md:pb-4"
+                        data-text={settings.headline}
+                      >
+                        {settings.headline}
+                        <span className="absolute left-0 -bottom-1 h-1 w-full rounded-full bg-gradient-to-r from-primary/90 via-primary/60 to-transparent shadow-[0_0_18px_hsl(var(--neon-pink)/0.4)]" />
+                      </span>
+                    </h1>
+
+                    {/* Subheadline */}
+                    <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground mb-6 md:mb-8 max-w-xl mx-auto lg:mx-0 animate-fade-in-up delay-100">
+                      {settings.subheadline}
+                    </p>
+
+                    {/* Teaser text */}
+                    {settings.teaser_text && (
+                      <p className="text-sm sm:text-base text-muted-foreground/90 max-w-md mx-auto lg:mx-0 animate-fade-in-up delay-200">
+                        {settings.teaser_text}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Countdown */}
+                  {showCountdown && (
+                    <div className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto animate-fade-in-up delay-200">
+                      <div className="grid grid-cols-4 gap-3 sm:gap-4">
+                        <CountdownUnit value={timeLeft.days} label="Days" />
+                        <CountdownUnit value={timeLeft.hours} label="Hours" />
+                        <CountdownUnit value={timeLeft.minutes} label="Mins" />
+                        <CountdownUnit value={timeLeft.seconds} label="Secs" />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          )}
-
-          {/* Teaser text */}
-          {settings.teaser_text && (
-            <p className="text-sm sm:text-base text-muted-foreground mb-8 max-w-md animate-fade-in-up delay-300">
-              {settings.teaser_text}
-            </p>
-          )}
+          </div>
         </div>
       </div>
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
     </section>
   )
 }
 
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-full aspect-square flex items-center justify-center rounded-xl bg-card border border-border shadow-lg overflow-hidden group">
-        {/* Glow effect on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-        {/* Number */}
-        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-mono font-bold tabular-nums">
-          {value.toString().padStart(2, "0")}
-        </span>
+    <div className="flex flex-col items-center gap-2">
+      {/* Pink-themed countdown tile */}
+      <div className="w-full aspect-square rounded-xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.5)] to-[hsl(var(--neon-pink)/0.15)] transition-transform duration-300 hover:-translate-y-1 shadow-[0_0_25px_hsl(var(--neon-pink)/0.2)]">
+        <div className="w-full h-full rounded-[calc(0.75rem-1px)] bg-gradient-to-b from-bg-secondary/90 to-bg-primary/95 backdrop-blur-sm flex items-center justify-center border border-white/[0.05]">
+          <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-mono font-bold tabular-nums text-foreground [text-shadow:0_0_20px_hsl(var(--neon-pink)/0.4)]">
+            {value.toString().padStart(2, "0")}
+          </span>
+        </div>
       </div>
-      <span className="mt-2 text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
+      <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-[0.35em]">
         {label}
       </span>
     </div>

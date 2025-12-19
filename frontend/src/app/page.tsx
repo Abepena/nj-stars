@@ -12,7 +12,7 @@ import { ContactForm } from "@/components/contact-form";
 
 export default function Home() {
   return (
-    <LayoutShell>
+    <LayoutShell background="gradient-grid">
       <Hero />
 
       {/* About Preview - Team intro and core values */}

@@ -28,14 +28,14 @@ const highlights = [
 
 export function AboutPreview() {
   return (
-    <section className="py-16 md:py-20">
-      <div className="container mx-auto px-4">
+    <section className="py-16 md:py-20 section-seamless">
+      <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="max-w-3xl mx-auto mb-12">
-          <p className="text-sm font-medium text-primary uppercase tracking-wider mb-2 text-center">
+          <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2 text-center">
             About Our Program
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-center text-foreground">
             We Don&apos;t Recruit Stars. We Build Them.
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed text-left">
@@ -59,19 +59,21 @@ export function AboutPreview() {
         </div>
 
         {/* Core Values */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 mb-10">
           {coreValues.map((value) => (
             <div
               key={value.title}
-              className="group bg-card/50 border border-border rounded-xl p-6 text-center hover:border-muted-foreground/30 transition-colors"
+              className="card-merch-style transition-all duration-300 hover:translate-y-[-4px] hover:shadow-[0_0_40px_hsl(var(--neon-pink)/0.2)]"
             >
-              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <value.icon className="w-6 h-6 text-muted-foreground" />
+              <div className="card-merch-style-inner p-6 text-center h-full">
+                <div className="w-12 h-12 bg-bg-tertiary border border-white/[0.08] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <value.icon className="w-6 h-6 text-text-secondary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{value.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {value.description}
+                </p>
               </div>
-              <h3 className="text-lg font-semibold mb-2">{value.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {value.description}
-              </p>
             </div>
           ))}
         </div>

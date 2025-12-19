@@ -4,45 +4,64 @@
 
 @layer base {
   :root {
-    /* NJ Stars palette (dark default) */
-    --bg-primary: 20 13% 9%;            /* #1a1614 - darkest background */
-    --bg-secondary: 20 9.4% 12.5%;      /* card/elevated surfaces */
-    --bg-tertiary: 20 7.1% 16.5%;       /* lightest background */
-    --bg-dashboard: 20 10% 12.5%;       /* #23201D - dashboard/admin background */
+    /* Premium Dark Palette - Pink Primary with Subtle Cyan */
+    --bg-primary: 0 0% 5%;              /* Almost black */
+    --bg-secondary: 0 0% 10%;           /* Dark gray/black */
+    --bg-tertiary: 0 0% 15%;            /* Lighter gray */
+    --bg-dashboard: 0 0% 10%;           /* Dashboard background */
+    --bg-quaternary: 0 0% 20%;          /* Light gray accent */
 
-    --text-primary: 26.7 16.4% 89.2%;   /* #e8e3df - main text */
-    --text-secondary: 38.8 6.8% 65%;    /* dimmed text - WCAG AA compliant */
-    --text-tertiary: 38.8 6.8% 60%;     /* more dimmed text - bumped from 55% for WCAG AA contrast */
+    --text-primary: 0 0% 100%;          /* Pure white */
+    --text-secondary: 0 0% 85%;         /* Off-white */
+    --text-tertiary: 0 0% 65%;          /* Gray */
 
-    --primary: 331.7 78% 58%;            /* hot pink - main brand color (brighter) */
-    --primary-foreground: 26.7 16.4% 89.2%;
+    /* Brand Colors - Black, White, Hot Pink (Team Colors) + Cyan Accent */
+    --primary: 316.3 96% 44%;           /* Hot pink #DC0588 (primary) */
+    --primary-foreground: 0 0% 100%;    /* White text on pink */
 
-    --secondary: 188.7 50% 25%;         /* muted teal badge background */
-    --secondary-foreground: 188.7 70% 65%;  /* teal text for contrast */
+    --secondary: 188.7 70% 45%;         /* Cyan accent (subtle, not dominant) */
+    --secondary-foreground: 0 0% 100%;  /* White text on cyan */
 
-    --accent: 353.4 65% 55%;            /* jersey red accent (brighter) */
-    --accent-foreground: 26.7 16.4% 89.2%;
+    --accent: 353.4 65% 55%;            /* Jersey red accent */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 353.4 65% 55%;
-    --destructive-foreground: 26.7 16.4% 89.2%;
+    --destructive-foreground: 0 0% 100%;
 
-    --info: 214.2 45% 58%;              /* blue (brighter) */
-    --info-foreground: 26.7 16.4% 89.2%;
+    --info: 214.2 45% 58%;              /* Blue */
+    --info-foreground: 0 0% 100%;
 
-    --success: 154.8 50% 52%;           /* green (brighter) */
-    --success-foreground: 26.7 16.4% 89.2%;
+    --success: 154.8 50% 52%;           /* Green */
+    --success-foreground: 0 0% 100%;
 
-    --warning: 33.3 75% 60%;            /* amber (brighter) */
-    --warning-foreground: 26.7 16.4% 89.2%;
+    --warning: 33.3 75% 60%;            /* Amber */
+    --warning-foreground: 0 0% 100%;
 
-    --tertiary: 37.7 92.1% 55%;         /* amber highlight (brighter) */
-    --tertiary-foreground: 26.7 16.4% 89.2%;
+    --tertiary: 37.7 92.1% 55%;         /* Amber highlight */
+    --tertiary-foreground: 0 0% 100%;
 
-    --border: 27.3 8% 26.9%;
-    --input: 27.3 8% 26.9%;
-    --ring: 331.7 78% 58%;               /* primary (hot pink) for focus */
+    --border: 0 0% 20%;                 /* Subtle gray border */
+    --input: 0 0% 20%;                  /* Input border */
+    --ring: 316.3 96% 44%;              /* Primary (hot pink #DC0588) for focus */
     --radius: 0.5rem;
     --portal-header-height: 0px;
+
+    /* Premium design tokens */
+    --pink-primary: 316.3 96% 44%;
+    --pink-accent: 316.3 96% 60%;
+    --cyan-accent: 188.7 70% 45%;
+    --cyan-muted: 188.7 50% 35%;
+
+    /* Neon color system - Pink primary, cyan accent */
+    --neon-pink: 316.3 95% 55%;
+    --neon-cyan: 188.7 80% 50%;
+    --neon-white: 0 0% 95%;
+
+    /* Glow intensities - use with box-shadow */
+    --glow-subtle: 0.15;
+    --glow-medium: 0.35;
+    --glow-intense: 0.55;
+    --glow-maximum: 0.75;
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
@@ -70,8 +89,8 @@
     --primary: 331.7 70% 42%;             /* Deeper hot pink for muted bg */
     --primary-foreground: 0 0% 100%;      /* white text on pink */
 
-    --secondary: 188.7 85% 30%;           /* Deeper teal for muted bg */
-    --secondary-foreground: 0 0% 100%;    /* white text on teal */
+    --secondary: 188.7 60% 35%;           /* Cyan accent for light mode */
+    --secondary-foreground: 0 0% 100%;    /* white text on cyan */
 
     --accent: 353.4 60% 40%;              /* Deeper red for muted bg */
     --accent-foreground: 0 0% 100%;       /* white text on red */
@@ -93,7 +112,7 @@
 
     --border: 40 8% 80%;                  /* Warm gray borders */
     --input: 40 8% 80%;                   /* Warm gray input borders */
-    --ring: 331.7 70% 42%;                /* primary for focus */
+    --ring: 316.3 96% 44%;                /* primary for focus */
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
@@ -107,32 +126,51 @@
   }
 
   .dark {
-    /* mirror root to keep dark the same palette */
-    --bg-primary: 20 13% 9%;
-    --bg-secondary: 20 9.4% 12.5%;
-    --bg-tertiary: 20 7.1% 16.5%;
-    --text-primary: 26.7 16.4% 89.2%;
-    --text-secondary: 38.8 6.8% 65%;
-    --text-tertiary: 38.8 6.8% 60%;
-    --primary: 331.7 78% 58%;
-    --primary-foreground: 26.7 16.4% 89.2%;
-    --secondary: 188.7 50% 25%;         /* muted teal badge background */
-    --secondary-foreground: 188.7 70% 65%;  /* teal text for contrast */
+    /* Premium dark palette - mirror root for dark mode */
+    --bg-primary: 0 0% 5%;
+    --bg-secondary: 0 0% 10%;
+    --bg-tertiary: 0 0% 15%;
+    --bg-dashboard: 0 0% 10%;
+    --bg-quaternary: 0 0% 20%;
+    --text-primary: 0 0% 100%;
+    --text-secondary: 0 0% 85%;
+    --text-tertiary: 0 0% 65%;
+    --primary: 316.3 96% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 188.7 70% 45%;
+    --secondary-foreground: 0 0% 100%;
     --accent: 353.4 65% 55%;
-    --accent-foreground: 26.7 16.4% 89.2%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 353.4 65% 55%;
-    --destructive-foreground: 26.7 16.4% 89.2%;
+    --destructive-foreground: 0 0% 100%;
     --info: 214.2 45% 58%;
-    --info-foreground: 26.7 16.4% 89.2%;
+    --info-foreground: 0 0% 100%;
     --success: 154.8 50% 52%;
-    --success-foreground: 26.7 16.4% 89.2%;
+    --success-foreground: 0 0% 100%;
     --warning: 33.3 75% 60%;
-    --warning-foreground: 26.7 16.4% 89.2%;
+    --warning-foreground: 0 0% 100%;
     --tertiary: 37.7 92.1% 55%;
-    --tertiary-foreground: 26.7 16.4% 89.2%;
-    --border: 27.3 8% 26.9%;
-    --input: 27.3 8% 26.9%;
-    --ring: 331.7 78% 58%;
+    --tertiary-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 316.3 96% 44%;
+
+    /* Premium design tokens */
+    --pink-primary: 316.3 96% 44%;
+    --pink-accent: 316.3 96% 60%;
+    --cyan-accent: 188.7 70% 45%;
+    --cyan-muted: 188.7 50% 35%;
+
+    /* Neon color system - Pink primary, cyan accent */
+    --neon-pink: 316.3 95% 55%;
+    --neon-cyan: 188.7 80% 50%;
+    --neon-white: 0 0% 95%;
+
+    /* Glow intensities - use with box-shadow */
+    --glow-subtle: 0.15;
+    --glow-medium: 0.35;
+    --glow-intense: 0.55;
+    --glow-maximum: 0.75;
 
     /* Aliases for backward compatibility */
     --background: var(--bg-primary);
@@ -365,6 +403,264 @@
   animation-delay: 2s;
 }
 
+/* Merch Drop Glitch Theme */
+@keyframes glitch-shift {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.55;
+  }
+  10% {
+    transform: translate(-2px, -1px);
+    opacity: 0.7;
+  }
+  20% {
+    transform: translate(2px, 1px);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translate(-1px, 2px);
+    opacity: 0.65;
+  }
+  40% {
+    transform: translate(1px, -2px);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate(-2px, 1px);
+    opacity: 0.7;
+  }
+  60% {
+    transform: translate(2px, -1px);
+    opacity: 0.5;
+  }
+  70% {
+    transform: translate(-1px, -2px);
+    opacity: 0.6;
+  }
+  80% {
+    transform: translate(1px, 1px);
+    opacity: 0.5;
+  }
+  90% {
+    transform: translate(-2px, 0);
+    opacity: 0.65;
+  }
+}
+
+@keyframes glitch-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.85;
+  }
+  46% {
+    opacity: 0.5;
+  }
+  47% {
+    opacity: 0.95;
+  }
+  56% {
+    opacity: 0.9;
+  }
+  57% {
+    opacity: 0.6;
+  }
+  58% {
+    opacity: 1;
+  }
+}
+
+@keyframes scanlines {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 60px;
+  }
+}
+
+@keyframes glitch-streaks {
+  0%, 100% {
+    transform: translate(-10%, -6%);
+  }
+  50% {
+    transform: translate(6%, 8%);
+  }
+}
+
+.glitch-hero {
+  background-color: hsl(var(--bg-primary));
+  background-image:
+    radial-gradient(1000px circle at 10% 15%, hsl(var(--secondary) / 0.18), transparent 55%),
+    radial-gradient(900px circle at 90% 20%, hsl(var(--primary) / 0.2), transparent 55%),
+    radial-gradient(700px circle at 50% 95%, hsl(var(--info) / 0.15), transparent 60%),
+    linear-gradient(180deg, hsl(var(--bg-primary)) 0%, hsl(var(--bg-secondary)) 55%, hsl(var(--bg-primary)) 100%);
+}
+
+.glitch-grid {
+  background-image:
+    linear-gradient(90deg, hsl(var(--secondary) / 0.22) 1px, transparent 1px),
+    linear-gradient(0deg, hsl(var(--primary) / 0.18) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.35;
+  mask-image: radial-gradient(circle at 50% 40%, #000 30%, transparent 70%);
+}
+
+.glitch-scanlines {
+  background-image: linear-gradient(transparent 0, transparent 2px, rgba(255, 255, 255, 0.06) 3px);
+  background-size: 100% 4px;
+  opacity: 0.25;
+  mix-blend-mode: soft-light;
+  animation: scanlines 12s linear infinite;
+}
+
+.glitch-streaks {
+  background-image:
+    linear-gradient(110deg, transparent 0%, hsl(var(--secondary) / 0.45) 50%, transparent 52%),
+    linear-gradient(120deg, transparent 0%, hsl(var(--primary) / 0.45) 50%, transparent 52%);
+  background-size: 200% 200%;
+  opacity: 0.18;
+  mix-blend-mode: screen;
+  animation: glitch-streaks 14s ease-in-out infinite;
+}
+
+.glitch-border {
+  background: linear-gradient(120deg, hsl(var(--secondary) / 0.8), hsl(var(--primary) / 0.8), hsl(var(--info) / 0.6));
+}
+
+/* Premium gradient grid background - static, no animations */
+.gradient-grid-bg {
+  background-color: hsl(0 0% 8%);
+  background-image:
+    /* Large radial gradients for depth - pink primary with cyan accent */
+    radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, hsl(var(--primary) / 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, hsl(var(--secondary) / 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 10% 80%, hsl(var(--secondary) / 0.08) 0%, transparent 35%),
+    radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.06) 0%, transparent 60%),
+    /* Grid pattern - pink with subtle cyan accent */
+    linear-gradient(90deg, hsl(var(--primary) / 0.15) 1px, transparent 1px),
+    linear-gradient(0deg, hsl(var(--primary) / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--secondary) / 0.06) 2px, transparent 2px),
+    linear-gradient(0deg, hsl(var(--secondary) / 0.04) 2px, transparent 2px),
+    /* Lighter black base layer */
+    linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 12%) 50%, hsl(0 0% 8%) 100%);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    80px 80px,
+    80px 80px,
+    160px 160px,
+    160px 160px,
+    100% 100%;
+  background-position:
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0;
+  background-attachment: fixed;
+}
+
+.glitch-panel {
+  background: linear-gradient(180deg, hsl(var(--bg-secondary) / 0.75), hsl(var(--bg-primary) / 0.85));
+  border: 1px solid hsl(var(--border) / 0.6);
+  box-shadow:
+    0 0 40px hsl(var(--secondary) / 0.18),
+    0 0 60px hsl(var(--primary) / 0.2);
+  backdrop-filter: blur(16px);
+}
+
+.glitch-title {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  text-shadow: 0 0 24px hsl(var(--primary) / 0.35);
+}
+
+.glitch-title::before,
+.glitch-title::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.glitch-title::before {
+  color: hsl(var(--secondary) / 0.85);
+  clip-path: inset(0 0 55% 0);
+  filter: blur(0.3px);
+  animation: glitch-shift 3.5s infinite linear;
+}
+
+.glitch-title::after {
+  color: hsl(var(--primary) / 0.85);
+  clip-path: inset(45% 0 0 0);
+  filter: blur(0.2px);
+  animation: glitch-shift 2.7s infinite linear reverse;
+}
+
+.glitch-tile {
+  position: relative;
+  border-radius: 1rem;
+  padding: 1px;
+  background: linear-gradient(135deg, hsl(var(--secondary) / 0.85), hsl(var(--primary) / 0.9), hsl(var(--info) / 0.7));
+  box-shadow:
+    0 0 25px hsl(var(--secondary) / 0.25),
+    0 0 35px hsl(var(--primary) / 0.2);
+}
+
+.glitch-tile-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(1rem - 1px);
+  background: linear-gradient(180deg, hsl(var(--bg-secondary) / 0.85), hsl(var(--bg-primary) / 0.9));
+  border: 1px solid hsl(var(--border) / 0.7);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.glitch-tile-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, hsl(var(--secondary) / 0.18), transparent);
+  opacity: 0.3;
+  mix-blend-mode: screen;
+}
+
+.glitch-digits {
+  color: hsl(var(--text-primary));
+  text-shadow:
+    0 0 12px hsl(var(--secondary) / 0.5),
+    0 0 18px hsl(var(--primary) / 0.45);
+  animation: glitch-flicker 6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch-title::before,
+  .glitch-title::after,
+  .glitch-scanlines,
+  .glitch-streaks,
+  .glitch-digits {
+    animation: none;
+  }
+}
+
 /* ==========================================================================
    Badge Utility Classes
    Muted backgrounds with foreground text for consistent visual hierarchy
@@ -493,4 +789,411 @@
 
 .animate-accordion-up {
   animation: accordion-up 0.2s ease-out;
+}
+
+/* ==========================================================================
+   Opus Neon Design System - Premium Glow Effects
+   ========================================================================== */
+
+/* Chromatic aberration keyframes for glitch text */
+@keyframes chromatic-shift {
+  0%, 100% {
+    text-shadow:
+      -2px 0 hsl(var(--neon-cyan)),
+      2px 0 hsl(var(--neon-pink));
+  }
+  25% {
+    text-shadow:
+      -3px -1px hsl(var(--neon-cyan)),
+      3px 1px hsl(var(--neon-pink));
+  }
+  50% {
+    text-shadow:
+      -1px 2px hsl(var(--neon-cyan)),
+      1px -2px hsl(var(--neon-pink));
+  }
+  75% {
+    text-shadow:
+      -2px 1px hsl(var(--neon-cyan)),
+      2px -1px hsl(var(--neon-pink));
+  }
+}
+
+/* Pulsing glow for emphasis */
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 20px hsl(var(--neon-pink) / 0.4),
+      0 0 40px hsl(var(--neon-pink) / 0.2),
+      inset 0 0 20px hsl(var(--neon-pink) / 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 30px hsl(var(--neon-pink) / 0.6),
+      0 0 60px hsl(var(--neon-pink) / 0.3),
+      inset 0 0 30px hsl(var(--neon-pink) / 0.15);
+  }
+}
+
+@keyframes neon-pulse-cyan {
+  0%, 100% {
+    box-shadow:
+      0 0 20px hsl(var(--neon-cyan) / 0.4),
+      0 0 40px hsl(var(--neon-cyan) / 0.2),
+      inset 0 0 20px hsl(var(--neon-cyan) / 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 30px hsl(var(--neon-cyan) / 0.6),
+      0 0 60px hsl(var(--neon-cyan) / 0.3),
+      inset 0 0 30px hsl(var(--neon-cyan) / 0.15);
+  }
+}
+
+/* Border gradient animation */
+@keyframes border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Neon glow utility classes */
+.neon-glow-pink {
+  box-shadow:
+    0 0 10px hsl(var(--neon-pink) / 0.3),
+    0 0 20px hsl(var(--neon-pink) / 0.2),
+    0 0 40px hsl(var(--neon-pink) / 0.1);
+}
+
+.neon-glow-pink-intense {
+  box-shadow:
+    0 0 15px hsl(var(--neon-pink) / 0.5),
+    0 0 30px hsl(var(--neon-pink) / 0.3),
+    0 0 60px hsl(var(--neon-pink) / 0.15);
+}
+
+.neon-glow-cyan {
+  box-shadow:
+    0 0 10px hsl(var(--neon-cyan) / 0.3),
+    0 0 20px hsl(var(--neon-cyan) / 0.2),
+    0 0 40px hsl(var(--neon-cyan) / 0.1);
+}
+
+.neon-glow-cyan-intense {
+  box-shadow:
+    0 0 15px hsl(var(--neon-cyan) / 0.5),
+    0 0 30px hsl(var(--neon-cyan) / 0.3),
+    0 0 60px hsl(var(--neon-cyan) / 0.15);
+}
+
+.neon-glow-dual {
+  box-shadow:
+    -5px 0 20px hsl(var(--neon-cyan) / 0.25),
+    5px 0 20px hsl(var(--neon-pink) / 0.25),
+    0 0 40px hsl(var(--neon-purple) / 0.15);
+}
+
+/* Chromatic text effect */
+.chromatic-text {
+  position: relative;
+  animation: chromatic-shift 4s ease-in-out infinite;
+}
+
+.chromatic-text-static {
+  text-shadow:
+    -2px 0 hsl(var(--neon-cyan) / 0.7),
+    2px 0 hsl(var(--neon-pink) / 0.7);
+}
+
+.chromatic-subtle {
+  text-shadow:
+    -1px 0 hsl(var(--neon-cyan) / 0.4),
+    1px 0 hsl(var(--neon-pink) / 0.4);
+}
+
+.chromatic-extreme {
+  animation: chromatic-shift-extreme 2s ease-in-out infinite;
+}
+
+@keyframes chromatic-shift-extreme {
+  0%, 100% {
+    text-shadow:
+      -4px 0 hsl(var(--neon-cyan)),
+      4px 0 hsl(var(--neon-pink)),
+      0 0 20px hsl(var(--neon-purple) / 0.5);
+  }
+  20% {
+    text-shadow:
+      -6px 0 hsl(var(--neon-cyan)),
+      6px 0 hsl(var(--neon-pink)),
+      0 0 30px hsl(var(--neon-purple) / 0.6);
+  }
+  40% {
+    text-shadow:
+      -2px 0 hsl(var(--neon-cyan)),
+      2px 0 hsl(var(--neon-pink)),
+      0 0 15px hsl(var(--neon-purple) / 0.4);
+  }
+  60% {
+    text-shadow:
+      -5px 0 hsl(var(--neon-cyan)),
+      5px 0 hsl(var(--neon-pink)),
+      0 0 25px hsl(var(--neon-purple) / 0.55);
+  }
+  80% {
+    text-shadow:
+      -3px 0 hsl(var(--neon-cyan)),
+      3px 0 hsl(var(--neon-pink)),
+      0 0 35px hsl(var(--neon-purple) / 0.7);
+  }
+}
+
+/* Neon text glow */
+.neon-text-pink {
+  text-shadow:
+    0 0 10px hsl(var(--neon-pink) / 0.8),
+    0 0 20px hsl(var(--neon-pink) / 0.5),
+    0 0 40px hsl(var(--neon-pink) / 0.3);
+}
+
+.neon-text-cyan {
+  text-shadow:
+    0 0 10px hsl(var(--neon-cyan) / 0.8),
+    0 0 20px hsl(var(--neon-cyan) / 0.5),
+    0 0 40px hsl(var(--neon-cyan) / 0.3);
+}
+
+/* Animated pulsing glow */
+.animate-neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.animate-neon-pulse-cyan {
+  animation: neon-pulse-cyan 2s ease-in-out infinite;
+}
+
+/* Animated gradient border */
+.neon-border-animated {
+  position: relative;
+  background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+              linear-gradient(135deg, hsl(var(--neon-cyan)), hsl(var(--neon-pink)), hsl(var(--neon-purple)), hsl(var(--neon-cyan))) border-box;
+  background-size: 100% 100%, 300% 300%;
+  border: 2px solid transparent;
+  animation: border-flow 4s ease infinite;
+}
+
+/* Static gradient border */
+.neon-border-gradient {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+              linear-gradient(135deg, hsl(var(--neon-cyan) / 0.6), hsl(var(--neon-pink) / 0.6)) border-box;
+}
+
+/* Court grid overlay for backgrounds */
+.court-grid-overlay {
+  background-image:
+    linear-gradient(90deg, hsl(var(--neon-pink) / 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, hsl(var(--neon-cyan) / 0.06) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* ==========================================================================
+   Seamless Section Depth System
+   Creates soft depth transitions without harsh edges between sections
+   ========================================================================== */
+
+/* Base section - removes background, relies on page-level gradient-grid */
+.section-seamless {
+  position: relative;
+  background: transparent;
+}
+
+/* Subtle radial depth glow - pink dominant */
+.section-seamless::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--neon-pink) / 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, hsl(var(--neon-pink) / 0.03) 0%, transparent 60%);
+}
+
+/* Alternating depth - for visual rhythm without hard lines */
+.section-depth-light {
+  position: relative;
+  background: transparent;
+}
+
+.section-depth-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 100% 80% at 50% 20%, hsl(var(--neon-pink) / 0.05) 0%, transparent 60%);
+}
+
+.section-depth-dark {
+  position: relative;
+  background: transparent;
+}
+
+.section-depth-dark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, hsl(0 0% 0% / 0.15) 0%, transparent 30%, transparent 70%, hsl(0 0% 0% / 0.1) 100%);
+}
+
+/* Floating ambient glow spots - use on sections that need emphasis */
+.section-glow-spot {
+  position: relative;
+}
+
+.section-glow-spot::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 40%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, hsl(var(--neon-pink) / 0.08) 0%, transparent 70%);
+  filter: blur(60px);
+}
+
+/* ==========================================================================
+   Subtle Card Gradients
+   Adds depth to cards without being too busy - diagonal pink accent
+   ========================================================================== */
+
+/* Subtle diagonal gradient from top-left - works on dark backgrounds */
+.card-subtle-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--neon-pink) / 0.04) 0%,
+    transparent 40%,
+    transparent 100%
+  ), hsl(var(--bg-secondary));
+}
+
+/* Radial corner glow - pink/purple tinted, increased visibility */
+.card-corner-glow {
+  background:
+    radial-gradient(ellipse 80% 80% at 0% 0%, hsl(var(--neon-pink) / 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 100% 100%, hsl(var(--neon-purple) / 0.05) 0%, transparent 50%),
+    hsl(var(--bg-secondary));
+}
+
+/* MerchHype-style card - gradient border with pink glow */
+.card-merch-style {
+  position: relative;
+  border-radius: 1rem;
+  padding: 1px;
+  background: linear-gradient(135deg, hsl(var(--neon-pink) / 0.5) 0%, hsl(var(--neon-pink) / 0.2) 50%, hsl(var(--neon-purple) / 0.15) 100%);
+  box-shadow: 0 0 30px hsl(var(--neon-pink) / 0.12);
+}
+
+.card-merch-style-inner {
+  position: relative;
+  background: linear-gradient(180deg, hsl(var(--bg-secondary) / 0.9) 0%, hsl(var(--bg-primary) / 0.95) 100%);
+  border-radius: calc(1rem - 1px);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(0 0% 100% / 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure card content stays above texture overlay */
+.card-merch-style-inner > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Scanline texture overlay for cards */
+.card-merch-style-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.03) 2px,
+    rgba(255, 255, 255, 0.03) 4px
+  );
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover state - subtle lighten with texture reveal */
+.group:hover .card-merch-style-inner,
+.card-merch-style:hover .card-merch-style-inner {
+  background: linear-gradient(180deg, hsl(var(--bg-secondary)) 0%, hsl(var(--bg-secondary) / 0.85) 100%);
+  border-color: hsl(0 0% 100% / 0.08);
+}
+
+.group:hover .card-merch-style-inner::before,
+.card-merch-style:hover .card-merch-style-inner::before {
+  opacity: 1;
+}
+
+/* Combined: gradient + very subtle border highlight */
+.card-premium {
+  background:
+    radial-gradient(ellipse 100% 100% at 10% 10%, hsl(var(--neon-pink) / 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, hsl(var(--bg-secondary)) 0%, hsl(var(--bg-primary) / 0.8) 100%);
+  border: 1px solid hsl(0 0% 100% / 0.06);
+}
+
+/* Premium card hover state */
+.neon-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neon-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 4px 20px hsl(var(--neon-pink) / 0.2),
+    0 8px 40px hsl(var(--neon-pink) / 0.1),
+    inset 0 1px 0 hsl(var(--neon-cyan) / 0.1);
+}
+
+/* Neon badge styles */
+.neon-badge {
+  background: linear-gradient(135deg, hsl(var(--neon-pink) / 0.2), hsl(var(--neon-purple) / 0.15));
+  border: 1px solid hsl(var(--neon-pink) / 0.4);
+  box-shadow: 0 0 10px hsl(var(--neon-pink) / 0.2);
+}
+
+.neon-badge-cyan {
+  background: linear-gradient(135deg, hsl(var(--neon-cyan) / 0.2), hsl(var(--neon-purple) / 0.15));
+  border: 1px solid hsl(var(--neon-cyan) / 0.4);
+  box-shadow: 0 0 10px hsl(var(--neon-cyan) / 0.2);
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .chromatic-text,
+  .animate-neon-pulse,
+  .animate-neon-pulse-cyan,
+  .neon-border-animated {
+    animation: none;
+  }
+
+  .chromatic-text {
+    text-shadow:
+      -2px 0 hsl(var(--neon-cyan) / 0.5),
+      2px 0 hsl(var(--neon-pink) / 0.5);
+  }
 }

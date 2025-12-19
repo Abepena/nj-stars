@@ -27,6 +27,7 @@ import {
   Sun,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 interface PortalLayoutProps {
   children: ReactNode
@@ -190,6 +191,27 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
                 Sign Out
               </Button>
             </div>
+
+            {/* Powered by LEAG */}
+            <div className="mt-auto pt-4 border-t px-4 py-3">
+              <a
+                href="https://leag.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                title="LEAG - Multi-tenant Sports Platform"
+              >
+                <span className="mr-1">Powered by</span>
+                <Image
+                  src="/brand/logos/leag-logo.svg"
+                  alt="LEAG"
+                  width={48}
+                  height={20}
+                  className="h-8 w-auto"
+                  style={{ filter: "brightness(0) saturate(100%) invert(85%) sepia(18%) saturate(747%) hue-rotate(88deg) brightness(101%) contrast(87%)" }}
+                />
+              </a>
+            </div>
           </nav>
         )}
       </header>
@@ -274,6 +296,27 @@ export default function PortalLayout({ children }: PortalLayoutProps) {
                 <LogOut className="h-5 w-5" />
                 Sign Out
               </Button>
+            </div>
+
+            {/* Powered by LEAG */}
+            <div className="p-4 border-t mt-auto">
+              <a
+                href="https://leag.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                title="LEAG - Multi-tenant Sports Platform"
+              >
+                <span className="mr-1">Powered by</span>
+                <Image
+                  src="/brand/logos/leag-logo.svg"
+                  alt="LEAG"
+                  width={48}
+                  height={20}
+                  className="h-8 w-auto"
+                  style={{ filter: "brightness(0) saturate(100%) invert(85%) sepia(18%) saturate(747%) hue-rotate(88deg) brightness(101%) contrast(87%)" }}
+                />
+              </a>
             </div>
           </div>
         </aside>
