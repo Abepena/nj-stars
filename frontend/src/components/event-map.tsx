@@ -147,15 +147,21 @@ export function EventMap({
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
-  }, [])
+    // Show home info by default when map loads (if no events focused)
+    if (!focusedEvents || focusedEvents.length === 0) {
+      setShowHomeInfo(true)
+    }
+  }, [focusedEvents])
 
   // Pan map to show InfoWindow fully when events change
   useEffect(() => {
     if (!mapRef.current || !focusedEvents || focusedEvents.length === 0) {
-      // Reset to home base
+      // Reset to home base and show home info (only if map is ready)
       if (mapRef.current) {
-        mapRef.current.panTo({ lat: HOME_BASE.lat, lng: HOME_BASE.lng })
+        const lat = HOME_BASE.lat - 0.002  // Offset down to show InfoWindow
+        mapRef.current.panTo({ lat, lng: HOME_BASE.lng })
         mapRef.current.setZoom(DEFAULT_ZOOM)
+        setShowHomeInfo(true)
       }
       setActiveLocationKey(null)
       setActiveEventIndex(0)
@@ -179,12 +185,18 @@ export function EventMap({
         setActiveEventIndex(idx >= 0 ? idx : 0)
       }
     } else {
-      // Multiple events - fit bounds with extra top padding for InfoWindow
-      const focusBounds = new google.maps.LatLngBounds()
-      focusedWithCoords.forEach(e => {
-        focusBounds.extend({ lat: Number(e.latitude), lng: Number(e.longitude) })
-      })
-      mapRef.current.fitBounds(focusBounds, { top: 150, right: 50, bottom: 50, left: 50 })
+      // Multiple events - center on the first event and show its InfoWindow
+      const firstEvent = focusedWithCoords[0]
+      const lat = Number(firstEvent.latitude) - 0.003  // Offset down to show InfoWindow
+      mapRef.current.panTo({ lat, lng: Number(firstEvent.longitude) })
+      mapRef.current.setZoom(15)
+      const key = getLocationKey(Number(firstEvent.latitude), Number(firstEvent.longitude))
+      setActiveLocationKey(key)
+      const group = locationGroups.find(g => g.locationKey === key)
+      if (group) {
+        const idx = group.events.findIndex(e => e.id === firstEvent.id)
+        setActiveEventIndex(idx >= 0 ? idx : 0)
+      }
     }
     setShowHomeInfo(false)
   }, [focusedEvents, locationGroups])
