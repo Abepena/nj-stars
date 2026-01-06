@@ -93,7 +93,7 @@ export function MerchDropHype({
   }, [settings?.drop_date, settings?.is_countdown_active, calculateTimeLeft])
 
   // Don't render if not active or still loading
-  if (loading || !isMerchDropAnnouncementActive(settings)) {
+  if (loading || !settings || !isMerchDropAnnouncementActive(settings)) {
     return null
   }
 
