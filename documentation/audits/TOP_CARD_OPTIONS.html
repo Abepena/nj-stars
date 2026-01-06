@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top 3 Card Options - Programs & Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: hsl(230, 15%, 7%);
+            --bg-secondary: hsl(230, 12%, 11%);
+            --bg-tertiary: hsl(230, 10%, 15%);
+            --text-primary: hsl(0, 0%, 100%);
+            --text-secondary: hsl(0, 0%, 80%);
+            --text-tertiary: hsl(0, 0%, 60%);
+
+            --neon-pink: hsl(331.7, 95%, 60%);
+            --neon-cyan: hsl(188.7, 100%, 55%);
+            --neon-purple: hsl(270, 100%, 65%);
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 span {
+            color: var(--neon-cyan);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .comparison-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .option {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 300ms ease;
+        }
+
+        .option:hover {
+            border-color: rgba(0, 255, 255, 0.3);
+            background: rgba(0, 255, 255, 0.02);
+        }
+
+        .option-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-badge {
+            background: var(--neon-cyan);
+            color: var(--bg-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .option-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .option-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .card-preview {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        /* ============================================
+           OPTION 1: Left Border
+           ============================================ */
+        .preview-1 {
+            border-left: 4px solid var(--neon-cyan);
+            background: rgba(0, 255, 255, 0.02);
+            border-radius: 8px;
+        }
+
+        .preview-1:hover {
+            border-left-color: var(--neon-pink);
+            background: rgba(255, 20, 147, 0.05);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
+            transform: translateX(4px);
+        }
+
+        .preview-1 .icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-1 h4 {
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+        }
+
+        .preview-1 p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .preview-1 .meta {
+            display: inline-block;
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-cyan);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ============================================
+           OPTION 2: Bottom Border
+           ============================================ */
+        .preview-2 {
+            border-bottom: 3px solid var(--neon-cyan);
+            border-radius: 4px;
+            background: transparent;
+            padding: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom-width: 3px;
+        }
+
+        .preview-2:hover {
+            border-bottom-color: var(--neon-pink);
+            background: rgba(0, 255, 255, 0.03);
+            transform: translateY(-3px);
+        }
+
+        .preview-2 .icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-2 h4 {
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+        }
+
+        .preview-2 p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           OPTION 3: Gradient Outline
+           ============================================ */
+        .preview-3 {
+            border: 2px solid transparent;
+            border-radius: 12px;
+            background-image:
+                linear-gradient(var(--bg-tertiary), var(--bg-tertiary)),
+                linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            padding: 1.5rem;
+            transition: all 300ms ease;
+        }
+
+        .preview-3:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25), 0 0 30px rgba(255, 20, 147, 0.1);
+            transform: translateY(-4px);
+        }
+
+        .preview-3 .icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .preview-3 h4 {
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+        }
+
+        .preview-3 p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           PROS/CONS
+           ============================================ */
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .pros, .cons {
+            font-size: 0.85rem;
+        }
+
+        .pros h5, .cons h5 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .pros h5 {
+            color: var(--neon-cyan);
+        }
+
+        .cons h5 {
+            color: var(--neon-pink);
+        }
+
+        .pros ul, .cons ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .pros li::before {
+            content: "✓ ";
+            color: var(--neon-cyan);
+            font-weight: 700;
+            margin-right: 0.3rem;
+        }
+
+        .cons li::before {
+            content: "✗ ";
+            color: var(--neon-pink);
+            font-weight: 700;
+            margin-right: 0.3rem;
+        }
+
+        .pros li, .cons li {
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+            line-height: 1.4;
+        }
+
+        /* ============================================
+           COMPARISON TABLE
+           ============================================ */
+        .comparison-table {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 4rem 0;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .table-header > div:first-child {
+            color: var(--text-primary);
+        }
+
+        .table-header > div:not(:first-child) {
+            color: var(--neon-cyan);
+            text-align: center;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .table-row > div:first-child {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .table-row > div:not(:first-child) {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .score {
+            font-weight: 600;
+        }
+
+        .score.high {
+            color: var(--neon-cyan);
+        }
+
+        .score.medium {
+            color: var(--neon-purple);
+        }
+
+        .score.low {
+            color: var(--neon-pink);
+        }
+
+        /* ============================================
+           RECOMMENDATION BOX
+           ============================================ */
+        .recommendation {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 20, 147, 0.05));
+            border: 2px solid transparent;
+            border-image: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink)) 1;
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 3rem 0;
+        }
+
+        .recommendation h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .recommendation h3 span {
+            color: var(--neon-cyan);
+        }
+
+        .recommendation p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .recommendation ul {
+            list-style: none;
+            margin-left: 1rem;
+        }
+
+        .recommendation li {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .recommendation li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--neon-cyan);
+            font-weight: 700;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .comparison-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .table-header, .table-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .table-header > div:not(:first-child),
+            .table-row > div:not(:first-child) {
+                text-align: left;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .table-header > div:not(:first-child)::before,
+            .table-row > div:not(:first-child)::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--text-secondary);
+            }
+        }
+
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            margin-top: 4rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Top 3 Card <span>Options</span></h1>
+        <p class="subtitle">For Programs & Training Section • Pick Your Favorite</p>
+    </header>
+
+    <main>
+        <div class="comparison-container">
+            <!-- OPTION 1 -->
+            <div class="option">
+                <div class="option-header">
+                    <div class="option-badge">1</div>
+                    <div class="option-title">Left Border</div>
+                </div>
+
+                <p class="option-description">Neon colored left border that animates on hover. Small, clean, with accent metadata. Best balance of clean + interesting.</p>
+
+                <div class="card-preview preview-1">
+                    <div class="icon">🏀</div>
+                    <h4>Elite Training</h4>
+                    <p>High-intensity competitive training sessions</p>
+                    <span class="meta">3x/week</span>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>Clean & minimal</li>
+                            <li>Clear directional flow</li>
+                            <li>Easy to scan</li>
+                            <li>Neon accent pops</li>
+                            <li>Hover effect smooth</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>Less premium feel</li>
+                            <li>Not as bold as others</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OPTION 2 -->
+            <div class="option">
+                <div class="option-header">
+                    <div class="option-badge">2</div>
+                    <div class="option-title">Bottom Border</div>
+                </div>
+
+                <p class="option-description">Single neon line at bottom. Ultra-minimal, closest to current shop aesthetic. Lifts up on hover.</p>
+
+                <div class="card-preview preview-2">
+                    <div class="icon">🏀</div>
+                    <h4>Elite Training</h4>
+                    <p>High-intensity competitive training sessions</p>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>Ultra minimal</li>
+                            <li>Shop-like feel</li>
+                            <li>Loads fast</li>
+                            <li>Elegant</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>Least exciting</li>
+                            <li>Feels safe</li>
+                            <li>Not "next level"</li>
+                            <li>May feel basic</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OPTION 3 -->
+            <div class="option">
+                <div class="option-header">
+                    <div class="option-badge">3</div>
+                    <div class="option-title">Gradient Border</div>
+                </div>
+
+                <p class="option-description">Cyan-to-pink gradient outline. Premium feel. Strong glow on hover. Most visually impactful.</p>
+
+                <div class="card-preview preview-3">
+                    <div class="icon">🏀</div>
+                    <h4>Elite Training</h4>
+                    <p>High-intensity competitive training sessions</p>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>Most premium</li>
+                            <li>Strong visual</li>
+                            <li>Deep hover glow</li>
+                            <li>Memorable</li>
+                            <li>Neon aesthetic</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>Might be "too much"</li>
+                            <li>More CPU intensive</li>
+                            <li>Less minimalist</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARISON TABLE -->
+        <div class="comparison-table">
+            <div class="table-header">
+                <div>Criteria</div>
+                <div>Option 1</div>
+                <div>Option 2</div>
+                <div>Option 3</div>
+            </div>
+            <div class="table-row">
+                <div>Minimalist</div>
+                <div class="score high">9/10</div>
+                <div class="score high">10/10</div>
+                <div class="score medium">6/10</div>
+            </div>
+            <div class="table-row">
+                <div>Visual Impact</div>
+                <div class="score medium">7/10</div>
+                <div class="score low">5/10</div>
+                <div class="score high">9/10</div>
+            </div>
+            <div class="table-row">
+                <div>Premium Feel</div>
+                <div class="score medium">7/10</div>
+                <div class="score medium">6/10</div>
+                <div class="score high">9/10</div>
+            </div>
+            <div class="table-row">
+                <div>Shop-Like</div>
+                <div class="score high">8/10</div>
+                <div class="score high">10/10</div>
+                <div class="score medium">5/10</div>
+            </div>
+            <div class="table-row">
+                <div>Not Boring</div>
+                <div class="score high">8/10</div>
+                <div class="score low">4/10</div>
+                <div class="score high">9/10</div>
+            </div>
+            <div class="table-row">
+                <div>Easy to Implement</div>
+                <div class="score high">9/10</div>
+                <div class="score high">10/10</div>
+                <div class="score high">8/10</div>
+            </div>
+        </div>
+
+        <!-- RECOMMENDATION -->
+        <div class="recommendation">
+            <h3>🏆 Our Top Pick: <span>Option 1 - Left Border</span></h3>
+            <p>This hits the sweet spot between your requirements:</p>
+            <ul>
+                <li><strong>Outline aesthetic:</strong> You get clean borders like you wanted</li>
+                <li><strong>Shop-clean feel:</strong> Maintains minimalist appeal of shop design</li>
+                <li><strong>Not basic:</strong> Left border + hover color shift makes it visually interesting</li>
+                <li><strong>Neon accent:</strong> Colored left border (cyan → pink on hover) adds that energy without being flashy</li>
+                <li><strong>Easy to scan:</strong> Small metadata keeps it functional and readable</li>
+            </ul>
+
+            <p style="margin-top: 1.5rem;"><strong>Why not the others?</strong></p>
+            <ul>
+                <li><strong>Option 2 (Bottom Border):</strong> Might still feel "too basic" — it's ultra-minimal but doesn't add much visual interest</li>
+                <li><strong>Option 3 (Gradient Border):</strong> Beautiful, but might be too much neon for programs cards (better for featured items)</li>
+            </ul>
+
+            <p style="margin-top: 1.5rem;"><strong>Next steps:</strong> Let me know if you want to:</p>
+            <ul>
+                <li>Go with Option 1 and I'll update the actual components</li>
+                <li>See variations of any option</li>
+                <li>Combine elements from different options</li>
+            </ul>
+        </div>
+    </main>
+
+    <footer>
+        <p>🎨 Pick an option by hovering over the cards above</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Let me know which resonates with you and I'll implement it</p>
+    </footer>
+</body>
+</html>

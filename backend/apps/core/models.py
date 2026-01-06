@@ -98,7 +98,7 @@ class InstagramPost(models.Model):
     instagram_id = models.CharField(max_length=100, unique=True)
     caption = models.TextField(blank=True)
     media_type = models.CharField(max_length=20)  # IMAGE, VIDEO, CAROUSEL_ALBUM
-    media_url = models.URLField(max_length=500)
+    media_url = models.URLField(max_length=2000)  # Instagram CDN URLs can be long
     permalink = models.URLField(max_length=500)
     timestamp = models.DateTimeField()
 
@@ -243,6 +243,147 @@ class ContactSubmission(models.Model):
         self.resolved_at = timezone.now()
         self.resolved_by = user
         self.save()
+
+
+class InstagramCredential(models.Model):
+    """
+    Instagram API credentials with automatic token refresh support.
+
+    Designed for multi-tenancy: supports multiple Instagram accounts.
+    For MVP, we'll have one primary account.
+
+    Token Lifecycle:
+    - Long-lived tokens expire after 60 days
+    - Tokens can be refreshed before expiry to get a new 60-day window
+    - Refresh should happen when < 7 days remain
+    """
+
+    # Account identification
+    account_name = models.CharField(
+        max_length=100,
+        help_text="Friendly name (e.g., 'NJ Stars Official')"
+    )
+    instagram_username = models.CharField(
+        max_length=50,
+        help_text="Instagram handle without @ (e.g., 'njstarselite_aau')"
+    )
+    instagram_user_id = models.CharField(
+        max_length=50,
+        help_text="Instagram/Facebook User ID (from API)"
+    )
+
+    # Token management
+    access_token = models.TextField(
+        help_text="Long-lived access token from Instagram Graph API"
+    )
+    token_expires_at = models.DateTimeField(
+        help_text="When the token expires (60 days from issue)"
+    )
+    token_issued_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="When this token was first added"
+    )
+    last_refreshed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time the token was refreshed"
+    )
+
+    # NOTE: App ID and App Secret are read from environment variables
+    # META_APP_ID and META_APP_SECRET - not stored in database for security
+
+    # Status
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether to use this account for fetching posts"
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        help_text="Primary account (used when no specific account requested)"
+    )
+    last_sync_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last successful post sync"
+    )
+    last_error = models.TextField(
+        blank=True,
+        help_text="Last error message (cleared on success)"
+    )
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Instagram Credential'
+        verbose_name_plural = 'Instagram Credentials'
+        ordering = ['-is_primary', 'account_name']
+
+    def __str__(self):
+        status = "✓" if self.is_active else "✗"
+        primary = " (Primary)" if self.is_primary else ""
+        return f"{status} @{self.instagram_username}{primary}"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one primary account
+        if self.is_primary:
+            InstagramCredential.objects.filter(is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
+
+    @property
+    def days_until_expiry(self):
+        """Days remaining until token expires"""
+        from django.utils import timezone
+        if not self.token_expires_at:
+            return 0
+        delta = self.token_expires_at - timezone.now()
+        return max(0, delta.days)
+
+    @property
+    def needs_refresh(self):
+        """Check if token should be refreshed (< 7 days remaining)"""
+        return self.days_until_expiry < 7
+
+    @property
+    def is_expired(self):
+        """Check if token is already expired"""
+        from django.utils import timezone
+        return self.token_expires_at and self.token_expires_at < timezone.now()
+
+    @property
+    def can_refresh(self):
+        """Check if we have credentials to refresh the token"""
+        if self.is_expired:
+            return False
+        # Instagram (IG) tokens can be refreshed with just the token itself
+        if self.access_token.startswith('IG'):
+            return True
+        # Facebook (EA) tokens require app credentials
+        from django.conf import settings
+        app_id = getattr(settings, 'META_APP_ID', '')
+        app_secret = getattr(settings, 'META_APP_SECRET', '')
+        return bool(app_id and app_secret)
+
+    @property
+    def token_status(self):
+        """Human-readable token status"""
+        if self.is_expired:
+            return "❌ Expired"
+        elif self.needs_refresh:
+            return f"⚠️ Expiring soon ({self.days_until_expiry} days)"
+        else:
+            return f"✅ Valid ({self.days_until_expiry} days)"
+
+    @classmethod
+    def get_primary(cls):
+        """Get the primary active credential"""
+        return cls.objects.filter(is_active=True, is_primary=True).first()
+
+    @classmethod
+    def get_active_credentials(cls):
+        """Get all active credentials"""
+        return cls.objects.filter(is_active=True)
 
 
 class IntegrationSettings(models.Model):

@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Stars - Premium Dark Design with Pink & Subtle Cyan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Premium Dark Palette */
+            --bg-primary: hsl(0, 0%, 5%);              /* Almost black */
+            --bg-secondary: hsl(0, 0%, 10%);           /* Dark gray/black */
+            --bg-tertiary: hsl(0, 0%, 15%);            /* Lighter gray */
+            --bg-quaternary: hsl(0, 0%, 20%);          /* Light gray accent */
+
+            /* Text */
+            --text-primary: hsl(0, 0%, 100%);          /* Pure white */
+            --text-secondary: hsl(0, 0%, 85%);         /* Off-white */
+            --text-tertiary: hsl(0, 0%, 65%);          /* Gray */
+
+            /* Brand Colors */
+            --pink-primary: hsl(331.7, 80%, 50%);      /* Rich pink (primary) */
+            --pink-accent: hsl(331.7, 75%, 60%);       /* Lighter pink */
+            --cyan-subtle: hsl(188.7, 70%, 50%);       /* Subtle cyan (hints only) */
+            --cyan-muted: hsl(188.7, 40%, 55%);        /* Very muted cyan */
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+        }
+
+        /* ============================================
+           HERO SECTION
+           ============================================ */
+        .hero {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.03;
+            background-image:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: -0.5px;
+        }
+
+        .hero h1 span {
+            color: var(--pink-primary);
+        }
+
+        .hero p {
+            font-size: 1.15rem;
+            color: var(--text-tertiary);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.9rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 250ms ease;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .btn-primary {
+            background: var(--pink-primary);
+            color: white;
+            box-shadow: 0 8px 24px rgba(227, 24, 95, 0.2);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 12px 36px rgba(227, 24, 95, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--text-secondary);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--pink-primary);
+            color: var(--pink-primary);
+            background: rgba(227, 24, 95, 0.05);
+        }
+
+        /* ============================================
+           MAIN LAYOUT
+           ============================================ */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: 4rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .section-title span {
+            color: var(--pink-primary);
+        }
+
+        .section-subtitle {
+            color: var(--text-tertiary);
+            font-size: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+
+        .section-underline {
+            width: 40px;
+            height: 2px;
+            background: var(--pink-primary);
+            margin: 1.5rem auto 0;
+            border-radius: 1px;
+        }
+
+        /* ============================================
+           ABOUT SECTION
+           ============================================ */
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .about-text h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .about-text p {
+            color: var(--text-tertiary);
+            margin-bottom: 1rem;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        .about-values {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .value {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 3px solid var(--pink-primary);
+            padding: 1.2rem;
+            border-radius: 6px;
+            transition: all 250ms ease;
+        }
+
+        .value:hover {
+            border-left-color: var(--cyan-subtle);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .value strong {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .value p {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+            font-weight: 300;
+        }
+
+        .about-image {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border-radius: 6px;
+            padding: 4rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* ============================================
+           PROGRAMS SECTION - CARD OPTION 8
+           (Large Icon Background + Radial Overlay)
+           ============================================ */
+        .programs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .program-card {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 2.5rem;
+            background: radial-gradient(circle at top right, rgba(227, 24, 95, 0.06) 0%, transparent 70%);
+            transition: all 300ms ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .program-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(188, 180, 235, 0.08) 0%, transparent 70%);
+            transition: all 300ms ease;
+            pointer-events: none;
+        }
+
+        .program-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: radial-gradient(circle at top right, rgba(227, 24, 95, 0.08) 0%, transparent 70%);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+            transform: translateY(-4px);
+        }
+
+        .program-card:hover::after {
+            top: -30%;
+            right: -30%;
+        }
+
+        .program-icon {
+            font-size: 3.5rem;
+            opacity: 0.12;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+
+        .program-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .program-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .program-card p {
+            color: var(--text-tertiary);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .program-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .program-meta span {
+            color: var(--text-tertiary);
+        }
+
+        .program-cta {
+            color: var(--pink-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 250ms ease;
+        }
+
+        .program-cta:hover {
+            color: var(--pink-accent);
+        }
+
+        /* ============================================
+           FEATURED PRODUCTS - CARD OPTION 6
+           (Icon with Drop-Shadow, Less Glow)
+           ============================================ */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 1.5rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .product-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .product-icon {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            transition: all 250ms ease;
+            filter: drop-shadow(0 4px 12px rgba(227, 24, 95, 0.15));
+        }
+
+        .product-card:hover .product-icon {
+            filter: drop-shadow(0 6px 16px rgba(227, 24, 95, 0.2));
+            transform: scale(1.1) rotateZ(-3deg);
+        }
+
+        .product-tag {
+            display: inline-block;
+            background: rgba(227, 24, 95, 0.15);
+            color: var(--pink-accent);
+            padding: 0.3rem 0.75rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .product-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .product-card p {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-bottom: 1.25rem;
+            font-weight: 300;
+        }
+
+        .product-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--pink-primary);
+        }
+
+        /* ============================================
+           EVENTS SECTION - LEFT BORDER
+           ============================================ */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .event-card {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 3px solid var(--cyan-subtle);
+            border-radius: 4px;
+            padding: 1.5rem;
+            background: rgba(227, 24, 95, 0.02);
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        .event-card:hover {
+            border-left-color: var(--pink-primary);
+            background: rgba(227, 24, 95, 0.04);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            transform: translateX(3px);
+        }
+
+        .event-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .event-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .event-card p {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .event-meta {
+            display: inline-block;
+            background: rgba(227, 24, 95, 0.15);
+            color: var(--pink-accent);
+            padding: 0.25rem 0.75rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ============================================
+           NEWS SECTION - MINIMAL
+           ============================================ */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .news-card {
+            border-bottom: 2px solid rgba(227, 24, 95, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 1.5rem;
+            background: transparent;
+            transition: all 300ms ease;
+            cursor: pointer;
+        }
+
+        .news-card:hover {
+            border-bottom-color: var(--pink-primary);
+            background: rgba(227, 24, 95, 0.03);
+            transform: translateY(-2px);
+        }
+
+        .news-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .news-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .news-card p {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            font-weight: 300;
+        }
+
+        .news-date {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ============================================
+           CTA SECTION
+           ============================================ */
+        .cta-section {
+            background: linear-gradient(135deg, rgba(227, 24, 95, 0.08), rgba(227, 24, 95, 0.03));
+            border: 1px solid rgba(227, 24, 95, 0.2);
+            border-radius: 6px;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .cta-section h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .cta-section p {
+            color: var(--text-tertiary);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-tertiary);
+            font-weight: 300;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.6rem;
+            }
+
+            .about-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .programs-grid,
+            .products-grid,
+            .news-grid,
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-section {
+                padding: 2rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== HERO ========== -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Elite Training. <span>Built for Rising Stars.</span></h1>
+            <p>Focused training and real competition for players serious about their game.</p>
+            <div class="hero-buttons">
+                <button class="btn-primary">Get in the Game →</button>
+                <button class="btn-secondary">Ball With Us</button>
+            </div>
+        </div>
+    </section>
+
+    <main>
+        <!-- ========== ABOUT PREVIEW ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Who We <span>Are</span></h2>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>NJ Stars Elite AAU Basketball</h3>
+                    <p>We're a premier AAU basketball organization dedicated to developing elite young athletes. Our mission is to provide world-class training, real competition, and a pathway to collegiate opportunities.</p>
+                    <p>Every player. Every practice. Every game. Matters.</p>
+
+                    <div class="about-values">
+                        <div class="value">
+                            <strong>Excellence</strong>
+                            <p>Highest standards in training</p>
+                        </div>
+                        <div class="value">
+                            <strong>Community</strong>
+                            <p>Supportive team culture</p>
+                        </div>
+                        <div class="value">
+                            <strong>Growth</strong>
+                            <p>Continuous development</p>
+                        </div>
+                        <div class="value">
+                            <strong>Opportunity</strong>
+                            <p>College recruiting exposure</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="about-image">
+                    🏀
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== PROGRAMS SECTION (CARD OPTION 8) ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Training <span>Programs</span></h2>
+                <p class="section-subtitle">Specialized programs designed for different skill levels and competitive goals</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="programs-grid">
+                <div class="program-card">
+                    <div class="program-icon">🏀</div>
+                    <div class="program-content">
+                        <h3>Elite Training</h3>
+                        <p>High-intensity competitive training for serious players. Focus on advanced techniques, game IQ, and championship preparation.</p>
+                        <div class="program-meta">
+                            <span>3x/week • Ages 14-18</span>
+                            <span class="program-cta">Learn More →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="program-card">
+                    <div class="program-icon">💪</div>
+                    <div class="program-content">
+                        <h3>Skills Development</h3>
+                        <p>Master the fundamentals. Ball handling, shooting, defensive footwork, and conditioning designed for all skill levels.</p>
+                        <div class="program-meta">
+                            <span>2x/week • Ages 12-16</span>
+                            <span class="program-cta">Learn More →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="program-card">
+                    <div class="program-icon">🎯</div>
+                    <div class="program-content">
+                        <h3>Game Strategy</h3>
+                        <p>Team plays, offensive sets, defensive formations, and in-game decision making for competitive teams and tournaments.</p>
+                        <div class="program-meta">
+                            <span>1x/week • Ages 16+</span>
+                            <span class="program-cta">Learn More →</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== FEATURED MERCH (CARD OPTION 6) ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">The Locker <span>Room</span></h2>
+                <p class="section-subtitle">Official NJ Stars gear and apparel</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="products-grid">
+                <div class="product-card">
+                    <span class="product-tag">New Drop</span>
+                    <div class="product-icon">👕</div>
+                    <h4>Elite Jersey 2025</h4>
+                    <p>Premium mesh jersey with embroidered logo</p>
+                    <div class="product-price">$49.99</div>
+                </div>
+
+                <div class="product-card">
+                    <span class="product-tag">Featured</span>
+                    <div class="product-icon">🏀</div>
+                    <h4>Court Ball</h4>
+                    <p>Official tournament basketball</p>
+                    <div class="product-price">$79.99</div>
+                </div>
+
+                <div class="product-card">
+                    <span class="product-tag">Limited</span>
+                    <div class="product-icon">👟</div>
+                    <h4>Performance Sneaker</h4>
+                    <p>Engineered for court dominance</p>
+                    <div class="product-price">$139.99</div>
+                </div>
+
+                <div class="product-card">
+                    <span class="product-tag">Classic</span>
+                    <div class="product-icon">🧢</div>
+                    <h4>Snapback Cap</h4>
+                    <p>Embroidered logo cap</p>
+                    <div class="product-price">$24.99</div>
+                </div>
+
+                <div class="product-card">
+                    <span class="product-tag">Sale</span>
+                    <div class="product-icon">🎽</div>
+                    <h4>Training Tank</h4>
+                    <p>Breathable training apparel</p>
+                    <div class="product-price">$29.99</div>
+                </div>
+
+                <div class="product-card">
+                    <span class="product-tag">New</span>
+                    <div class="product-icon">🎒</div>
+                    <h4>Elite Backpack</h4>
+                    <p>Durable team backpack</p>
+                    <div class="product-price">$59.99</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== UPCOMING EVENTS ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">Upcoming <span>Events</span></h2>
+                <p class="section-subtitle">Mark your calendar for these key events</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="events-grid">
+                <div class="event-card">
+                    <div class="event-icon">📅</div>
+                    <h4>Spring Tryouts</h4>
+                    <p>March 15 @ 6:00 PM • Elite Training Center</p>
+                    <span class="event-meta">$25 • Register</span>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">🏆</div>
+                    <h4>Regional Championship</h4>
+                    <p>April 5-7 • Multi-court Venue</p>
+                    <span class="event-meta">Free Event</span>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">💪</div>
+                    <h4>Open Gym Friday</h4>
+                    <p>Every Friday @ 7:00 PM • Drop-in</p>
+                    <span class="event-meta">$10 • Join</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== NEWS SECTION ========== -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">The <span>Huddle</span></h2>
+                <p class="section-subtitle">Latest news and updates from NJ Stars</p>
+                <div class="section-underline"></div>
+            </div>
+
+            <div class="news-grid">
+                <div class="news-card">
+                    <div class="news-icon">📰</div>
+                    <h4>New Coach Announced</h4>
+                    <p>Meet Coach Davis, our new Head of Player Development with 15 years of AAU experience.</p>
+                    <div class="news-date">March 10, 2025</div>
+                </div>
+
+                <div class="news-card">
+                    <div class="news-icon">🏆</div>
+                    <h4>Championship Victory</h4>
+                    <p>Elite 14U team wins regional tournament, advancing to nationals in June.</p>
+                    <div class="news-date">March 8, 2025</div>
+                </div>
+
+                <div class="news-card">
+                    <div class="news-icon">📣</div>
+                    <h4>Early Registration Open</h4>
+                    <p>Spring training programs now open for enrollment. Limited spots available.</p>
+                    <div class="news-date">March 5, 2025</div>
+                </div>
+
+                <div class="news-card">
+                    <div class="news-icon">🎓</div>
+                    <h4>College Commits</h4>
+                    <p>5 athletes sign letters of intent to D1 and D2 schools this year.</p>
+                    <div class="news-date">March 1, 2025</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== CTA SECTION ========== -->
+        <section style="padding: 4rem 0;">
+            <div class="cta-section">
+                <h3>Ready to Join the Elite?</h3>
+                <p>Take your game to the next level with NJ Stars Elite AAU Basketball</p>
+                <button class="btn-primary" style="margin: 0 auto; display: block;">Register for Tryouts</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>🏀 NJ Stars Elite AAU Basketball • 2025</p>
+        <p style="font-size: 0.85rem; margin-top: 0.5rem;">Premium dark design with pink primary, subtle cyan hints, Card Options 6 & 8</p>
+    </footer>
+</body>
+</html>

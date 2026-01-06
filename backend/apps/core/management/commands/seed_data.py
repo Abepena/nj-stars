@@ -308,6 +308,30 @@ class Command(BaseCommand):
     def create_instagram_posts(self):
         self.stdout.write('Creating Instagram posts...')
 
+        # Check if real Instagram credentials are available
+        from django.conf import settings
+        access_token = getattr(settings, 'INSTAGRAM_ACCESS_TOKEN', '')
+        account_id = getattr(settings, 'INSTAGRAM_BUSINESS_ACCOUNT_ID', '')
+
+        if access_token and account_id:
+            # Real credentials available - sync from API instead of using mock data
+            self.stdout.write(self.style.SUCCESS(
+                '  Real Instagram credentials found! Syncing from API...'
+            ))
+            try:
+                from django.core.management import call_command
+                call_command('sync_instagram', use_env=True, limit=15, verbosity=0)
+                post_count = InstagramPost.objects.count()
+                self.stdout.write(self.style.SUCCESS(f'  Synced {post_count} real posts from Instagram'))
+                return
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(
+                    f'  Failed to sync from API: {e}. Falling back to mock data.'
+                ))
+
+        # No credentials or sync failed - use mock data
+        self.stdout.write('  Using mock Instagram posts (no credentials or sync failed)')
+
         now = timezone.now()
 
         posts = [

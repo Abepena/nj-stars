@@ -77,8 +77,8 @@ export function Hero({
     ? `Next Tryout – ${format(new Date(nextTryout.start_datetime), "MMM d")}`
     : defaults.ctaLabel;
   return (
-    <section className="bg-card border-b border-border min-h-[calc(100vh-80px)] flex flex-col relative overflow-hidden">
-      {/* Video Background */}
+    <section className="min-h-screen max-h-[900px] lg:max-h-[1000px] flex flex-col relative overflow-hidden">
+      {/* Video Background - object-position keeps player centered */}
       <div className="absolute inset-0 z-0">
         {USE_HERO_VIDEO ? (
           <video
@@ -88,31 +88,36 @@ export function Hero({
             playsInline
             preload="metadata"
             poster={HERO_IMAGE_URL}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-[center_20%]"
           >
             <source src={HERO_VIDEO_URL} type="video/mp4" />
             {/* Fallback for browsers without video support */}
             <img
               src={HERO_IMAGE_URL}
               alt="NJ Stars Elite Basketball"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-[center_20%]"
             />
           </video>
         ) : (
           <img
             src={HERO_IMAGE_URL}
             alt="NJ Stars Elite Basketball"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-[center_20%]"
           />
         )}
         {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-black/50" />
-        {/* Additional gradient for depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+        <div className="absolute inset-0 bg-black/10" />
+        {/* Gradient that fades into the page background */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--bg-primary))] via-transparent to-black/10" />
       </div>
 
-      {/* Content - Bottom on all screens, centered on desktop */}
-      <div className="relative z-10 w-full mt-auto px-4 py-8 md:py-16">
+      {/* Bottom fade into page - extended seamless transition */}
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[hsl(var(--bg-primary))] via-[hsl(var(--bg-primary)/0.7)] to-transparent z-[1] pointer-events-none" />
+      {/* Subtle pink glow at bottom to blend with next section */}
+      <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-[80%] h-40 bg-[radial-gradient(ellipse_at_center,hsl(var(--neon-pink)/0.08)_0%,transparent_70%)] blur-2xl z-[1] pointer-events-none" />
+
+      {/* Content - Bottom on all screens, with safe area for nav */}
+      <div className="relative z-10 w-full mt-auto px-4 pt-20 pb-12 md:pb-16">
         <div className="container mx-auto px-4 text-center md:text-left">
           <div className="max-w-4xl">
             <h1 className="text-4xl pb-2 sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">

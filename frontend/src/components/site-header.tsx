@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useTheme } from "@/components/theme-provider";
 import { ThemeLogo } from "@/components/ui/theme-logo";
 import { BagDrawer } from "@/components/bag-drawer";
 import { useBag } from "@/lib/bag";
@@ -49,6 +50,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const { bag, isBagOpen, setIsBagOpen } = useBag();
+  const { isForced } = useTheme();
 
   const itemCount = bag?.item_count || 0;
 
@@ -98,8 +100,8 @@ export function SiteHeader() {
             </Link>
           ))}
 
-          {/* Theme Toggle */}
-          <ThemeToggle />
+          {/* Theme Toggle - hidden when theme is forced */}
+          {!isForced && <ThemeToggle />}
 
           {/* Shopping Bag */}
           <Button

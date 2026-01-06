@@ -32,15 +32,15 @@ const eventTypes = [
 
 export function ScheduleSection() {
   return (
-    <section className="py-16 md:py-20">
-      <div className="container mx-auto px-4">
+    <section className="py-16 md:py-20 section-seamless">
+      <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
-            <p className="text-sm font-medium text-success uppercase tracking-wider mb-2">
+            <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-2">
               What&apos;s Happening
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
               The Schedule
             </h2>
           </div>
@@ -52,7 +52,7 @@ export function ScheduleSection() {
         </div>
 
         {/* Event Types Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {eventTypes.map((eventType) => (
             <IconCard
               key={eventType.title}
@@ -60,7 +60,8 @@ export function ScheduleSection() {
               title={eventType.title}
               description={eventType.description}
               href={eventType.href}
-              accentColor="success"
+              accentColor="secondary"
+              variant="merch"
             />
           ))}
         </div>

@@ -155,8 +155,8 @@ export function FeaturedMerch({
 
     if (wrapInSection) {
       return (
-        <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container mx-auto px-4">
+        <section className="py-16 md:py-24 section-seamless">
+          <div className="container mx-auto px-4 relative z-10">
             {skeletonContent}
           </div>
         </section>
@@ -254,8 +254,8 @@ export function FeaturedMerch({
 
   if (wrapInSection) {
     return (
-      <section className="py-16 md:py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
+      <section className="py-16 md:py-24 section-seamless">
+        <div className="container mx-auto px-4 relative z-10">
           {content}
         </div>
       </section>
@@ -317,7 +317,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
       aria-label={`View ${product.name}`}
     >
       {/* Image - square aspect ratio with rounded corners */}
-      <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-muted">
+      <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-bg-secondary border border-white/8 transition-all duration-300 group-hover:border-primary/40">
         {(product.primary_image_url || product.image_url) ? (
           <Image
             src={product.primary_image_url || product.image_url}
