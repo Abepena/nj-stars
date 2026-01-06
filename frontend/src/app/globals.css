@@ -290,6 +290,21 @@
   animation: slide-in-left 0.3s ease-out forwards;
 }
 
+/* Hero video fade-in - starts invisible, fades in after delay */
+@keyframes fade-in-video {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-video {
+  opacity: 0;
+  animation: fade-in-video 0.8s ease-out 0.3s forwards;
+}
+
 /* Calendar month slide animations */
 @keyframes slide-out-left {
   0% {
