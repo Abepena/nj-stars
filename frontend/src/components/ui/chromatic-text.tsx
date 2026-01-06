@@ -70,7 +70,7 @@ export interface ChromaticTextProps
  * </ChromaticText>
  * ```
  */
-const ChromaticText = React.forwardRef<HTMLSpanElement, ChromaticTextProps>(
+const ChromaticText = React.forwardRef<HTMLElement, ChromaticTextProps>(
   (
     {
       className,
@@ -94,7 +94,7 @@ const ChromaticText = React.forwardRef<HTMLSpanElement, ChromaticTextProps>(
 
     return (
       <Component
-        ref={ref as React.Ref<HTMLSpanElement>}
+        ref={ref as React.Ref<HTMLElement>}
         className={cn(
           chromaticTextVariants({ intensity: effectiveIntensity, glow, size }),
           "tracking-tight",
@@ -120,13 +120,13 @@ interface GlitchTextProps extends React.HTMLAttributes<HTMLSpanElement> {
   as?: "span" | "h1" | "h2" | "h3" | "h4" | "p"
 }
 
-const GlitchText = React.forwardRef<HTMLSpanElement, GlitchTextProps>(
+const GlitchText = React.forwardRef<HTMLElement, GlitchTextProps>(
   ({ className, as: Component = "span", children, ...props }, ref) => {
     const textContent = typeof children === "string" ? children : undefined
 
     return (
       <Component
-        ref={ref as React.Ref<HTMLSpanElement>}
+        ref={ref as React.Ref<HTMLElement>}
         className={cn(
           "glitch-title text-4xl md:text-5xl lg:text-6xl font-bold",
           className
@@ -168,10 +168,10 @@ interface NeonTextProps
   as?: "span" | "h1" | "h2" | "h3" | "h4" | "p"
 }
 
-const NeonText = React.forwardRef<HTMLSpanElement, NeonTextProps>(
+const NeonText = React.forwardRef<HTMLElement, NeonTextProps>(
   ({ className, color, pulse, as: Component = "span", ...props }, ref) => (
     <Component
-      ref={ref as React.Ref<HTMLSpanElement>}
+      ref={ref as React.Ref<HTMLElement>}
       className={cn(neonTextVariants({ color, pulse }), className)}
       {...props}
     />
