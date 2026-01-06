@@ -217,7 +217,6 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
           : `Sync complete`,
         summary: syncStats,
       })
-      setShowAllProducts(true)
       // Refresh products list after sync
       await fetchProducts()
     } catch (err) {
