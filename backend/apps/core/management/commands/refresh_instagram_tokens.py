@@ -43,6 +43,19 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # DEBUG: Print DATABASE_URL to diagnose connection issues
+        import os
+        db_url = os.environ.get('DATABASE_URL', 'NOT_SET')
+        if db_url and db_url != 'NOT_SET':
+            # Show host portion only (hide credentials)
+            if '@' in db_url:
+                host_part = db_url.split('@')[1][:50]
+                self.stdout.write(f'DEBUG: DATABASE_URL host: ...@{host_part}')
+            else:
+                self.stdout.write(f'DEBUG: DATABASE_URL (no @): {db_url[:30]}...')
+        else:
+            self.stdout.write(self.style.ERROR(f'DEBUG: DATABASE_URL = {db_url}'))
+
         force = options['force']
         specific_account = options['account']
         days_threshold = options['days']
