@@ -52,7 +52,7 @@ const chromaticTextVariants = cva(
 )
 
 export interface ChromaticTextProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
+  extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof chromaticTextVariants> {
   /** The element type to render */
   as?: "span" | "h1" | "h2" | "h3" | "h4" | "p"
@@ -70,44 +70,38 @@ export interface ChromaticTextProps
  * </ChromaticText>
  * ```
  */
-const ChromaticText = React.forwardRef<HTMLElement, ChromaticTextProps>(
-  (
-    {
-      className,
-      intensity,
-      glow,
-      size,
-      as: Component = "span",
-      static: isStatic = false,
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    // For the chromatic effect to work, we need to pass the text content
-    // as a data attribute so CSS ::before and ::after can access it
-    const textContent = typeof children === "string" ? children : undefined
+function ChromaticText({
+  className,
+  intensity,
+  glow,
+  size,
+  as: Component = "span",
+  static: isStatic = false,
+  children,
+  ...props
+}: ChromaticTextProps) {
+  // For the chromatic effect to work, we need to pass the text content
+  // as a data attribute so CSS ::before and ::after can access it
+  const textContent = typeof children === "string" ? children : undefined
 
-    // Override intensity to static version if requested
-    const effectiveIntensity =
-      isStatic && intensity === "strong" ? "medium" : intensity
+  // Override intensity to static version if requested
+  const effectiveIntensity =
+    isStatic && intensity === "strong" ? "medium" : intensity
 
-    return (
-      <Component
-        ref={ref as React.Ref<HTMLElement>}
-        className={cn(
-          chromaticTextVariants({ intensity: effectiveIntensity, glow, size }),
-          "tracking-tight",
-          className
-        )}
-        data-text={textContent}
-        {...props}
-      >
-        {children}
-      </Component>
-    )
-  }
-)
+  return (
+    <Component
+      className={cn(
+        chromaticTextVariants({ intensity: effectiveIntensity, glow, size }),
+        "tracking-tight",
+        className
+      )}
+      data-text={textContent}
+      {...props}
+    >
+      {children}
+    </Component>
+  )
+}
 ChromaticText.displayName = "ChromaticText"
 
 /**
@@ -116,29 +110,31 @@ ChromaticText.displayName = "ChromaticText"
  * Uses CSS custom properties for fine-tuned control over the effect.
  * Includes random-feeling animation via keyframes.
  */
-interface GlitchTextProps extends React.HTMLAttributes<HTMLSpanElement> {
+interface GlitchTextProps extends React.HTMLAttributes<HTMLElement> {
   as?: "span" | "h1" | "h2" | "h3" | "h4" | "p"
 }
 
-const GlitchText = React.forwardRef<HTMLElement, GlitchTextProps>(
-  ({ className, as: Component = "span", children, ...props }, ref) => {
-    const textContent = typeof children === "string" ? children : undefined
+function GlitchText({
+  className,
+  as: Component = "span",
+  children,
+  ...props
+}: GlitchTextProps) {
+  const textContent = typeof children === "string" ? children : undefined
 
-    return (
-      <Component
-        ref={ref as React.Ref<HTMLElement>}
-        className={cn(
-          "glitch-title text-4xl md:text-5xl lg:text-6xl font-bold",
-          className
-        )}
-        data-text={textContent}
-        {...props}
-      >
-        {children}
-      </Component>
-    )
-  }
-)
+  return (
+    <Component
+      className={cn(
+        "glitch-title text-4xl md:text-5xl lg:text-6xl font-bold",
+        className
+      )}
+      data-text={textContent}
+      {...props}
+    >
+      {children}
+    </Component>
+  )
+}
 GlitchText.displayName = "GlitchText"
 
 /**
@@ -163,20 +159,25 @@ const neonTextVariants = cva("font-bold", {
 })
 
 interface NeonTextProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
+  extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof neonTextVariants> {
   as?: "span" | "h1" | "h2" | "h3" | "h4" | "p"
 }
 
-const NeonText = React.forwardRef<HTMLElement, NeonTextProps>(
-  ({ className, color, pulse, as: Component = "span", ...props }, ref) => (
+function NeonText({
+  className,
+  color,
+  pulse,
+  as: Component = "span",
+  ...props
+}: NeonTextProps) {
+  return (
     <Component
-      ref={ref as React.Ref<HTMLElement>}
       className={cn(neonTextVariants({ color, pulse }), className)}
       {...props}
     />
   )
-)
+}
 NeonText.displayName = "NeonText"
 
 export { ChromaticText, GlitchText, NeonText, chromaticTextVariants, neonTextVariants }
