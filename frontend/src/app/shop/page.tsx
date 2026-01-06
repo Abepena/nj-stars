@@ -486,7 +486,11 @@ export default function ShopPage() {
   return (
     <LayoutShell background="gradient-grid">
       {/* Merch Drop Hype Section - Full viewport when active */}
-      {merchHypeActive && <MerchDropHype fullHeight />}
+      {merchHypeActive && (
+        <div className="animate-fade-in-up">
+          <MerchDropHype fullHeight />
+        </div>
+      )}
 
       {/* Only show Locker Room content when merch hype is NOT active */}
       {!merchHypeActive && (
