@@ -18,7 +18,7 @@ import { format, startOfWeek, startOfMonth, endOfWeek, endOfMonth, isWithinInter
 import { cn } from "@/lib/utils"
 
 // News-specific sort options
-type NewsSortOption = "newest" | "oldest" | "title_asc" | "title_desc"
+type NewsSortOption = "newest" | "oldest"
 
 // Time range filter options
 type TimeFilter = "all" | "this_week" | "this_month"
@@ -123,8 +123,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const SORT_OPTIONS: { value: NewsSortOption; label: string }[] = [
   { value: "newest", label: "Newest First" },
   { value: "oldest", label: "Oldest First" },
-  { value: "title_asc", label: "Title A-Z" },
-  { value: "title_desc", label: "Title Z-A" },
 ]
 
 // Time filter options configuration
@@ -316,12 +314,6 @@ export default function NewsPage() {
       case "oldest":
         filtered.sort((a, b) => new Date(a.published_date).getTime() - new Date(b.published_date).getTime())
         break
-      case "title_asc":
-        filtered.sort((a, b) => a.title.localeCompare(b.title))
-        break
-      case "title_desc":
-        filtered.sort((a, b) => b.title.localeCompare(a.title))
-        break
       default:
         filtered.sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
     }
@@ -396,7 +388,7 @@ export default function NewsPage() {
   const hasActiveFilters = activeFilterCount > 0 || sortBy !== "newest"
 
   return (
-    <LayoutShell>
+    <LayoutShell background="gradient-grid">
       <PageHeader
         title="The Huddle"
         subtitle="Stay connected with the latest news, updates, and highlights."
@@ -413,7 +405,7 @@ export default function NewsPage() {
               placeholder="Search posts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-9 h-9 bg-bg-secondary/40 border-white/[0.08] placeholder:text-muted-foreground/50"
             />
             {searchQuery && (
               <button
@@ -583,7 +575,7 @@ export default function NewsPage() {
                     onClick={clearFilters}
                     className="flex-1"
                   >
-                    Clear ({activeFilterCount})
+                    Clear{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
                   </Button>
                 )}
                 <SheetClose asChild>
@@ -604,8 +596,8 @@ export default function NewsPage() {
         </div>
       </div>
 
-      <section className="py-8">
-        <div className="container mx-auto px-4">
+      <section className="py-8 section-depth-light">
+        <div className="container mx-auto px-4 relative z-10">
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
@@ -617,7 +609,7 @@ export default function NewsPage() {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Desktop Filter Sidebar */}
             <aside className="hidden lg:block w-full lg:w-64 lg:flex-shrink-0">
-              <div className="lg:sticky lg:top-24 space-y-6">
+              <div className="lg:sticky lg:top-24 rounded-lg bg-bg-secondary/60 border border-white/[0.06] p-5 space-y-6">
                 <h2 className="text-lg font-semibold">Filter</h2>
 
                 {/* Sort By */}
@@ -673,7 +665,7 @@ export default function NewsPage() {
                     placeholder="Search posts..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-bg-secondary/40 border-white/[0.08] placeholder:text-muted-foreground/50"
                   />
                 </div>
 
@@ -736,7 +728,7 @@ export default function NewsPage() {
                       className="w-full"
                     >
                       <X className="w-4 h-4 mr-2" />
-                      Clear Filters ({activeFilterCount})
+                      Clear Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
                     </Button>
 
                     {/* Results count */}
@@ -790,7 +782,7 @@ export default function NewsPage() {
   )
 }
 
-// Clean Nike-style news card
+// News card matching homepage Huddle FeedCard style
 function NewsCard({ item }: { item: FeedItem }) {
   const formattedDate = format(new Date(item.published_date), "MMM dd, yyyy")
 
@@ -805,51 +797,47 @@ function NewsCard({ item }: { item: FeedItem }) {
   const tagConfig = getTagConfig()
 
   const cardContent = (
-    <article className="flex flex-col cursor-pointer group">
-      {/* Image - rounded corners, no card border */}
-      <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-muted">
-        {item.image_url ? (
-          <Image
-            src={item.image_url}
-            alt={item.title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center p-8 relative">
+    <article className="flex flex-col cursor-pointer group h-full">
+      {/* Card wrapper matching FeedCard style */}
+      <div className="h-full rounded-lg bg-bg-secondary/60 border border-white/[0.06] overflow-hidden flex flex-col transition-all duration-200 hover:bg-bg-secondary/80 hover:border-white/[0.1]">
+        {/* Image thumbnail - portrait aspect ratio */}
+        <div className="relative w-full aspect-[4/5] bg-bg-secondary overflow-hidden">
+          {item.image_url ? (
             <Image
-              src="/brand/logos/logo square thick muted.svg"
+              src={item.image_url}
               alt={item.title}
               fill
-              className="opacity-30 object-contain p-8"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="h-full w-full flex items-center justify-center relative">
+              <Image
+                src="/brand/logos/logo square thick muted.svg"
+                alt={item.title}
+                fill
+                className="opacity-30 object-contain p-8"
+              />
+            </div>
+          )}
+        </div>
 
-      {/* Content - Nike style: tag, title, date */}
-      <div className="flex flex-col pt-3 space-y-1">
-        {/* Tag label */}
-        <span className={`text-xs font-medium ${tagConfig.className}`}>
-          {tagConfig.label}
-        </span>
+        {/* Content area */}
+        <div className="p-4 flex flex-col flex-1">
+          {/* Tag label */}
+          <span className={`text-xs font-medium uppercase tracking-wider mb-2 ${tagConfig.className}`}>
+            {tagConfig.label}
+          </span>
 
-        {/* Title */}
-        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
-          {item.title}
-        </h3>
+          {/* Title */}
+          <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-white transition-colors mb-2">
+            {item.title}
+          </h3>
 
-        {/* Date */}
-        <p className="text-xs text-muted-foreground">
-          {formattedDate}
-        </p>
-
-        {/* Excerpt for blog posts */}
-        {item.type === "huddle" && item.excerpt && (
-          <p className="text-xs text-muted-foreground line-clamp-2 pt-1">
-            {item.excerpt}
+          {/* Date - at bottom */}
+          <p className="text-xs text-text-tertiary mt-auto">
+            {formattedDate}
           </p>
-        )}
+        </div>
       </div>
     </article>
   )

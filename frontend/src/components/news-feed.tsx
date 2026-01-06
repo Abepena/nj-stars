@@ -274,7 +274,7 @@ export function NewsFeed({ limit, showSeeMore = false, wrapInSection = false }: 
   return content
 }
 
-// Clean editorial-style feed card
+// Clean editorial-style feed card with image
 function FeedCard({ item }: { item: FeedItem }) {
   const formattedDate = format(new Date(item.published_date), "MMM dd, yyyy")
 
@@ -293,33 +293,41 @@ function FeedCard({ item }: { item: FeedItem }) {
   const cardContent = (
     <article className="flex flex-col cursor-pointer group h-full">
       {/* Clean card - subtle border, no heavy gradients */}
-      <div className="h-full rounded-lg bg-bg-secondary/60 border border-white/[0.06] p-4 flex flex-col transition-all duration-200 hover:bg-bg-secondary/80 hover:border-white/[0.1]">
-        {/* Top row: Icon + Category */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-md bg-white/[0.06] flex items-center justify-center">
-            <IconComponent className="w-4 h-4 text-text-tertiary" />
+      <div className="h-full rounded-lg bg-bg-secondary/60 border border-white/[0.06] overflow-hidden flex flex-col transition-all duration-200 hover:bg-bg-secondary/80 hover:border-white/[0.1]">
+        {/* Image thumbnail - portrait aspect ratio to match Instagram */}
+        {item.image_url && (
+          <div className="relative w-full aspect-[4/5] bg-bg-secondary overflow-hidden">
+            <Image
+              src={item.image_url}
+              alt={item.title}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
           </div>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
-            {tagConfig.label}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-white transition-colors mb-2">
-          {item.title}
-        </h3>
-
-        {/* Excerpt if available */}
-        {item.excerpt && (
-          <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
-            {item.excerpt}
-          </p>
         )}
 
-        {/* Date - muted, at bottom */}
-        <p className="text-xs text-text-tertiary mt-auto">
-          {formattedDate}
-        </p>
+        {/* Content area */}
+        <div className="p-4 flex flex-col flex-1">
+          {/* Top row: Icon + Category */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-md bg-white/[0.06] flex items-center justify-center">
+              <IconComponent className="w-4 h-4 text-text-tertiary" />
+            </div>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
+              {tagConfig.label}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-sm font-semibold line-clamp-2 group-hover:text-white transition-colors mb-2">
+            {item.title}
+          </h3>
+
+          {/* Date - muted, at bottom */}
+          <p className="text-xs text-text-tertiary mt-auto">
+            {formattedDate}
+          </p>
+        </div>
       </div>
     </article>
   )

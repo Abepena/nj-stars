@@ -24,6 +24,7 @@ import {
   AlertCircle,
   Check,
 } from 'lucide-react'
+import { ReturnPolicyModal } from '@/components/return-policy-modal'
 
 interface BagDrawerProps {
   open: boolean
@@ -128,9 +129,9 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col sm:max-w-lg">
+      <SheetContent className="flex w-full flex-col sm:max-w-lg !bg-black/60 backdrop-blur-2xl border-l border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         <SheetHeader className="space-y-2.5 pr-6">
-          <SheetTitle className="flex items-center gap-2">
+          <SheetTitle className="flex items-center gap-2 text-white">
             <ShoppingBag className="h-5 w-5" />
             Your Bag
             {itemCount > 0 && (
@@ -141,20 +142,20 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
           </SheetTitle>
         </SheetHeader>
 
-        <Separator className="my-4" />
+        <Separator className="my-4 bg-white/20" />
 
         {/* Select All / Deselect All */}
         {bag && bag.items.length > 0 && (
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={allAvailableSelected ? deselectAllItems : selectAllItems}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
             >
               <div
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                   allAvailableSelected
                     ? 'bg-primary border-primary'
-                    : 'border-muted-foreground/50 hover:border-muted-foreground'
+                    : 'border-white/30 hover:border-white/50'
                 }`}
               >
                 {allAvailableSelected && <Check className="w-3 h-3 text-primary-foreground" />}
@@ -162,7 +163,7 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
               {allAvailableSelected ? 'Deselect all' : 'Select all'}
             </button>
             {hasSelectedItems && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-white/60">
                 {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
               </span>
             )}
@@ -175,15 +176,15 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
           </div>
         ) : !bag || bag.items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-            <ShoppingBag className="h-16 w-16 text-muted-foreground/50" />
+            <ShoppingBag className="h-16 w-16 text-white/30" />
             <div>
-              <p className="text-lg font-medium">Your bag is empty</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-lg font-medium text-white">Your bag is empty</p>
+              <p className="text-sm text-white/60">
                 Add some items to get started
               </p>
             </div>
             <SheetClose asChild>
-              <Button asChild>
+              <Button asChild className="border-2 border-white/30 bg-white/10 hover:bg-white/20 text-white">
                 <Link href="/shop">Continue Shopping</Link>
               </Button>
             </SheetClose>
@@ -203,10 +204,10 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
                   return (
                     <div
                       key={item.id}
-                      className={`flex gap-3 rounded-lg border p-3 transition-all ${
+                      className={`flex gap-3 rounded-lg border border-white/10 bg-white/5 p-3 transition-all ${
                         isUpdating ? 'opacity-50' : ''
-                      } ${!item.is_available ? 'border-destructive/50 bg-destructive/5' : ''} ${
-                        isSelected ? 'border-primary/50 bg-primary/5' : ''
+                      } ${!item.is_available ? 'border-destructive/50 bg-destructive/10' : ''} ${
+                        isSelected ? 'border-primary/50 bg-primary/10' : ''
                       }`}
                     >
                       {/* Selection Checkbox */}
@@ -217,8 +218,8 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
                           isSelected
                             ? 'bg-primary border-primary'
                             : item.is_available
-                            ? 'border-muted-foreground/50 hover:border-muted-foreground'
-                            : 'border-muted-foreground/30 cursor-not-allowed'
+                            ? 'border-white/30 hover:border-white/50'
+                            : 'border-white/20 cursor-not-allowed'
                         }`}
                         aria-label={isSelected ? 'Deselect item' : 'Select item'}
                       >
@@ -249,10 +250,10 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
                       <div className="flex flex-1 flex-col">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="line-clamp-1 font-medium">
+                            <h4 className="line-clamp-1 font-medium text-white">
                               {item.product.name}
                             </h4>
-                            <p className="text-xs text-muted-foreground capitalize">
+                            <p className="text-xs text-white/60 capitalize">
                               {item.product.category}
                               {(item.selected_size || item.selected_color) && ' • '}
                               {item.selected_color && item.selected_color}
@@ -263,7 +264,7 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            className="h-8 w-8 text-white/50 hover:text-destructive hover:bg-white/10"
                             onClick={() => handleRemove(item.id)}
                             disabled={isUpdating}
                           >
@@ -280,41 +281,37 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
 
                         <div className="mt-auto flex items-center justify-between pt-2">
                           {/* Quantity Controls */}
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
+                          <div className="flex items-center border border-white/30 rounded bg-white/10">
+                            <button
+                              className="w-8 h-8 flex items-center justify-center hover:bg-white/20 transition-colors text-white disabled:opacity-50"
                               onClick={() =>
                                 handleQuantityChange(item.id, item.quantity - 1)
                               }
                               disabled={isUpdating}
                             >
                               <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center text-sm font-medium">
+                            </button>
+                            <span className="w-8 text-center text-sm font-medium text-white border-x border-white/30">
                               {item.quantity}
                             </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7"
+                            <button
+                              className="w-8 h-8 flex items-center justify-center hover:bg-white/20 transition-colors text-white disabled:opacity-50"
                               onClick={() =>
                                 handleQuantityChange(item.id, item.quantity + 1)
                               }
                               disabled={isUpdating || !item.is_available}
                             >
                               <Plus className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </div>
 
                           {/* Price */}
                           <div className="text-right">
-                            <p className="font-semibold">
+                            <p className="font-semibold text-white">
                               ${parseFloat(item.total_price).toFixed(2)}
                             </p>
                             {comparePrice && comparePrice > price && (
-                              <p className="text-xs text-muted-foreground line-through">
+                              <p className="text-xs text-white/50 line-through">
                                 ${(comparePrice * item.quantity).toFixed(2)}
                               </p>
                             )}
@@ -328,35 +325,34 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
             </ScrollArea>
 
             <div className="space-y-4 pt-4">
-              <Separator />
+              <Separator className="bg-white/20" />
 
               {/* Selected Items Subtotal */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
+                  <span className="text-white/60">
                     Selected ({selectedCount} item{selectedCount !== 1 ? 's' : ''})
                   </span>
-                  <span className="font-medium">${selectedSubtotal}</span>
+                  <span className="font-medium text-white">${selectedSubtotal}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-white/60">Shipping</span>
+                  <span className="text-white/60">
                     Calculated at checkout
                   </span>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-white/20" />
 
-              <div className="flex items-center justify-between text-lg font-semibold">
+              <div className="flex items-center justify-between text-lg font-semibold text-white">
                 <span>Total</span>
                 <span>${selectedSubtotal}</span>
               </div>
 
               <div className="flex flex-col gap-2">
                 <Button
-                  variant="cta"
-                  className="w-full"
+                  className="w-full h-12 text-base font-semibold bg-primary/30 hover:bg-primary/50 text-white border-2 border-primary backdrop-blur-sm disabled:opacity-50"
                   size="lg"
                   onClick={handleCheckout}
                   disabled={checkoutLoading || !hasSelectedItems || bag.items.filter(item => selectedItems.has(item.id)).some(item => !item.is_available)}
@@ -373,10 +369,13 @@ export function BagDrawer({ open, onOpenChange }: BagDrawerProps) {
                   )}
                 </Button>
                 <SheetClose asChild>
-                  <Button variant="outline" className="w-full" size="lg">
+                  <Button className="w-full h-12 border-2 border-white/30 bg-white/10 hover:bg-white/20 text-white" size="lg">
                     Continue Shopping
                   </Button>
                 </SheetClose>
+                <div className="text-center pt-3">
+                  <ReturnPolicyModal className="text-sm text-white/70 hover:text-white underline underline-offset-4 transition-colors" />
+                </div>
               </div>
             </div>
           </>

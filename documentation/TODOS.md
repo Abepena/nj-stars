@@ -35,6 +35,7 @@ Fees reduce by **0.5% per active platform tenant** until floor is reached.
   - ✅ Include event picture in the card header
   - ✅ Show location details
   - [x] Map integration with event selection ✅ (Map zooms to selected events)
+- [ ] **Fallback to all upcoming events** - When homepage links filter events by type (e.g., `?event_type=tryout`) and none are found, default to showing all upcoming events instead of an empty state
 
 ## Forms & User Capture
 - [ ] Create full functionality of the forms to sign up
@@ -77,9 +78,21 @@ Fees reduce by **0.5% per active platform tenant** until floor is reached.
 
 ## Content & Media
 - [ ] Evaluate whether the news feed should be announcements or Instagram (founder not responding - can't let Instagram credentials hold this up)
-- [ ] Find pictures for the coaches
+- [x] Find pictures for the coaches ✅ (Coach photos saved to /public/brand/assets/images/coaches/)
 - [ ] Announcements can be tied to events - if event is paid, a button to register should be on the announcements
 - [ ] Review livestreaming to investigate complexity
+- [ ] **Blog Post to Instagram Publishing** - Create blog posts from admin dashboard that auto-post to Instagram
+  - Admin/staff can create blog posts with title, content, and thumbnail image
+  - On publish, automatically create Instagram post with:
+    - Thumbnail image
+    - Summary text from blog post
+    - Link to full blog post on website (in bio or via Linktree-style link)
+  - **IMPORTANT: Deduplication logic needed** - When Instagram posts are fetched for the news feed:
+    - Detect if an Instagram post is a "blog announcement" (e.g., via hashtag like #NJStarsBlog or URL in caption)
+    - If so, show ONLY the blog post in the feed, NOT both the blog post AND the Instagram post referencing it
+    - Prevents duplicate content appearing in "The Huddle" news feed
+  - Consider adding `instagram_post_id` field to blog posts to track which posts have been syndicated
+  - Future: Schedule posts for optimal engagement times
 
 ## Launch Prep
 - [ ] Create MVP comprehensive implementation plan for launch this week
@@ -341,6 +354,26 @@ Your feedback helps us make this better for everyone. Thanks!
 
 ---
 
+## CMS Migration
+
+### Migrate Away from Wagtail CMS Completely
+- [ ] **Audit Wagtail usage** - Identify all pages/content currently managed by Wagtail
+  - Homepage hero section
+  - Blog posts
+  - Team pages
+- [ ] **Create Next.js admin pages** for content management
+  - Blog post editor with TipTap or similar rich text editor
+  - Homepage content editor
+  - Coach/team profile management
+- [ ] **Migrate data** from Wagtail models to simpler Django models
+- [ ] **Remove Wagtail dependencies** from backend
+  - Remove `wagtail` packages from requirements.txt
+  - Remove `apps/cms/` app
+  - Update URL configuration
+- [ ] **Update frontend** to use new API endpoints instead of Wagtail API
+
+---
+
 ## V2 - Post-Launch Polish
 
 ### Design System Refinements
@@ -361,6 +394,12 @@ Your feedback helps us make this better for everyone. Thanks!
   - Example: $15 Printify cost + ~3% Stripe fee + 5% LEAG fee = ~$16.20 final price
   - Toggle per-product or org-wide setting in admin
   - Clearly show "At Cost" badge on products using this mode
+
+- [ ] **Compare-at/Sale Pricing for POD Products** - Add strikethrough pricing support for print-on-demand items
+  - Allow setting a `compare_at_price` on POD products synced from Printify
+  - Display original price crossed out with sale price to show perceived value
+  - Use case: Show "Was $35, Now $30" even for made-to-order items
+  - Consider auto-calculating compare-at based on Printify retail suggestions
 
 ### Multi-Tenant Email System
 - [ ] **Organization Email Configuration** - Allow each org to customize support communication

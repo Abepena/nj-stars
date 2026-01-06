@@ -288,7 +288,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl max-h-[90vh] md:max-h-[85vh] p-0 overflow-hidden"
+        className="max-w-[95vw] md:max-w-3xl lg:max-w-4xl max-h-[85vh] p-0 overflow-hidden !bg-black/60 backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
         aria-modal="true"
         onOpenAutoFocus={(e) => {
           // Prevent default focus behavior and focus the close button for easy dismissal
@@ -305,7 +305,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
           <DialogDescription>Quick view of {product.name}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid md:grid-cols-2 max-h-[90vh] md:max-h-[85vh] overflow-y-auto">
+        <div className="grid md:grid-cols-2 max-h-[80vh] overflow-y-auto">
           {/* Image & Title/Price (desktop: LHS) */}
           <div className="p-4 md:p-6 flex flex-col">
             <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
@@ -364,7 +364,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
             {/* Title & Price - below image on desktop */}
             <div className="hidden md:block mt-4">
               <h2 className="text-xl font-bold">{product.name}</h2>
-              <p className="text-2xl font-bold text-primary mt-1">
+              <p className="text-2xl font-bold text-white mt-1">
                 ${parseFloat(product.price).toFixed(2)}
               </p>
             </div>
@@ -375,7 +375,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
             {/* Title & Price - mobile only (shows at top of RHS) */}
             <div className="md:hidden mb-6">
               <h2 className="text-xl font-bold mb-1">{product.name}</h2>
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-2xl font-bold text-white">
                 ${parseFloat(product.price).toFixed(2)}
               </p>
             </div>
@@ -395,14 +395,14 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                         onClick={() => setSelectedColor(color.name)}
                         className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${
                           selectedColor === color.name
-                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-black/60"
                             : "hover:ring-1 hover:ring-muted-foreground"
                         }`}
                         aria-label={`Select ${color.name}${color.hex ? ` (${color.hex})` : ''}`}
                         aria-pressed={selectedColor === color.name}
                       >
                         <span
-                          className="w-9 h-9 rounded-full border border-border"
+                          className="w-9 h-9 rounded-full border-2 border-white/40"
                           style={{ backgroundColor: getColorHex(color.name, color.hex) }}
                         />
                       </button>
@@ -423,10 +423,10 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                         key={size}
                         onClick={() => setSelectedSize(size)}
                         aria-pressed={selectedSize === size}
-                        className={`min-w-[3rem] min-h-[3rem] px-4 py-2 border rounded text-sm font-medium transition-colors ${
+                        className={`min-w-[3rem] min-h-[3rem] px-4 py-2 border-2 rounded text-sm font-medium transition-colors ${
                           selectedSize === size
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-input hover:bg-muted"
+                            ? "border-primary bg-primary/40 text-white backdrop-blur-sm"
+                            : "border-white/30 bg-white/10 hover:bg-white/20 text-white"
                         }`}
                       >
                         {size}
@@ -442,17 +442,17 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                   <label className="text-sm font-medium text-muted-foreground mb-2 block">
                     Quantity
                   </label>
-                  <div className="inline-flex items-center border rounded">
+                  <div className="inline-flex items-center border border-white/30 rounded bg-white/10">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-11 h-11 flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      className="w-11 h-11 flex items-center justify-center hover:bg-white/20 transition-colors text-lg text-white"
                       disabled={quantity <= 1}
                       aria-label={quantity <= 1 ? "Decrease quantity (minimum reached)" : "Decrease quantity"}
                     >
                       −
                     </button>
                     <span
-                      className="w-12 h-11 flex items-center justify-center border-x text-center font-medium"
+                      className="w-12 h-11 flex items-center justify-center border-x border-white/30 text-center font-medium text-white"
                       aria-live="polite"
                       aria-atomic="true"
                     >
@@ -460,7 +460,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                     </span>
                     <button
                       onClick={() => setQuantity(Math.min(product.is_pod ? 10 : product.stock_quantity, quantity + 1))}
-                      className="w-11 h-11 flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      className="w-11 h-11 flex items-center justify-center hover:bg-white/20 transition-colors text-lg text-white"
                       disabled={quantity >= (product.is_pod ? 10 : product.stock_quantity)}
                       aria-label="Increase quantity"
                     >
@@ -475,7 +475,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
             <div className="mt-6 space-y-3">
               {isAvailable ? (
                 <Button
-                  className="w-full h-12 text-base font-semibold"
+                  className="w-full h-12 text-base font-semibold bg-primary/30 hover:bg-primary/50 text-white border-2 border-primary backdrop-blur-sm"
                   onClick={handleAddToBag}
                   disabled={isAdding || !variantsSelected}
                 >
@@ -492,7 +492,7 @@ export function ProductQuickView({ product, open, onOpenChange }: ProductQuickVi
                   ) : (
                     <>
                       <ShoppingBag className="mr-2 h-5 w-5" />
-                      Add to Cart
+                      Add to Bag
                     </>
                   )}
                 </Button>

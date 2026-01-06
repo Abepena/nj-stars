@@ -582,7 +582,7 @@ export default function AdminDashboard() {
                 </div>
                 <h3 className="text-sm sm:text-base font-semibold transition-colors">Manage Products</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Printify sync & publish
+                  Printify sync & activate
                 </p>
               </CardContent>
             </Card>
@@ -699,14 +699,15 @@ export default function AdminDashboard() {
                     {/* Collapsed Row - Clickable */}
                     <div
                       onClick={() => toggleSubmission(submission.id)}
-                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                         isExpanded
                           ? "border-foreground/30 bg-foreground/5 rounded-b-none"
                           : "hover:bg-muted/50"
                       }`}
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${
+                      <div className="flex items-start gap-3">
+                        {/* Icon - hidden on mobile */}
+                        <div className={`hidden sm:flex h-9 w-9 rounded-lg items-center justify-center shrink-0 ${
                           isExpanded ? "bg-foreground/10" : "bg-muted"
                         }`}>
                           <CategoryIcon className={`h-4 w-4 ${
@@ -714,27 +715,35 @@ export default function AdminDashboard() {
                           }`} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">
-                            {submission.subject}
-                          </p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {submission.name} &bull; {submission.email}
-                          </p>
+                          {/* Title - full width on mobile */}
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-medium text-foreground leading-snug">
+                              {submission.subject}
+                            </p>
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            )}
+                          </div>
+                          {/* Meta row */}
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <p className="text-sm text-muted-foreground">
+                              {submission.name}
+                            </p>
+                            <span className="text-muted-foreground">·</span>
+                            <span className="text-xs text-muted-foreground">
+                              {submission.time_since_created}
+                            </span>
+                            {/* Priority only on desktop */}
+                            <div className="hidden sm:block ml-auto">
+                              <PriorityDropdown
+                                value={submission.priority}
+                                onChange={(newPriority) => handlePriorityUpdate(submission.id, newPriority)}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-2 shrink-0">
-                        <PriorityDropdown
-                          value={submission.priority}
-                          onChange={(newPriority) => handlePriorityUpdate(submission.id, newPriority)}
-                        />
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {submission.time_since_created}
-                        </span>
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
                       </div>
                     </div>
 

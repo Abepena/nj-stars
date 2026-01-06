@@ -206,7 +206,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
         </div>
 
         {/* Product name */}
-        <h3 className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={product.name}>
+        <h3 className="text-sm font-medium truncate group-hover:text-white/80 transition-colors" title={product.name}>
           {product.name}
         </h3>
 
@@ -222,7 +222,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
           </button>
           <span className="text-muted-foreground">·</span>
           {product.is_pod ? (
-            <span className="text-xs text-violet-500 font-medium">Made to Order</span>
+            <span className="text-xs text-violet-400 font-medium">Made to Order</span>
           ) : (
             <span className="text-xs text-emerald-500 font-medium">Coach Delivery</span>
           )}
@@ -472,7 +472,7 @@ export default function ShopPage() {
   }
 
   return (
-    <LayoutShell>
+    <LayoutShell background="gradient-grid">
       {/* Merch Drop Hype Section - Full viewport when active */}
       <MerchDropHype fullHeight />
 
@@ -494,7 +494,38 @@ export default function ShopPage() {
               />
 
               <div className="flex flex-col lg:flex-row gap-8">
-                {/* Sticky Sidebar Filters */}
+                {/* Sticky Sidebar Filters - Black background */}
+                {/* Filter Sidebar - Merch drop style */}
+                <div className="hidden lg:block lg:w-64 lg:flex-shrink-0">
+                  <div className="sticky top-24 rounded-2xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.4)] via-[hsl(var(--neon-pink)/0.2)] to-[hsl(var(--neon-pink)/0.05)]">
+                    <div className="rounded-[calc(1rem-1px)] bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl border border-white/[0.05] shadow-[0_0_40px_hsl(var(--neon-pink)/0.1)] p-4">
+                      <FilterSidebar
+                        title="Filters"
+                        searchPlaceholder="Search products..."
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        categories={categories}
+                        selectedCategories={selectedCategories}
+                        onCategoryToggle={toggleCategory}
+                        tags={tags}
+                        selectedTags={selectedTags}
+                        onTagToggle={toggleTag}
+                        colors={filterColors}
+                        selectedColors={selectedColors}
+                        onColorToggle={toggleColor}
+                        sortBy={sortBy}
+                        onSortChange={setSortBy}
+                        onClearFilters={clearFilters}
+                        totalCount={products.length}
+                        filteredCount={filteredProducts.length}
+                        getCategoryColor={getCategoryColor}
+                        className="lg:bg-transparent"
+                        hideDesktopWrapper
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Mobile Filter */}
                 <FilterSidebar
                   title="Filters"
                   searchPlaceholder="Search products..."
@@ -515,10 +546,12 @@ export default function ShopPage() {
                   totalCount={products.length}
                   filteredCount={filteredProducts.length}
                   getCategoryColor={getCategoryColor}
+                  className="lg:hidden"
                 />
 
-                {/* Products Grid */}
-                <main className="flex-1">
+                {/* Products Grid - Merch drop style */}
+                <main className="flex-1 rounded-2xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.4)] via-[hsl(var(--neon-pink)/0.2)] to-[hsl(var(--neon-pink)/0.05)]">
+                  <div className="h-full rounded-[calc(1rem-1px)] bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl border border-white/[0.05] shadow-[0_0_40px_hsl(var(--neon-pink)/0.1)] p-4 lg:p-6">
                   {error && (
                     <div className="mb-8">
                       <ErrorMessage error={error} />
@@ -574,6 +607,7 @@ export default function ShopPage() {
                       ))}
                     </div>
                   )}
+                  </div>
                 </main>
               </div>
             </div>

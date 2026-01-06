@@ -25,7 +25,7 @@ const coreValues = [
 
 export default function AboutPage() {
   return (
-    <LayoutShell>
+    <LayoutShell background="gradient-grid">
       <PageHeader
         title="About NJ Stars Elite"
         subtitle="Building elite basketball players and young leaders in New Jersey."
@@ -42,16 +42,38 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* About Section */}
-      <section className="py-8 md:py-12">
-        <div className="container mx-auto px-4">
+      {/* Meet Our Coaches - Now at the top */}
+      <CoachesSection />
+
+      {/* Core Values */}
+      <section className="py-12 md:py-16 section-seamless">
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto">
-            {/* Main About Paragraph */}
-            <div className="prose prose-invert prose-lg max-w-none mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {coreValues.map((value) => (
+                <IconCard
+                  key={value.title}
+                  icon={value.icon}
+                  title={value.title}
+                  description={value.description}
+                  accentColor="primary"
+                  variant="merch"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section className="py-8 md:py-12 section-depth-light">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl mx-auto">
+            <div className="prose prose-invert prose-lg max-w-none">
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
                 Based out of Moonachie, NJ, <span className="text-foreground font-medium">NJ Stars Elite</span> has
                 quickly become one of the premier AAU basketball programs serving families and players throughout
-                Bergen County. We develop young athletes from grades 2nd through 10th, focusing on mastering
+                Bergen County. We develop young athletes from grades 2nd through 12th, focusing on mastering
                 fundamental skills while fostering the teamwork and decision-making abilities that translate
                 both on and off the court. <span className="text-foreground font-medium">We don&apos;t recruit
                 stars, we develop them.</span> Our mission is to grow talent from within our community, turning
@@ -64,26 +86,9 @@ export default function AboutPage() {
                 into strong, well-rounded individuals who make a positive impact in their communities.
               </p>
             </div>
-
-            {/* Core Values */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-              {coreValues.map((value) => (
-                <IconCard
-                  key={value.title}
-                  icon={value.icon}
-                  title={value.title}
-                  description={value.description}
-                  accentColor="none"
-                  className="bg-card/50 border-border/50"
-                />
-              ))}
-            </div>
           </div>
         </div>
       </section>
-
-      {/* Meet Our Coaches */}
-      <CoachesSection />
     </LayoutShell>
   )
 }

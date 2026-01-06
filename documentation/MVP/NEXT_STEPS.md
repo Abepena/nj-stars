@@ -105,6 +105,7 @@ Coach private training: **5% platform fee** (to incentivize platform use over DM
 
 | Task | Priority | Status | Section |
 |------|----------|--------|---------|
+| **Order Tracking & Emails** | 🔴 CRITICAL | Pending | [4.14](#414-order-tracking-system--critical-pre-launch) |
 | **Printify POD Integration** | 🔴 Critical | ✅ Complete | [4.12](#412-printify-pod-integration--critical-added-dec-10) |
 | Instagram API Integration | 🔴 Critical | Pending | [4.8](#48-multi-instagram-huddle--medium-added-dec-8) |
 | Custom Products/Invoice System | 🔴 Critical | Pending | [4.10](#410-custom-products-system--critical-added-dec-9) |
@@ -1282,6 +1283,204 @@ PRINTIFY_WEBHOOK_SECRET=optional-webhook-secret
 
 ---
 
+### 4.14 Order Tracking System 🔴 CRITICAL (Pre-Launch)
+
+**Time:** 3-5 days
+
+**Goal:** Implement a complete order tracking experience with automated email notifications so customers can track their orders from purchase to delivery.
+
+> ⚠️ **PRE-LAUNCH BLOCKER:** This must be fully working before public launch. Customers need to know the status of their orders.
+
+#### Research Required: Printify Order Tracking Pages
+
+**TODO:** Investigate whether Printify provides hosted order tracking pages that we can link customers to directly.
+
+**Questions to answer:**
+- [ ] Does Printify provide a public tracking URL for each order?
+- [ ] Can we embed Printify's tracking widget?
+- [ ] What tracking info does Printify's webhook provide? (carrier, tracking number, tracking URL)
+- [ ] Should we build our own tracking page or link to Printify/carrier pages?
+
+**Printify API endpoints to check:**
+- `GET /shops/{shop_id}/orders/{order_id}.json` - Check response for tracking fields
+- Webhook events: `order:shipment:created` - What tracking data is included?
+
+#### Automated Email Notifications
+
+**Required Email Types:**
+
+| Email | Trigger | Content |
+|-------|---------|---------|
+| **Order Confirmation** | Stripe checkout success | Order summary, items, total, estimated delivery |
+| **Order Processing** | POD order sent to Printify | "Your order is being prepared" |
+| **Shipped** | Printify `shipment:created` webhook | Tracking number, carrier, tracking link |
+| **Delivered** | Printify `shipment:delivered` webhook (if available) | "Your order has arrived!" |
+| **Local Pickup Ready** | Admin marks order ready | "Ready for pickup at practice" |
+
+**Backend Implementation:**
+- [ ] Create email templates in `backend/templates/emails/`:
+  - `order_confirmation.html`
+  - `order_shipped.html`
+  - `order_delivered.html`
+  - `order_pickup_ready.html`
+- [ ] Create `apps/payments/services/email_service.py` for order emails
+- [ ] Update Stripe webhook to send confirmation email
+- [ ] Update Printify webhook to send shipping/delivery emails
+- [ ] Add admin action to send "ready for pickup" email for local orders
+
+**Frontend Implementation:**
+- [ ] Order tracking page at `/portal/orders/[order_id]`:
+  - Order status timeline (visual progress indicator)
+  - Tracking number with link to carrier
+  - Estimated delivery date
+  - Item list with images
+  - Shipping address
+- [ ] Update `/portal/orders` list to show status badges
+- [ ] Email preference settings (optional: let users opt out)
+
+**Order Status Flow:**
+
+```
+POD Orders:
+[Paid] → [Processing] → [Shipped] → [Delivered]
+                           ↓
+                    (tracking email sent)
+
+Local Orders:
+[Paid] → [Processing] → [Ready for Pickup] → [Picked Up]
+                              ↓
+                    (pickup email sent)
+```
+
+**Data Model Updates:**
+```python
+# Order model additions
+class Order(models.Model):
+    # ... existing fields ...
+    tracking_number = models.CharField(max_length=100, blank=True)
+    tracking_url = models.URLField(blank=True)
+    carrier = models.CharField(max_length=50, blank=True)  # USPS, UPS, FedEx, etc.
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    estimated_delivery = models.DateField(null=True, blank=True)
+```
+
+**Environment Variables:**
+```bash
+# Email configuration (production)
+EMAIL_HOST=smtp.sendgrid.net
+EMAIL_PORT=587
+EMAIL_HOST_USER=apikey
+EMAIL_HOST_PASSWORD=SG.xxxxx
+DEFAULT_FROM_EMAIL=orders@njstarselite.com
+```
+
+#### Testing Checklist
+- [ ] Place test POD order → receive confirmation email
+- [ ] Simulate Printify shipped webhook → receive shipping email with tracking
+- [ ] Place test local order → admin sends pickup email
+- [ ] Verify tracking links work (carrier pages)
+- [ ] Test on mobile email clients
+
+---
+
+### 4.15 Payment Security - Wallet Integration 🔴 CRITICAL (Pre-Launch)
+
+**Time:** 2-3 days
+
+**Goal:** Remove stored card details from user profiles and implement secure wallet-based payment handling through Stripe/PayPal instead of storing sensitive payment data.
+
+> ⚠️ **SECURITY PRIORITY:** Storing full card numbers is a PCI compliance violation. We must NEVER store raw card data on our servers.
+
+#### Current State (REMOVE)
+The `SavedPaymentMethod` model in `apps/portal/models.py` may be storing more card data than necessary:
+- [ ] Audit `SavedPaymentMethod` model for sensitive data
+- [ ] Remove any fields storing full card numbers, CVVs, or expiration dates
+- [ ] Keep ONLY: last 4 digits, card brand (Visa/MC), and Stripe payment method ID
+
+#### Target Architecture
+
+**What we store locally (safe):**
+| Field | Example | Purpose |
+|-------|---------|---------|
+| `stripe_payment_method_id` | `pm_1234abc` | Reference to Stripe's stored card |
+| `card_last_four` | `4242` | Display to user: "Card ending in 4242" |
+| `card_brand` | `visa` | Display card icon |
+| `is_default` | `true` | User's preferred payment method |
+
+**What Stripe/PayPal stores (secure):**
+- Full card number (encrypted, PCI compliant)
+- Expiration date
+- Billing address
+- All sensitive payment data
+
+#### Implementation Tasks
+
+**Backend:**
+- [ ] Update `SavedPaymentMethod` model:
+  ```python
+  class SavedPaymentMethod(models.Model):
+      user = models.ForeignKey(User, on_delete=models.CASCADE)
+      stripe_payment_method_id = models.CharField(max_length=255)  # pm_xxxxx
+      card_last_four = models.CharField(max_length=4)
+      card_brand = models.CharField(max_length=20)  # visa, mastercard, amex
+      is_default = models.BooleanField(default=False)
+      created_at = models.DateTimeField(auto_now_add=True)
+      # NO card_number, NO expiration, NO cvv fields!
+  ```
+- [ ] Create migration to remove any sensitive fields
+- [ ] Update payment endpoints to use Stripe's stored payment methods
+- [ ] Add endpoint to attach new payment method: `POST /api/portal/payment-methods/`
+- [ ] Add endpoint to detach payment method: `DELETE /api/portal/payment-methods/{id}/`
+- [ ] Add endpoint to set default: `PATCH /api/portal/payment-methods/{id}/default/`
+
+**Frontend:**
+- [ ] Use Stripe Elements for card input (card data never touches our servers)
+- [ ] Display saved cards as "Visa •••• 4242" with card brand icons
+- [ ] Add "Add new card" flow using Stripe's SetupIntent
+- [ ] Add "Remove card" functionality
+- [ ] Add "Set as default" toggle
+
+**Stripe Integration:**
+```python
+# When user saves a new card (backend)
+def attach_payment_method(user, payment_method_id):
+    stripe.PaymentMethod.attach(
+        payment_method_id,
+        customer=user.profile.stripe_customer_id,
+    )
+    pm = stripe.PaymentMethod.retrieve(payment_method_id)
+    SavedPaymentMethod.objects.create(
+        user=user,
+        stripe_payment_method_id=payment_method_id,
+        card_last_four=pm.card.last4,
+        card_brand=pm.card.brand,
+    )
+```
+
+**PayPal Wallet (Optional Future):**
+- [ ] Add PayPal as alternative payment option
+- [ ] Store PayPal billing agreement ID (not PayPal account details)
+- [ ] Allow users to choose preferred wallet (Stripe vs PayPal)
+
+#### Security Checklist
+- [ ] Confirm NO raw card numbers in database
+- [ ] Confirm NO CVV/CVC codes stored anywhere
+- [ ] Confirm NO full expiration dates stored
+- [ ] All card input uses Stripe Elements (client-side tokenization)
+- [ ] Payment method IDs are the only Stripe reference we store
+- [ ] Database fields are encrypted at rest (Railway provides this)
+
+#### Why This Matters
+| ❌ Bad (PCI Violation) | ✅ Good (PCI Compliant) |
+|------------------------|-------------------------|
+| Store card number `4242424242424242` | Store Stripe ID `pm_1234abc` |
+| Store CVV `123` | Let Stripe handle CVV |
+| Store expiry `12/25` | Store only last4 `4242` |
+| Process cards on our server | Use Stripe Elements (client-side) |
+
+---
+
 ### 4.13 Instagram API Enhancements (Post-MVP) 🟡 MEDIUM
 
 **Time:** 1-2 weeks (when needed)
@@ -1491,14 +1690,16 @@ useEffect(() => {
 12. 🟠 **Configure production email** (SendGrid/Mailgun) for password reset emails
 
 ### This Month
-11. 🔴 **Tryout Registration Form Modal** (replace Google Form)
-12. 🔴 **Coach Management System** (add Tray, Coach Cee, Coach K)
-13. 🔴 Deploy backend to production
-14. 🔴 Deploy frontend to production
-15. 🔴 Configure Stripe webhooks for production
-16. 🟠 Add real content (products, blog posts, events) via Wagtail CMS
-17. 🟠 User acceptance testing
-18. 🚀 Launch!
+11. 🔴 **ORDER TRACKING SYSTEM** (automated emails + tracking page) - **PRE-LAUNCH BLOCKER**
+12. 🔴 **Research Printify tracking pages** (can we link to hosted tracking?)
+13. 🔴 **Tryout Registration Form Modal** (replace Google Form)
+14. 🔴 **Coach Management System** (add Tray, Coach Cee, Coach K)
+15. 🔴 Deploy backend to production
+16. 🔴 Deploy frontend to production
+17. 🔴 Configure Stripe webhooks for production
+18. 🟠 Add real content (products, blog posts, events) via Wagtail CMS
+19. 🟠 User acceptance testing
+20. 🚀 Launch!
 
 ### Next Month
 19. 🟠 **Coach Payout System** (Stripe Connect integration)

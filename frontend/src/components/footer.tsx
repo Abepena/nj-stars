@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { Instagram } from "lucide-react"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 const footerLinks = [
   { href: "/about", label: "About" },
@@ -13,6 +16,7 @@ const footerLinks = [
 
 export function Footer() {
   const [isLightMode, setIsLightMode] = useState(false)
+  const [instagramUrl, setInstagramUrl] = useState<string>("")
 
   useEffect(() => {
     const updateTheme = () => {
@@ -32,6 +36,22 @@ export function Footer() {
     return () => observer.disconnect()
   }, [])
 
+  // Fetch site settings for Instagram URL
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const response = await fetch(`${API_BASE}/api/settings/`)
+        if (response.ok) {
+          const data = await response.json()
+          setInstagramUrl(data.instagram_url || "")
+        }
+      } catch {
+        // Silently fail - Instagram link just won't show
+      }
+    }
+    fetchSettings()
+  }, [])
+
   // Light mode: #285441 (dark forest green)
   // Dark mode: light greenish color for visibility
   const leagLogoFilter = isLightMode
@@ -41,8 +61,8 @@ export function Footer() {
   return (
     <footer className="bg-background py-8 border-t border-border">
       <div className="container mx-auto px-4 space-y-6">
-        {/* Footer Links */}
-        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+        {/* Footer Links & Social */}
+        <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
           {footerLinks.map((link) => (
             <Link
               key={link.href}
@@ -52,6 +72,17 @@ export function Footer() {
               {link.label}
             </Link>
           ))}
+          {instagramUrl && (
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Follow us on Instagram"
+            >
+              <Instagram className="h-5 w-5" />
+            </a>
+          )}
         </nav>
 
         {/* Copyright & Powered By */}

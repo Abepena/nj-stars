@@ -388,11 +388,23 @@ class InstagramCredential(models.Model):
 
 class IntegrationSettings(models.Model):
     """
-    Singleton model for storing third-party integration credentials.
+    Singleton model for storing third-party integration credentials and site settings.
 
     Designed for multi-tenancy: in the future, add a tenant FK.
     For now, we use a single instance (enforced in save()).
     """
+
+    # Contact Settings
+    contact_email = models.EmailField(
+        default='contact@leag.app',
+        help_text="Email address that receives contact form submissions"
+    )
+    instagram_url = models.URLField(
+        max_length=200,
+        blank=True,
+        default='https://instagram.com/njstarselite_aau',
+        help_text="Instagram profile URL for footer/social links"
+    )
 
     # Printify Integration
     printify_api_key = models.TextField(

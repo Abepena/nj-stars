@@ -126,8 +126,8 @@ export function CoachesSection() {
 
   if (isLoading) {
     return (
-      <section className="py-16 md:py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
+      <section className="py-16 md:py-24 section-seamless">
+        <div className="container mx-auto px-4 relative z-10">
           <div className="mb-8 text-center">
             <div className="h-9 w-64 bg-muted rounded mx-auto mb-2 animate-pulse" />
             <div className="h-5 w-96 max-w-full bg-muted rounded mx-auto animate-pulse" />
@@ -171,8 +171,8 @@ export function CoachesSection() {
   }
 
   return (
-    <section className="py-16 md:py-24 bg-muted/30">
-      <div className="container mx-auto px-4">
+    <section className="py-16 md:py-24 section-seamless">
+      <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="mb-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">Meet Our Coaches</h2>
@@ -198,10 +198,10 @@ export function CoachesSection() {
                   <button
                     onClick={goToPrevious}
                     disabled={transitionPhase !== 'idle'}
-                    className="md:hidden w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50 flex-shrink-0"
+                    className="md:hidden w-10 h-10 rounded-full bg-black/80 border border-white/20 flex items-center justify-center hover:bg-black transition-colors disabled:opacity-50 flex-shrink-0"
                     aria-label="Previous coach"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-5 h-5 text-white" />
                   </button>
                 )}
 
@@ -232,10 +232,10 @@ export function CoachesSection() {
                   <button
                     onClick={goToNext}
                     disabled={transitionPhase !== 'idle'}
-                    className="md:hidden w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50 flex-shrink-0"
+                    className="md:hidden w-10 h-10 rounded-full bg-black/80 border border-white/20 flex items-center justify-center hover:bg-black transition-colors disabled:opacity-50 flex-shrink-0"
                     aria-label="Next coach"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-5 h-5 text-white" />
                   </button>
                 )}
               </div>
@@ -268,7 +268,7 @@ export function CoachesSection() {
                 {currentCoach.display_name || currentCoach.name}
               </h3>
               {currentCoach.title && (
-                <p className="text-primary font-medium text-lg md:text-xl mb-6">{currentCoach.title}</p>
+                <p className="text-secondary font-medium text-lg md:text-xl mb-6">{currentCoach.title}</p>
               )}
 
               {/* Full Bio */}
@@ -286,8 +286,8 @@ export function CoachesSection() {
                     {currentCoach.specialties_list.map((specialty) => (
                       <Badge
                         key={specialty}
-                        variant="outline"
-                        className="text-sm px-3 py-1"
+                        variant="secondary"
+                        className="text-sm px-3 py-1 bg-black/80 text-white border-white/20"
                       >
                         {specialty}
                       </Badge>
@@ -324,10 +324,10 @@ export function CoachesSection() {
               <button
                 onClick={goToPrevious}
                 disabled={transitionPhase !== 'idle'}
-                className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
+                className="w-10 h-10 rounded-full bg-black/80 border border-white/20 flex items-center justify-center hover:bg-black transition-colors disabled:opacity-50"
                 aria-label="Previous coach"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5 text-white" />
               </button>
 
               <div className="flex gap-2">
@@ -350,10 +350,10 @@ export function CoachesSection() {
               <button
                 onClick={goToNext}
                 disabled={transitionPhase !== 'idle'}
-                className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
+                className="w-10 h-10 rounded-full bg-black/80 border border-white/20 flex items-center justify-center hover:bg-black transition-colors disabled:opacity-50"
                 aria-label="Next coach"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5 text-white" />
               </button>
             </div>
           )}

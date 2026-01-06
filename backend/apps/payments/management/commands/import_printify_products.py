@@ -114,10 +114,16 @@ class Command(BaseCommand):
         title = product_data.get('title', '').strip()
         description = product_data.get('description', '')
 
-        # Clean HTML tags and decode entities from description
+        # Convert HTML to plain text while preserving structure
         if description:
+            description = re.sub(r'<br\s*/?>', '\n', description, flags=re.IGNORECASE)
+            description = re.sub(r'</p>', '\n\n', description, flags=re.IGNORECASE)
+            description = re.sub(r'<li[^>]*>', '• ', description, flags=re.IGNORECASE)
+            description = re.sub(r'</li>', '\n', description, flags=re.IGNORECASE)
             description = re.sub(r'<[^>]+>', '', description)
             description = html.unescape(description)  # Decode &#39; → '
+            description = re.sub(r'\n{3,}', '\n\n', description)
+            description = description.strip()
 
         # Generate slug
         base_slug = slugify(title)[:50]

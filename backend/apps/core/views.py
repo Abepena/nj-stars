@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from .emails import send_contact_notification
-from .models import Coach, InstagramPost, NewsletterSubscriber
+from .models import Coach, InstagramPost, NewsletterSubscriber, IntegrationSettings
 from .serializers import (
     CoachSerializer,
     InstagramPostSerializer,
@@ -398,3 +398,19 @@ def contact_status_update(request, pk):
         submission.save()
 
     return Response({"status": submission.status})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def site_settings(request):
+    """
+    Get public site settings for frontend use.
+
+    GET /api/settings/
+    Returns:
+        - instagram_url: Instagram profile URL
+    """
+    settings_instance = IntegrationSettings.get_instance()
+    return Response({
+        'instagram_url': settings_instance.instagram_url or '',
+    })

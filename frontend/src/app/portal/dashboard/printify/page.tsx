@@ -6,7 +6,7 @@ import { PrintifyAdminSection } from "@/components/admin/printify-section"
 
 export default function PrintifyPage() {
   return (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6 pt-4 min-h-[calc(100vh-4rem)]">
       <BackToDashboard />
 
       <div className="flex items-center gap-3">
@@ -16,7 +16,7 @@ export default function PrintifyPage() {
         <div>
           <h1 className="text-2xl font-bold">Manage Products</h1>
           <p className="text-sm text-muted-foreground">
-            Printify sync, publish, and merch controls
+            Printify sync, activate, and merch controls
           </p>
         </div>
       </div>

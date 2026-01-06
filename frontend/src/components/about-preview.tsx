@@ -23,7 +23,7 @@ const coreValues = [
 const highlights = [
   { icon: Trophy, label: "Tournament Champions", value: "12+" },
   { icon: Target, label: "Training Sessions", value: "200+" },
-  { icon: Star, label: "Player Development", value: "2nd-10th" },
+  { icon: Star, label: "Player Development", value: "2nd-12th" },
 ]
 
 export function AboutPreview() {

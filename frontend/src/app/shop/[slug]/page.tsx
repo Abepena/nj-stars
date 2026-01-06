@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { ZoomableImage } from "@/components/zoomable-image"
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft, Truck, Package } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShoppingBag, Loader2, Check, ArrowLeft, Truck, Package, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -16,6 +16,7 @@ import { useBag } from "@/lib/bag"
 import { getCategoryBadgeColor } from "@/lib/category-colors"
 import { shouldSkipImageOptimization } from "@/lib/utils"
 import { getColorHex } from "@/lib/color-utils"
+import { ReturnPolicyModal } from "@/components/return-policy-modal"
 
 interface ProductImage {
   id: number
@@ -351,7 +352,7 @@ export default function ProductDetailPage() {
     : 0
 
   return (
-    <LayoutShell>
+    <LayoutShell background="gradient-grid">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumbs */}
         <Breadcrumbs
@@ -371,11 +372,26 @@ export default function ProductDetailPage() {
           Back to all products
         </Link>
 
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            {/* Main Image */}
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+        <div className="grid lg:grid-cols-2 gap-4 lg:gap-12">
+          {/* Image Gallery - Merch drop style */}
+          <div className="rounded-2xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.4)] via-[hsl(var(--neon-pink)/0.2)] to-[hsl(var(--neon-pink)/0.05)] h-fit self-start">
+            <div className="rounded-[calc(1rem-1px)] bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl border border-white/[0.05] shadow-[0_0_40px_hsl(var(--neon-pink)/0.1)] p-4">
+              {/* Mobile Title & Price - Inside panel, above image */}
+              <div className="lg:hidden mb-4">
+                <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-2xl font-bold">${parseFloat(product.price).toFixed(2)}</span>
+                  {hasDiscount && (
+                    <span className="text-lg text-muted-foreground line-through">
+                      ${parseFloat(product.compare_at_price!).toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Main Image */}
+                <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
               {productImages[currentImageIndex] ? (
                 <>
                   <ZoomableImage
@@ -445,12 +461,165 @@ export default function ProductDetailPage() {
                 ))}
               </div>
             )}
+              </div>
+            </div>
           </div>
 
-          {/* Product Info */}
-          <div className="flex flex-col">
-            {/* Category & Tags */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+          {/* Mobile Variant Selection - Right after image */}
+          <div className="lg:hidden rounded-2xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.4)] via-[hsl(var(--neon-pink)/0.2)] to-[hsl(var(--neon-pink)/0.05)]">
+            <div className="rounded-[calc(1rem-1px)] bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl border border-white/[0.05] shadow-[0_0_40px_hsl(var(--neon-pink)/0.1)] p-4">
+              {/* Color Selector - Mobile */}
+              {availableColors.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider">
+                      Color{selectedColor && `: ${selectedColor}`}
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {availableColors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`relative w-10 h-10 rounded-full transition-all duration-200 ${
+                          selectedColor === color.name
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                            : "hover:scale-110"
+                        }`}
+                        style={{ backgroundColor: getColorHex(color.name, color.hex) }}
+                        aria-label={color.name}
+                        aria-pressed={selectedColor === color.name}
+                        title={color.name}
+                      >
+                        <span className="absolute inset-0 rounded-full border-2 border-white/40" />
+                        {selectedColor === color.name && (
+                          <Check
+                            className={`absolute inset-0 m-auto w-5 h-5 ${
+                              getColorHex(color.name, color.hex) === "#ffffff" || getColorHex(color.name, color.hex) === "#9ca3af"
+                                ? "text-gray-800"
+                                : "text-white"
+                            }`}
+                          />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Size Selector - Mobile */}
+              {availableSizes.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider">Size</h2>
+                    {!selectedSize && (
+                      <span className="text-xs text-muted-foreground">Select a size</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`min-w-[3rem] px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 border ${
+                          selectedSize === size
+                            ? "border-primary bg-background text-foreground"
+                            : "border-border bg-background text-foreground hover:border-muted-foreground"
+                        }`}
+                        aria-pressed={selectedSize === size}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quantity - Mobile */}
+              {(product.is_pod || product.stock_quantity > 0) && (
+                <div className="mb-4">
+                  <span className="text-sm font-semibold uppercase tracking-wider block mb-2">Quantity</span>
+                  <div className="flex items-center border rounded-lg w-fit">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      disabled={quantity <= 1}
+                      aria-label="Decrease quantity"
+                    >
+                      −
+                    </button>
+                    <span className="px-4 min-h-[44px] flex items-center justify-center border-x min-w-[3rem] text-center font-medium">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted transition-colors text-lg"
+                      disabled={quantity >= 10}
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Stock Status - Mobile */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      product.is_pod
+                        ? "bg-violet-500"
+                        : product.stock_quantity > 15
+                        ? "bg-success"
+                        : product.stock_quantity > 5
+                        ? "bg-warning"
+                        : product.stock_quantity > 0
+                        ? "bg-accent animate-pulse"
+                        : "bg-destructive"
+                    }`}
+                  />
+                  <span
+                    className={
+                      product.is_pod
+                        ? "text-violet-500 font-medium"
+                        : product.stock_quantity === 0
+                        ? "text-destructive font-semibold"
+                        : product.stock_quantity <= 5
+                        ? "text-accent font-semibold"
+                        : "text-foreground"
+                    }
+                  >
+                    {product.is_pod
+                      ? "Made to Order"
+                      : product.stock_quantity > 15
+                      ? "In Stock"
+                      : product.stock_quantity > 5
+                      ? "⚡ Limited Drop"
+                      : product.stock_quantity > 0
+                      ? "🔥 Almost Gone!"
+                      : "Out of Stock"}
+                  </span>
+                </div>
+                {product.shipping_estimate && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span>·</span>
+                    <span className="flex items-center gap-1.5">
+                      <Truck className="w-4 h-4" />
+                      Ships in {product.shipping_estimate}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Product Info - Merch drop style */}
+          <div className="rounded-2xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.4)] via-[hsl(var(--neon-pink)/0.2)] to-[hsl(var(--neon-pink)/0.05)] h-fit">
+            <div className="h-full rounded-[calc(1rem-1px)] bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl border border-white/[0.05] shadow-[0_0_40px_hsl(var(--neon-pink)/0.1)] p-6">
+              <div className="flex flex-col">
+            {/* Category & Tags - Desktop only */}
+            <div className="hidden lg:flex flex-wrap items-center gap-2 mb-4">
               <span
                 className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider ${getCategoryBadgeColor(
                   product.category
@@ -470,11 +639,11 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Title */}
-            <h1 className="text-3xl lg:text-4xl font-bold mb-4">{product.name}</h1>
+            {/* Title - Desktop only */}
+            <h1 className="hidden lg:block text-3xl lg:text-4xl font-bold mb-4">{product.name}</h1>
 
-            {/* Price */}
-            <div className="flex items-baseline gap-3 mb-6">
+            {/* Price - Desktop only */}
+            <div className="hidden lg:flex items-baseline gap-3 mb-6">
               <span className="text-3xl font-bold">${parseFloat(product.price).toFixed(2)}</span>
               {hasDiscount && (
                 <>
@@ -486,17 +655,17 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            <Separator className="mb-6" />
+            <Separator className="hidden lg:block mb-6" />
 
             {/* Description */}
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-2">Description</h2>
-              <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{product.description}</p>
             </div>
 
-            {/* Variant Selection - Size */}
+            {/* Variant Selection - Size - Desktop only */}
             {availableSizes.length > 0 && (
-              <div className="mb-6">
+              <div className="hidden lg:block mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wider">Size</h2>
                   {!selectedSize && (
@@ -526,9 +695,9 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Variant Selection - Color */}
+            {/* Variant Selection - Color - Desktop only */}
             {availableColors.length > 0 && (
-              <div className="mb-6">
+              <div className="hidden lg:block mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold uppercase tracking-wider">
                     Color{selectedColor && `: ${selectedColor}`}
@@ -553,7 +722,7 @@ export default function ProductDetailPage() {
                       title={color.name}
                     >
                       {/* Border for all swatches - visible on both light and dark */}
-                      <span className="absolute inset-0 rounded-full border border-border" />
+                      <span className="absolute inset-0 rounded-full border-2 border-white/40" />
                       {/* Checkmark for selected */}
                       {selectedColor === color.name && (
                         <Check
@@ -570,10 +739,10 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            <Separator className="mb-6" />
+            <Separator className="hidden lg:block mb-6" />
 
-            {/* Stock Status with Marketing Language */}
-            <div className="mb-6">
+            {/* Stock Status with Marketing Language - Desktop only */}
+            <div className="hidden lg:block mb-6">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 {/* Stock indicator */}
                 <div className="flex items-center gap-2">
@@ -633,9 +802,9 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Urgency Banner - only show for local products with limited stock (POD is always available) */}
+            {/* Urgency Banner - Desktop only */}
             {!product.is_pod && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-              <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 mb-6">
+              <div className="hidden lg:block bg-accent/10 border border-accent/30 rounded-lg p-4 mb-6">
                 <p className="text-sm text-accent font-semibold flex items-center gap-2">
                   <span className="animate-pulse">🔥</span>
                   Selling fast! Only a few left - grab yours now!
@@ -643,7 +812,7 @@ export default function ProductDetailPage() {
               </div>
             )}
             {!product.is_pod && product.stock_quantity > 5 && product.stock_quantity <= 15 && (
-              <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6">
+              <div className="hidden lg:block bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6">
                 <p className="text-sm text-warning font-medium flex items-center gap-2">
                   <span>⚡</span>
                   Limited edition drop - don&apos;t miss out!
@@ -651,19 +820,10 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* POD Info Banner */}
-            {product.is_pod && (
-              <div className="bg-violet-500/10 border border-violet-500/30 rounded-lg p-4 mb-6">
-                <p className="text-sm text-violet-400 font-medium flex items-center gap-2">
-                  <Truck className="w-4 h-4" />
-                  Made to order just for you. Ships via Printify in 5-10 business days.
-                </p>
-              </div>
-            )}
 
-            {/* Quantity & Add to Bag */}
+            {/* Quantity & Add to Bag - Desktop only */}
             {(product.is_pod || product.stock_quantity > 0) ? (
-              <div className="space-y-4">
+              <div className="hidden lg:block space-y-4">
                 {/* Variant selection reminder */}
                 {!variantsSelected && (needsSize || needsColor) && (
                   <p className="text-sm text-muted-foreground">
@@ -701,7 +861,7 @@ export default function ProductDetailPage() {
 
                 {/* Add to Bag Button - hidden on mobile (covered by sticky footer) */}
                 <Button
-                  className="w-full hidden lg:flex"
+                  className="w-full hidden lg:flex h-12 text-base font-semibold bg-primary/30 hover:bg-primary/50 text-white border-2 border-primary backdrop-blur-sm disabled:opacity-50"
                   size="lg"
                   onClick={handleAddToBag}
                   disabled={isAdding || !variantsSelected}
@@ -752,7 +912,7 @@ export default function ProductDetailPage() {
               {product.is_pod ? (
                 <div className="flex items-center gap-2">
                   <Truck className="w-5 h-5 text-violet-500" />
-                  <span>Printed & shipped via Printify (5-10 business days)</span>
+                  <span>Printed and shipped upon checkout</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -773,17 +933,12 @@ export default function ProductDetailPage() {
               </div>
               {product.is_pod && (
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  <span>Easy returns within 30 days</span>
+                  <FileText className="w-5 h-5" />
+                  <ReturnPolicyModal />
                 </div>
               )}
+            </div>
+              </div>
             </div>
           </div>
         </div>
@@ -805,7 +960,7 @@ export default function ProductDetailPage() {
 
             {/* Add to Bag button */}
             <Button
-              className="flex-1 h-12 text-base font-semibold"
+              className="flex-1 h-12 text-base font-semibold bg-primary/30 hover:bg-primary/50 text-white border-2 border-primary backdrop-blur-sm disabled:opacity-50"
               onClick={handleAddToBag}
               disabled={isAdding || !variantsSelected}
             >

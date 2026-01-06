@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Shirt,
   ChevronDown,
   ChevronUp,
@@ -34,6 +40,12 @@ import {
   Key,
   Store,
   ArrowRight,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
+  Plus,
+  Trash2,
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -42,10 +54,11 @@ interface PrintifyProduct {
   id: string
   title: string
   is_published?: boolean
+  is_locked?: boolean
   visible?: boolean
   synced?: boolean
   images?: { src: string }[]
-  variants?: { price: number }[]
+  price?: number  // Price in cents from Printify
 }
 
 interface PrintifyShop {
@@ -84,9 +97,17 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [syncProgress, setSyncProgress] = useState<{ current: number; total: number; currentProduct: string } | null>(null)
+  const syncCancelledRef = useRef(false)
+  const [massUnpublishing, setMassUnpublishing] = useState(false)
+  const [unpublishProgress, setUnpublishProgress] = useState<{ current: number; total: number; currentProduct: string } | null>(null)
+  const unpublishCancelledRef = useRef(false)
   const [syncingProducts, setSyncingProducts] = useState<Set<string>>(new Set())
+  const [publishingProducts, setPublishingProducts] = useState<Set<string>>(new Set())
+  const [unlockingProducts, setUnlockingProducts] = useState<Set<string>>(new Set())
+  const [removingProducts, setRemovingProducts] = useState<Set<string>>(new Set())
   const [syncSummary, setSyncSummary] = useState<{ message?: string; summary?: Record<string, any> } | null>(null)
-  const [showAllProducts, setShowAllProducts] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<PrintifyProduct | null>(null)
 
   const getAuthHeaders = () => {
     const apiToken = (session as any)?.apiToken
@@ -148,38 +169,145 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
   }
 
   const syncProducts = async () => {
-    if (!session) return
+    if (!session || products.length === 0) return
 
     setSyncing(true)
     setError(null)
     setSyncSummary(null)
+    syncCancelledRef.current = false
+
+    const syncStats = { synced: 0, failed: 0, skipped: 0 }
 
     try {
-      const response = await fetch(`${API_BASE}/api/payments/admin/printify/sync/`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-      })
+      for (let i = 0; i < products.length; i++) {
+        // Check if cancelled
+        if (syncCancelledRef.current) {
+          syncStats.skipped = products.length - i
+          break
+        }
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log("Sync result:", data)
-          setSyncSummary({
-            message: data.message || "Sync complete",
-            summary: data.summary || data.sync_stats || {},
+        const product = products[i]
+        setSyncProgress({
+          current: i + 1,
+          total: products.length,
+          currentProduct: product.title,
+        })
+
+        try {
+          const response = await fetch(`${API_BASE}/api/payments/admin/printify/sync/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ product_id: product.id }),
           })
-          setShowAllProducts(true)
-        // Refresh products list after successful sync
-        await fetchProducts()
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        setError(errorData.error || "Failed to sync products")
+
+          if (response.ok) {
+            syncStats.synced++
+          } else {
+            syncStats.failed++
+          }
+        } catch {
+          syncStats.failed++
+        }
       }
+
+      const wasCancelled = syncCancelledRef.current
+      setSyncSummary({
+        message: wasCancelled
+          ? `Sync cancelled (${syncStats.synced} synced)`
+          : `Sync complete`,
+        summary: syncStats,
+      })
+      setShowAllProducts(true)
+      // Refresh products list after sync
+      await fetchProducts()
     } catch (err) {
-      console.error("Failed to sync Printify products:", err)
       setError("Sync failed - check connection")
     } finally {
       setSyncing(false)
+      setSyncProgress(null)
+      syncCancelledRef.current = false
     }
+  }
+
+  const cancelSync = () => {
+    syncCancelledRef.current = true
+  }
+
+  const massUnpublishProducts = async () => {
+    // Filter to visible AND not locked products
+    const publishedProducts = products.filter(p => p.visible && !p.is_locked)
+    const lockedCount = products.filter(p => p.visible && p.is_locked).length
+
+    if (!session || publishedProducts.length === 0) {
+      if (lockedCount > 0) {
+        setSyncSummary({
+          message: `No products to unpublish`,
+          summary: { locked_skipped: lockedCount },
+        })
+      }
+      return
+    }
+
+    setMassUnpublishing(true)
+    setError(null)
+    setSyncSummary(null)
+    unpublishCancelledRef.current = false
+
+    const stats = { unpublished: 0, failed: 0, skipped: 0, locked_skipped: lockedCount }
+
+    try {
+      for (let i = 0; i < publishedProducts.length; i++) {
+        if (unpublishCancelledRef.current) {
+          stats.skipped = publishedProducts.length - i
+          break
+        }
+
+        const product = publishedProducts[i]
+        setUnpublishProgress({
+          current: i + 1,
+          total: publishedProducts.length,
+          currentProduct: product.title,
+        })
+
+        try {
+          const response = await fetch(`${API_BASE}/api/payments/admin/printify/unpublish/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ product_id: product.id }),
+          })
+
+          if (response.ok) {
+            stats.unpublished++
+            // Update local state
+            setProducts((prev) =>
+              prev.map((p) => p.id === product.id ? { ...p, visible: false } : p)
+            )
+          } else {
+            stats.failed++
+          }
+        } catch {
+          stats.failed++
+        }
+      }
+
+      const wasCancelled = unpublishCancelledRef.current
+      setSyncSummary({
+        message: wasCancelled
+          ? `Deactivation cancelled (${stats.unpublished} deactivated)`
+          : `Deactivation complete`,
+        summary: { deactivated: stats.unpublished, failed: stats.failed, skipped: stats.skipped, locked_skipped: stats.locked_skipped },
+      })
+    } catch (err) {
+      setError("Deactivation failed - check connection")
+    } finally {
+      setMassUnpublishing(false)
+      setUnpublishProgress(null)
+      unpublishCancelledRef.current = false
+    }
+  }
+
+  const cancelUnpublish = () => {
+    unpublishCancelledRef.current = true
   }
 
   const handleSyncSingle = async (productId: string) => {
@@ -199,9 +327,13 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
       if (response.ok) {
         const data = await response.json()
         setSyncSummary({
-          message: data.message || "Product synced",
+          message: data.message || "Product added to shop",
           summary: data.summary || data.sync_stats || {},
         })
+        // Update selected product if it's the one being synced
+        setSelectedProduct(prev =>
+          prev?.id === productId ? { ...prev, synced: true } : prev
+        )
         await fetchProducts()
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -212,6 +344,128 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
       setError("Sync failed - check connection")
     } finally {
       setSyncingProducts((prev) => {
+        const next = new Set(prev)
+        next.delete(productId)
+        return next
+      })
+    }
+  }
+
+  const handlePublishToggle = async (productId: string, isCurrentlyPublished: boolean) => {
+    if (!session) return
+
+    setError(null)
+    setPublishingProducts((prev) => new Set(prev).add(productId))
+
+    const endpoint = isCurrentlyPublished ? "unpublish" : "publish"
+
+    try {
+      const response = await fetch(`${API_BASE}/api/payments/admin/printify/${endpoint}/`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: productId }),
+      })
+
+      if (response.ok) {
+        // Update local state optimistically
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, visible: !isCurrentlyPublished } : p
+          )
+        )
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || `Failed to ${endpoint} product`)
+      }
+    } catch (err) {
+      console.error(`Failed to ${endpoint} Printify product:`, err)
+      setError(`${endpoint} failed - check connection`)
+    } finally {
+      setPublishingProducts((prev) => {
+        const next = new Set(prev)
+        next.delete(productId)
+        return next
+      })
+    }
+  }
+
+  const handleUnlockProduct = async (productId: string) => {
+    if (!session) return
+
+    setError(null)
+    setUnlockingProducts((prev) => new Set(prev).add(productId))
+
+    try {
+      const response = await fetch(`${API_BASE}/api/payments/admin/printify/unlock/`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: productId }),
+      })
+
+      if (response.ok) {
+        // Update local state - product is now unlocked
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, is_locked: false } : p
+          )
+        )
+        setSyncSummary({
+          message: "Product unlocked successfully",
+          summary: {},
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || "Failed to unlock product")
+      }
+    } catch (err) {
+      console.error("Failed to unlock Printify product:", err)
+      setError("Unlock failed - check connection")
+    } finally {
+      setUnlockingProducts((prev) => {
+        const next = new Set(prev)
+        next.delete(productId)
+        return next
+      })
+    }
+  }
+
+  const handleRemoveFromLocal = async (productId: string) => {
+    if (!session) return
+
+    setError(null)
+    setRemovingProducts((prev) => new Set(prev).add(productId))
+
+    try {
+      const response = await fetch(`${API_BASE}/api/payments/admin/printify/delete-local/`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ product_id: productId }),
+      })
+
+      if (response.ok) {
+        // Update local state - product is no longer synced
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, synced: false, visible: false } : p
+          )
+        )
+        // Also update selected product if it's the one being removed
+        setSelectedProduct(prev =>
+          prev?.id === productId ? { ...prev, synced: false, visible: false } : prev
+        )
+        setSyncSummary({
+          message: "Product removed from local database",
+          summary: {},
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || "Failed to remove product")
+      }
+    } catch (err) {
+      console.error("Failed to remove product from local database:", err)
+      setError("Remove failed - check connection")
+    } finally {
+      setRemovingProducts((prev) => {
         const next = new Set(prev)
         next.delete(productId)
         return next
@@ -326,6 +580,8 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
   }, [isOpen])
 
   const publishedCount = products.filter(p => p.visible).length
+  const unpublishableCount = products.filter(p => p.visible && !p.is_locked).length
+  const lockedPublishedCount = products.filter(p => p.visible && p.is_locked).length
 
   // Render setup flow
   const renderSetupFlow = () => (
@@ -337,7 +593,7 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
           Connect Your Printify Store
         </h4>
         <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-          <li>Go to your <a href="https://printify.com/app/account/api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Printify Account Settings</a></li>
+          <li>Go to your <a href="https://printify.com/app/account/api" target="_blank" rel="noopener noreferrer" className="text-foreground underline hover:text-muted-foreground">Printify Account Settings</a></li>
           <li>Navigate to <strong>Connections</strong> in the sidebar</li>
           <li>Click <strong>Generate new token</strong> under API access</li>
           <li>Copy the token and paste it below</li>
@@ -465,15 +721,47 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={syncProducts}
-          disabled={syncing}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Syncing..." : "Sync from Printify"}
-        </Button>
+        {syncing ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={cancelSync}
+          >
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            Cancel ({syncProgress?.current}/{syncProgress?.total})
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={syncProducts}
+            disabled={products.length === 0 || massUnpublishing}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Sync All from Printify
+          </Button>
+        )}
+        {massUnpublishing ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={cancelUnpublish}
+          >
+            <EyeOff className="h-4 w-4 mr-2 animate-pulse" />
+            Cancel ({unpublishProgress?.current}/{unpublishProgress?.total})
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={massUnpublishProducts}
+            disabled={unpublishableCount === 0 || syncing}
+            title={lockedPublishedCount > 0 ? `${lockedPublishedCount} locked product(s) will be skipped` : undefined}
+          >
+            <EyeOff className="h-4 w-4 mr-2" />
+            Deactivate All ({unpublishableCount}{lockedPublishedCount > 0 ? ` +${lockedPublishedCount} locked` : ""})
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -483,6 +771,46 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
           Open Printify Dashboard
         </Button>
       </div>
+
+      {/* Sync progress indicator */}
+      {syncProgress && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground truncate flex-1 mr-2">
+              Syncing: {syncProgress.currentProduct}
+            </span>
+            <span className="text-muted-foreground whitespace-nowrap">
+              {syncProgress.current} of {syncProgress.total}
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className="bg-foreground h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(syncProgress.current / syncProgress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Deactivate progress indicator */}
+      {unpublishProgress && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground truncate flex-1 mr-2">
+              Deactivating: {unpublishProgress.currentProduct}
+            </span>
+            <span className="text-muted-foreground whitespace-nowrap">
+              {unpublishProgress.current} of {unpublishProgress.total}
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className="bg-destructive h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(unpublishProgress.current / unpublishProgress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {syncSummary && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-muted border">
@@ -542,65 +870,149 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
 
       {/* Products list - show during sync too */}
       {products.length > 0 && (
-        <div className="space-y-2 max-h-80 overflow-y-auto">
-          {(showAllProducts ? products : products.slice(0, 10)).map((product) => (
+        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          {products.map((product) => (
             <div
               key={product.id}
-              className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
             >
-              {product.images?.[0]?.src ? (
-                <img
-                  src={product.images[0].src}
-                  alt={product.title}
-                  className="h-12 w-12 object-cover rounded"
-                />
-              ) : (
-                <div className="h-12 w-12 bg-muted rounded flex items-center justify-center">
-                  <Package className="h-5 w-5 text-muted-foreground" />
+              {/* Product info row - clickable */}
+              <div
+                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                onClick={() => setSelectedProduct(product)}
+              >
+                {product.images?.[0]?.src ? (
+                  <img
+                    src={product.images[0].src}
+                    alt={product.title}
+                    className="h-12 w-12 object-cover rounded flex-shrink-0"
+                  />
+                ) : (
+                  <div className="h-12 w-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{product.title}</p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    {syncing ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      product.synced ? "Synced" : "Not synced"
+                    )}
+                  </p>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{product.title}</p>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  {syncing ? (
-                    <>
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                      Syncing...
-                    </>
-                  ) : (
-                    product.synced ? "Synced" : "Not synced"
+                {/* Badges shown inline on mobile */}
+                <div className="flex items-center gap-1 sm:hidden flex-shrink-0">
+                  {product.is_locked && (
+                    <Badge variant="outline" className="text-amber-500 border-amber-500">
+                      <Lock className="h-3 w-3" />
+                    </Badge>
                   )}
-                </p>
+                  <Badge variant={product.visible ? "success" : "destructive"} className={product.visible ? "" : "bg-destructive/20 text-destructive hover:bg-destructive/30"}>
+                    {product.visible ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* Actions row - stacks below on mobile */}
+              <div className="flex items-center gap-2 pl-15 sm:pl-0">
                 {syncing && (
                   <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
                 )}
-                <Badge variant={product.visible ? "default" : "secondary"}>
-                  {product.visible ? "Published" : "Draft"}
+                {/* Badges hidden on mobile, shown on desktop */}
+                {product.is_locked && (
+                  <Badge variant="outline" className="hidden sm:inline-flex text-amber-500 border-amber-500">
+                    <Lock className="h-3 w-3 mr-1" />
+                    Locked
+                  </Badge>
+                )}
+                <Badge variant={product.visible ? "success" : "destructive"} className={`hidden sm:inline-flex ${product.visible ? "" : "bg-destructive/20 text-destructive hover:bg-destructive/30"}`}>
+                  {product.visible ? "Active" : "Inactive"}
                 </Badge>
+                {/* Unlock button - shown when product is locked */}
+                {product.is_locked && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUnlockProduct(product.id)}
+                    disabled={syncing || unlockingProducts.has(product.id)}
+                    title="Unlock product to allow editing/deactivating"
+                    className="text-amber-500 hover:text-amber-600"
+                  >
+                    {unlockingProducts.has(product.id) ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Unlock className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Unlock</span>
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
-                  variant="outline"
+                  variant={product.visible ? "outline" : "success"}
                   size="sm"
-                  onClick={() => handleSyncSingle(product.id)}
-                  disabled={syncing || syncingProducts.has(product.id)}
+                  onClick={() => handlePublishToggle(product.id, !!product.visible)}
+                  disabled={syncing || publishingProducts.has(product.id) || product.is_locked}
+                  title={product.is_locked ? "Unlock product first" : product.visible ? "Hide from store" : "Show on store"}
                 >
-                  {syncingProducts.has(product.id) ? (
+                  {publishingProducts.has(product.id) ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : product.visible ? (
+                    <>
+                      <EyeOff className="h-4 w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Deactivate</span>
+                    </>
                   ) : (
-                    "Sync to local"
+                    <>
+                      <Eye className="h-4 w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Activate</span>
+                    </>
                   )}
                 </Button>
+                {product.synced ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemoveFromLocal(product.id)}
+                    disabled={syncing || removingProducts.has(product.id)}
+                    title="Remove from local shop"
+                    className="text-destructive hover:text-destructive"
+                  >
+                    {removingProducts.has(product.id) ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Remove</span>
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSyncSingle(product.id)}
+                    disabled={syncing || syncingProducts.has(product.id)}
+                    title="Add to local shop"
+                  >
+                    {syncingProducts.has(product.id) ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Add to Shop</span>
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           ))}
-          {products.length > 10 && (
-            <div className="flex justify-center">
-              <Button variant="ghost" size="sm" onClick={() => setShowAllProducts(!showAllProducts)}>
-                {showAllProducts ? "Show less" : `View all ${products.length} products`}
-              </Button>
-            </div>
-          )}
         </div>
       )}
 
@@ -612,6 +1024,138 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
           <p className="text-sm">Create products in Printify, then sync them here</p>
         </div>
       )}
+
+      {/* Product Detail Modal */}
+      <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
+        <DialogContent className="sm:max-w-md">
+          {selectedProduct && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="pr-8">{selectedProduct.title}</DialogTitle>
+              </DialogHeader>
+
+              {/* Large Product Image */}
+              <div className="relative aspect-square w-full bg-muted rounded-lg overflow-hidden">
+                {selectedProduct.images?.[0]?.src ? (
+                  <img
+                    src={selectedProduct.images[0].src}
+                    alt={selectedProduct.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="h-16 w-16 text-muted-foreground/50" />
+                  </div>
+                )}
+              </div>
+
+              {/* Price & Status */}
+              <div className="flex items-center justify-between">
+                <div className="text-lg font-semibold">
+                  {selectedProduct.price
+                    ? `$${(selectedProduct.price / 100).toFixed(2)}`
+                    : "Price not set"
+                  }
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedProduct.is_locked && (
+                    <Badge variant="outline" className="text-amber-500 border-amber-500">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Locked
+                    </Badge>
+                  )}
+                  <Badge
+                    variant={selectedProduct.visible ? "success" : "destructive"}
+                    className={selectedProduct.visible ? "" : "bg-destructive/20 text-destructive"}
+                  >
+                    {selectedProduct.visible ? "Active" : "Inactive"}
+                  </Badge>
+                  <Badge variant="outline">
+                    {selectedProduct.synced ? "Synced" : "Not synced"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2">
+                {/* Unlock button if locked */}
+                {selectedProduct.is_locked && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleUnlockProduct(selectedProduct.id)}
+                    disabled={unlockingProducts.has(selectedProduct.id)}
+                    className="w-full text-amber-500 hover:text-amber-600 focus-visible:ring-muted-foreground"
+                  >
+                    {unlockingProducts.has(selectedProduct.id) ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Unlock className="h-4 w-4 mr-2" />
+                    )}
+                    Unlock Product
+                  </Button>
+                )}
+
+                {/* Activate/Deactivate button */}
+                <Button
+                  variant={selectedProduct.visible ? "outline" : "success"}
+                  onClick={() => {
+                    handlePublishToggle(selectedProduct.id, !!selectedProduct.visible)
+                    // Update the selected product state to reflect the change
+                    setSelectedProduct(prev => prev ? { ...prev, visible: !prev.visible } : null)
+                  }}
+                  disabled={publishingProducts.has(selectedProduct.id) || selectedProduct.is_locked}
+                  className="w-full focus-visible:ring-muted-foreground"
+                >
+                  {publishingProducts.has(selectedProduct.id) ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : selectedProduct.visible ? (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Deactivate from Store
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Activate on Store
+                    </>
+                  )}
+                </Button>
+
+                {/* Add to Shop / Remove from Shop button */}
+                {selectedProduct.synced ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleRemoveFromLocal(selectedProduct.id)}
+                    disabled={removingProducts.has(selectedProduct.id)}
+                    className="w-full focus-visible:ring-muted-foreground text-destructive hover:text-destructive"
+                  >
+                    {removingProducts.has(selectedProduct.id) ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Remove from Shop
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSyncSingle(selectedProduct.id)}
+                    disabled={syncingProducts.has(selectedProduct.id)}
+                    className="w-full focus-visible:ring-muted-foreground"
+                  >
+                    {syncingProducts.has(selectedProduct.id) ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    Add to Shop
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 
@@ -620,14 +1164,15 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+            <div className="flex items-center justify-between gap-2">
+              {/* Left: Icon + Title */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
                   <Shirt className="h-5 w-5 text-purple-600" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <CardTitle className="text-lg">Printify Store</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="truncate">
                     {connectionStatus?.connected
                       ? `Connected to ${connectionStatus.shop_name}`
                       : "Manage print-on-demand products"
@@ -635,20 +1180,24 @@ export function PrintifyAdminSection({ defaultOpen = false }: { defaultOpen?: bo
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              {/* Right: Status badges + chevron */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Active count - hidden on mobile */}
                 {connectionStatus?.connected && products.length > 0 && (
-                  <Badge variant="secondary">
-                    {publishedCount} published
+                  <Badge variant="secondary" className="hidden sm:inline-flex">
+                    {publishedCount} active
                   </Badge>
                 )}
+                {/* Connection status */}
                 {connectionStatus?.connected ? (
                   <Badge variant="outline" className="text-success border-success">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Connected
+                    <CheckCircle2 className="h-3 w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Connected</span>
                   </Badge>
                 ) : connectionStatus !== null && (
                   <Badge variant="outline" className="text-muted-foreground">
-                    Not connected
+                    <span className="hidden sm:inline">Not connected</span>
+                    <span className="sm:hidden">—</span>
                   </Badge>
                 )}
                 {isOpen ? (

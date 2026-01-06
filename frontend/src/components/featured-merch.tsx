@@ -212,7 +212,7 @@ export function FeaturedMerch({
             {showSeeMore && (
               <div className="mt-5">
                 <Link href="/shop">
-                  <Button variant="outline" size="lg" className="px-8">
+                  <Button variant="outline" size="lg" className="px-8 border-primary/50 bg-primary/20 hover:bg-primary/30 text-white shadow-[0_0_20px_hsl(var(--neon-pink)/0.2)]">
                     Gear Up →
                   </Button>
                 </Link>
@@ -233,7 +233,7 @@ export function FeaturedMerch({
         {showSeeMore && (
           <div className="flex justify-center lg:hidden">
             <Link href="/shop">
-              <Button variant="outline" size="lg" className="px-8">
+              <Button variant="outline" size="lg" className="px-8 border-primary/50 bg-primary/20 hover:bg-primary/30 text-white shadow-[0_0_20px_hsl(var(--neon-pink)/0.2)]">
                 Gear Up →
               </Button>
             </Link>
@@ -256,7 +256,11 @@ export function FeaturedMerch({
     return (
       <section className="py-16 md:py-24 section-seamless">
         <div className="container mx-auto px-4 relative z-10">
-          {content}
+          <div className="rounded-2xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.4)] via-[hsl(var(--neon-pink)/0.2)] to-[hsl(var(--neon-pink)/0.05)]">
+            <div className="rounded-[calc(1rem-1px)] bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl border border-white/[0.05] shadow-[0_0_40px_hsl(var(--neon-pink)/0.1)] p-4 lg:p-6">
+              {content}
+            </div>
+          </div>
         </div>
       </section>
     )

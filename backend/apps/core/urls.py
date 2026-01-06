@@ -11,6 +11,7 @@ from .views import (
     contact_submission_update,
     contact_reply,
     contact_status_update,
+    site_settings,
 )
 
 router = DefaultRouter()
@@ -29,4 +30,6 @@ urlpatterns = [
     # Contact reply and status (for dashboard)
     path("contact/<int:pk>/reply/", contact_reply, name="contact-reply"),
     path("contact/<int:pk>/status/", contact_status_update, name="contact-status"),
+    # Site settings (public)
+    path("settings/", site_settings, name="site-settings"),
 ]

@@ -145,7 +145,7 @@ export function Hero({
                   variant="outline"
                   className="w-full sm:w-auto text-base px-6 py-5 bg-white/10 border-2 border-white/40 text-white hover:bg-white/20"
                 >
-                  Ball With Us
+                  View Schedule
                 </Button>
               </Link>
             </div>

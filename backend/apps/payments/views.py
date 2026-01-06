@@ -1395,10 +1395,21 @@ def _handle_product_publish(resource: dict):
         title = printify_data.get('title', f'Product {printify_product_id}')
         description = printify_data.get('description', '')
 
-        # Clean HTML tags and decode entities from description
+        # Convert HTML to plain text while preserving structure
         if description:
+            # Convert <br>, <br/>, </p> to newlines
+            description = re.sub(r'<br\s*/?>', '\n', description, flags=re.IGNORECASE)
+            description = re.sub(r'</p>', '\n\n', description, flags=re.IGNORECASE)
+            # Convert list items to bullet points
+            description = re.sub(r'<li[^>]*>', '• ', description, flags=re.IGNORECASE)
+            description = re.sub(r'</li>', '\n', description, flags=re.IGNORECASE)
+            # Remove remaining HTML tags
             description = re.sub(r'<[^>]+>', '', description)
-            description = html.unescape(description)  # Decode &#39; → '
+            # Decode HTML entities (&#39; → ')
+            description = html.unescape(description)
+            # Clean up excessive whitespace while preserving intentional line breaks
+            description = re.sub(r'\n{3,}', '\n\n', description)
+            description = description.strip()
 
         # Generate unique slug
         base_slug = slugify(title)
@@ -1661,10 +1672,13 @@ class PrintifyAdminView(APIView):
 
 class PrintifyPublishView(PrintifyAdminView):
     """
-    Publish a Printify product.
+    Publish a Printify product by marking it active in our local database.
 
     POST /api/payments/admin/printify/publish/
     Body: { "product_id": "693b573a9164dbdf170252cd" }
+
+    Note: For custom API integrations, we control visibility through our local
+    database's is_active flag rather than Printify's publish API.
     """
 
     def post(self, request):
@@ -1680,29 +1694,32 @@ class PrintifyPublishView(PrintifyAdminView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        client = get_printify_client()
-        if not client or not client.is_configured:
-            return Response(
-                {'error': 'Printify API not configured'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
         try:
-            # Publish the product
-            result = client.publish_product(product_id)
+            # Find the local product by Printify ID
+            product = Product.objects.filter(printify_product_id=product_id).first()
+
+            if not product:
+                return Response(
+                    {'error': f'Product not synced to local database. Sync it first, then publish.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Mark as active in our database
+            product.is_active = True
+            product.save(update_fields=['is_active'])
+
+            logger.info(f"Published (activated) product '{product.name}' (Printify ID: {product_id})")
+
             return Response({
                 'success': True,
-                'message': f'Product {product_id} published successfully',
-                'product_id': product_id
+                'message': f'Product "{product.name}" published to store',
+                'product_id': product_id,
+                'local_slug': product.slug,
+                'is_active': True
             })
-        except PrintifyError as e:
-            logger.error(f"Failed to publish Printify product {product_id}: {e}")
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+
         except Exception as e:
-            logger.error(f"Unexpected error publishing Printify product: {e}", exc_info=True)
+            logger.error(f"Unexpected error publishing product: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to publish product'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1711,10 +1728,14 @@ class PrintifyPublishView(PrintifyAdminView):
 
 class PrintifyUnpublishView(PrintifyAdminView):
     """
-    Unpublish a Printify product.
+    Unpublish a Printify product by marking it inactive in our local database.
 
     POST /api/payments/admin/printify/unpublish/
     Body: { "product_id": "693b573a9164dbdf170252cd" }
+
+    Note: Printify's API unpublish endpoint is designed for traditional sales channels
+    (Shopify, Etsy, etc.) and doesn't work reliably for custom API integrations.
+    Instead, we control visibility through our local database's is_active flag.
     """
 
     def post(self, request):
@@ -1730,29 +1751,32 @@ class PrintifyUnpublishView(PrintifyAdminView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        client = get_printify_client()
-        if not client or not client.is_configured:
-            return Response(
-                {'error': 'Printify API not configured'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
         try:
-            # Unpublish the product
-            result = client.unpublish_product(product_id)
+            # Find the local product by Printify ID
+            product = Product.objects.filter(printify_product_id=product_id).first()
+
+            if not product:
+                return Response(
+                    {'error': f'Product not synced to local database. Sync it first, then unpublish.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Mark as inactive in our database
+            product.is_active = False
+            product.save(update_fields=['is_active'])
+
+            logger.info(f"Unpublished (deactivated) product '{product.name}' (Printify ID: {product_id})")
+
             return Response({
                 'success': True,
-                'message': f'Product {product_id} unpublished successfully',
-                'product_id': product_id
+                'message': f'Product "{product.name}" unpublished from store',
+                'product_id': product_id,
+                'local_slug': product.slug,
+                'is_active': False
             })
-        except PrintifyError as e:
-            logger.error(f"Failed to unpublish Printify product {product_id}: {e}")
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+
         except Exception as e:
-            logger.error(f"Unexpected error unpublishing Printify product: {e}", exc_info=True)
+            logger.error(f"Unexpected error unpublishing product: {e}", exc_info=True)
             return Response(
                 {'error': 'Failed to unpublish product'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1784,30 +1808,46 @@ class PrintifyProductsView(PrintifyAdminView):
         try:
             products = client.get_products()
 
-            # Get all synced Printify product IDs from local DB
+            # Get all synced Printify product IDs from local DB with is_active status
             synced_products = Product.objects.filter(
                 printify_product_id__isnull=False
-            ).values('printify_product_id', 'slug', 'name')
+            ).values('printify_product_id', 'slug', 'name', 'is_active')
             synced_map = {
-                p['printify_product_id']: {'slug': p['slug'], 'name': p['name']}
+                p['printify_product_id']: {
+                    'slug': p['slug'],
+                    'name': p['name'],
+                    'is_active': p['is_active']
+                }
                 for p in synced_products
             }
 
             # Return simplified product list with sync status
+            # Note: 'visible' now reflects our local is_active status, not Printify's state
             simplified = []
             for p in products:
                 product_id = p.get('id')
                 local_info = synced_map.get(product_id)
+
+                # Get price from first enabled variant (Printify prices are in cents)
+                variants = p.get('variants', [])
+                price = None
+                for v in variants:
+                    if v.get('is_enabled', True):
+                        price = v.get('price')
+                        break
+
                 simplified.append({
                     'id': product_id,
                     'title': p.get('title'),
                     'is_locked': p.get('is_locked', False),
-                    'visible': p.get('visible', False),
+                    # Use local is_active if synced, otherwise False (not on our store yet)
+                    'visible': local_info['is_active'] if local_info else False,
                     'created_at': p.get('created_at'),
                     'images': p.get('images', [])[:1],  # Just first image
                     'synced': local_info is not None,
                     'local_slug': local_info['slug'] if local_info else None,
                     'local_name': local_info['name'] if local_info else None,
+                    'price': price,  # Price in cents from Printify
                 })
             return Response({'products': simplified})
         except PrintifyError as e:
@@ -1885,9 +1925,16 @@ class PrintifySyncView(PrintifyAdminView):
             title = printify_data.get('title', f'Product {product_id}')
             description = printify_data.get('description', '')
 
+            # Convert HTML to plain text while preserving structure
             if description:
+                description = re.sub(r'<br\s*/?>', '\n', description, flags=re.IGNORECASE)
+                description = re.sub(r'</p>', '\n\n', description, flags=re.IGNORECASE)
+                description = re.sub(r'<li[^>]*>', '• ', description, flags=re.IGNORECASE)
+                description = re.sub(r'</li>', '\n', description, flags=re.IGNORECASE)
                 description = re.sub(r'<[^>]+>', '', description)
                 description = html.unescape(description)
+                description = re.sub(r'\n{3,}', '\n\n', description)
+                description = description.strip()
 
             base_slug = slugify(title)
             slug = base_slug
@@ -1993,9 +2040,16 @@ class PrintifySyncAndUnpublishView(PrintifyAdminView):
             title = printify_data.get('title', f'Product {product_id}')
             description = printify_data.get('description', '')
 
+            # Convert HTML to plain text while preserving structure
             if description:
+                description = re.sub(r'<br\s*/?>', '\n', description, flags=re.IGNORECASE)
+                description = re.sub(r'</p>', '\n\n', description, flags=re.IGNORECASE)
+                description = re.sub(r'<li[^>]*>', '• ', description, flags=re.IGNORECASE)
+                description = re.sub(r'</li>', '\n', description, flags=re.IGNORECASE)
                 description = re.sub(r'<[^>]+>', '', description)
                 description = html.unescape(description)
+                description = re.sub(r'\n{3,}', '\n\n', description)
+                description = description.strip()
 
             base_slug = slugify(title)
             slug = base_slug

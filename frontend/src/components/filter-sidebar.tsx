@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { X, SlidersHorizontal, Check, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -80,6 +80,8 @@ export interface FilterSidebarProps {
   showSearchLabel?: boolean
   /** Custom label for tags section (default: "Shop By") */
   tagsLabel?: string
+  /** Hide the desktop wrapper (for custom styling) */
+  hideDesktopWrapper?: boolean
   /** Additional class names */
   className?: string
 }
@@ -99,10 +101,12 @@ function CollapsibleSection({
   title,
   children,
   defaultOpen = true,
+  isMobile = false,
 }: {
   title: string
   children: React.ReactNode
   defaultOpen?: boolean
+  isMobile?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
@@ -110,7 +114,10 @@ function CollapsibleSection({
     <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-2 text-sm font-semibold hover:text-muted-foreground transition-colors"
+        className={cn(
+          "w-full flex items-center justify-between py-2 text-sm font-semibold transition-colors",
+          isMobile ? "text-white hover:text-white/80" : "hover:text-muted-foreground"
+        )}
         aria-expanded={isOpen}
       >
         {title}
@@ -158,7 +165,7 @@ function FilterContent({
     <div className={cn("space-y-4", isMobile && "pb-24")}>
       {/* Sort By - Mobile drawer style */}
       {onSortChange && (
-        <CollapsibleSection title="Sort By" defaultOpen={isMobile}>
+        <CollapsibleSection title="Sort By" defaultOpen={isMobile} isMobile={isMobile}>
           <div className="space-y-1 pt-2">
             {SORT_OPTIONS.map((option) => (
               <button
@@ -167,17 +174,19 @@ function FilterContent({
                 className={cn(
                   "w-full flex items-center justify-between py-2 text-sm transition-colors",
                   sortBy === option.value
-                    ? "text-foreground font-medium"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? isMobile ? "text-white font-medium" : "text-foreground font-medium"
+                    : isMobile ? "text-white/60 hover:text-white" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span className="flex items-center gap-3">
                   <span className={cn(
                     "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-                    sortBy === option.value ? "border-foreground" : "border-muted-foreground"
+                    sortBy === option.value
+                      ? isMobile ? "border-white" : "border-foreground"
+                      : isMobile ? "border-white/30" : "border-muted-foreground"
                   )}>
                     {sortBy === option.value && (
-                      <span className="w-2 h-2 rounded-full bg-foreground" />
+                      <span className={cn("w-2 h-2 rounded-full", isMobile ? "bg-white" : "bg-foreground")} />
                     )}
                   </span>
                   {option.label}
@@ -188,13 +197,16 @@ function FilterContent({
         </CollapsibleSection>
       )}
 
-      {onSortChange && <Separator />}
+      {onSortChange && <Separator className={isMobile ? "bg-white/20" : ""} />}
 
       {/* Search */}
       <div>
         <label
           htmlFor={isMobile ? "filter-search-mobile" : "filter-search"}
-          className={isMobile || showSearchLabel ? "text-sm text-muted-foreground mb-1.5 block" : "sr-only"}
+          className={cn(
+            isMobile || showSearchLabel ? "text-sm mb-1.5 block" : "sr-only",
+            isMobile ? "text-white/60" : "text-muted-foreground"
+          )}
         >
           {isMobile ? "Search" : showSearchLabel ? "Search Products" : searchPlaceholder}
         </label>
@@ -204,12 +216,12 @@ function FilterContent({
           placeholder={isMobile ? "Search products..." : showSearchLabel ? "e.g. Jersey, Hoodie..." : searchPlaceholder}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full"
+          className={cn("w-full", isMobile && "bg-white/10 border-white/30 text-white placeholder:text-white/50")}
         />
       </div>
 
       {/* Categories */}
-      <CollapsibleSection title="Categories" defaultOpen={true}>
+      <CollapsibleSection title="Categories" defaultOpen={true} isMobile={isMobile}>
         <div className={cn(
           "flex gap-2 pt-2",
           isMobile ? "flex-col" : "flex-wrap lg:flex-col"
@@ -225,8 +237,8 @@ function FilterContent({
                   isMobile ? "w-full min-h-[44px]" : "px-4 py-3 rounded-md min-h-[44px]",
                   isMobile
                     ? isActive
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "text-white font-medium"
+                      : "text-white/60 hover:text-white"
                     : getCategoryColor(category.value, isActive)
                 )}
                 aria-label={`Filter by ${category.label}`}
@@ -236,15 +248,15 @@ function FilterContent({
                   {isMobile && (
                     <span className={cn(
                       "w-5 h-5 rounded border flex items-center justify-center",
-                      isActive ? "bg-foreground border-foreground" : "border-muted-foreground"
+                      isActive ? "bg-primary border-primary" : "border-white/30 hover:border-white/50"
                     )}>
-                      {isActive && <Check className="w-3 h-3 text-background" />}
+                      {isActive && <Check className="w-3 h-3 text-primary-foreground" />}
                     </span>
                   )}
                   {category.label}
                 </span>
                 {category.count !== undefined && (
-                  <span className="text-xs opacity-70">({category.count})</span>
+                  <span className={cn("text-xs", isMobile ? "text-white/50" : "opacity-70")}>({category.count})</span>
                 )}
               </button>
             )
@@ -252,12 +264,12 @@ function FilterContent({
         </div>
       </CollapsibleSection>
 
-      <Separator />
+      <Separator className={isMobile ? "bg-white/20" : ""} />
 
       {/* Tags */}
       {tags && tags.length > 0 && onTagToggle && (
         <>
-          <CollapsibleSection title={tagsLabel} defaultOpen={true}>
+          <CollapsibleSection title={tagsLabel} defaultOpen={true} isMobile={isMobile}>
             <div className={cn(
               "flex gap-2",
               isMobile ? "flex-col" : "flex-wrap"
@@ -273,8 +285,8 @@ function FilterContent({
                       isMobile ? "w-full" : "px-3 py-1.5 rounded-full min-h-[32px]",
                       isMobile
                         ? isActive
-                          ? "text-foreground font-medium"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "text-white font-medium"
+                          : "text-white/60 hover:text-white"
                         : isActive
                           ? "bg-foreground text-background"
                           : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -285,9 +297,9 @@ function FilterContent({
                     {isMobile && (
                       <span className={cn(
                         "w-5 h-5 rounded border flex items-center justify-center",
-                        isActive ? "bg-foreground border-foreground" : "border-muted-foreground"
+                        isActive ? "bg-primary border-primary" : "border-white/30 hover:border-white/50"
                       )}>
-                        {isActive && <Check className="w-3 h-3 text-background" />}
+                        {isActive && <Check className="w-3 h-3 text-primary-foreground" />}
                       </span>
                     )}
                     {tag.label}
@@ -299,13 +311,13 @@ function FilterContent({
               })}
             </div>
           </CollapsibleSection>
-          <Separator />
+          <Separator className={isMobile ? "bg-white/20" : ""} />
         </>
       )}
 
       {/* Colors */}
       {colors && colors.length > 0 && onColorToggle && (
-        <CollapsibleSection title="Color" defaultOpen={true}>
+        <CollapsibleSection title="Color" defaultOpen={true} isMobile={isMobile}>
           <div className="grid grid-cols-3 gap-4 pt-2">
             {colors.map((color) => {
               const isActive = selectedColors.includes(color.name)
@@ -319,8 +331,13 @@ function FilterContent({
                 >
                   <span
                     className={cn(
-                      "w-7 h-7 rounded-full border border-border transition-all flex items-center justify-center",
-                      isActive ? "ring-2 ring-offset-2 ring-offset-background ring-primary" : "hover:scale-110"
+                      "w-7 h-7 rounded-full border transition-all flex items-center justify-center",
+                      isMobile ? "border-white/30" : "border-border",
+                      isActive
+                        ? isMobile
+                          ? "ring-2 ring-offset-2 ring-offset-black ring-primary"
+                          : "ring-2 ring-offset-2 ring-offset-background ring-primary"
+                        : "hover:scale-110"
                     )}
                     style={{ backgroundColor: color.hex }}
                   >
@@ -333,7 +350,10 @@ function FilterContent({
                       )} />
                     )}
                   </span>
-                  <span className="text-xs text-muted-foreground group-hover:text-foreground">
+                  <span className={cn(
+                    "text-xs",
+                    isMobile ? "text-white/60 group-hover:text-white" : "text-muted-foreground group-hover:text-foreground"
+                  )}>
                     {color.name}
                   </span>
                 </button>
@@ -368,19 +388,54 @@ export function FilterSidebar({
   getCategoryColor = defaultGetCategoryColor,
   showSearchLabel = false,
   tagsLabel = "Shop By",
+  hideDesktopWrapper = false,
   className,
 }: FilterSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isStuck, setIsStuck] = useState(false)
+  const stickyRef = useRef<HTMLDivElement>(null)
   const hasActiveFilters = selectedCategories.length > 0 || selectedTags.length > 0 || selectedColors.length > 0 || searchQuery.length > 0
   const activeFilterCount = selectedCategories.length + selectedTags.length + selectedColors.length + (searchQuery ? 1 : 0)
 
+  // Detect when the sticky element is stuck
+  useEffect(() => {
+    const stickyElement = stickyRef.current
+    if (!stickyElement) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When the element is intersecting less (stuck at top), show the background
+        setIsStuck(entry.intersectionRatio < 1)
+      },
+      {
+        threshold: [1],
+        rootMargin: "-56px 0px 0px 0px", // Account for navbar height
+      }
+    )
+
+    observer.observe(stickyElement)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <>
-      {/* Mobile: Results count + Filter button */}
-      <div className="lg:hidden flex items-center justify-between mb-4">
-        <p className="text-sm text-muted-foreground">
-          {filteredCount !== undefined ? `${filteredCount} Results` : ""}
-        </p>
+      {/* Mobile: Sticky filter bar */}
+      <div
+        ref={stickyRef}
+        className={cn(
+          "lg:hidden sticky top-[53px] z-50 -mx-4 px-4 py-3 mb-4 flex items-center justify-between transition-all duration-200",
+          isStuck
+            ? "bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50"
+            : "bg-transparent"
+        )}
+      >
+        {filteredCount !== undefined ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-black text-white rounded-md">
+            {filteredCount} Results
+          </span>
+        ) : (
+          <span />
+        )}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
@@ -398,10 +453,20 @@ export function FilterSidebar({
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto !bg-black/60 backdrop-blur-2xl border-l border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
             <SheetHeader className="text-left mb-6">
-              <SheetTitle>Filter & Sort</SheetTitle>
+              <SheetTitle className="flex items-center gap-2 text-white">
+                <SlidersHorizontal className="h-5 w-5" />
+                Filter & Sort
+                {activeFilterCount > 0 && (
+                  <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">
+                    {activeFilterCount} active
+                  </span>
+                )}
+              </SheetTitle>
             </SheetHeader>
+
+            <Separator className="mb-4 bg-white/20" />
 
             <FilterContent
               searchPlaceholder={searchPlaceholder}
@@ -424,18 +489,18 @@ export function FilterSidebar({
             />
 
             {/* Fixed footer */}
-            <SheetFooter className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t flex gap-3">
+            <SheetFooter className="fixed bottom-0 left-0 right-0 p-4 !bg-black/80 backdrop-blur-xl border-t border-white/20 flex gap-3">
               {hasActiveFilters && (
                 <Button
                   variant="outline"
                   onClick={onClearFilters}
-                  className="flex-1"
+                  className="flex-1 border-2 border-white/30 bg-white/10 hover:bg-white/20 text-white"
                 >
                   Clear ({activeFilterCount})
                 </Button>
               )}
               <SheetClose asChild>
-                <Button className="flex-1">
+                <Button className="flex-1 bg-primary/30 hover:bg-primary/50 text-white border-2 border-primary backdrop-blur-sm">
                   Apply & Close
                 </Button>
               </SheetClose>
@@ -445,13 +510,9 @@ export function FilterSidebar({
       </div>
 
       {/* Desktop sidebar */}
-      <aside
-        className={cn(
-          "hidden lg:block w-full lg:w-64 lg:flex-shrink-0",
-          className
-        )}
-      >
-        <div className="lg:sticky lg:top-24 space-y-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-2 lg:scrollbar-thin">
+      {hideDesktopWrapper ? (
+        /* Render content only without wrapper (for custom styling) */
+        <div className={cn("space-y-6", className)}>
           {/* Title */}
           {title && (
             <h2 className="text-lg font-semibold">{title}</h2>
@@ -498,7 +559,64 @@ export function FilterSidebar({
             </div>
           )}
         </div>
-      </aside>
+      ) : (
+        <aside
+          className={cn(
+            "hidden lg:block w-full lg:w-64 lg:flex-shrink-0",
+          )}
+        >
+          <div className={cn(
+            "lg:sticky lg:top-24 space-y-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-2 lg:scrollbar-thin",
+            className
+          )}>
+            {/* Title */}
+            {title && (
+              <h2 className="text-lg font-semibold">{title}</h2>
+            )}
+
+            <FilterContent
+              searchPlaceholder={searchPlaceholder}
+              searchQuery={searchQuery}
+              onSearchChange={onSearchChange}
+              categories={categories}
+              selectedCategories={selectedCategories}
+              onCategoryToggle={onCategoryToggle}
+              tags={tags}
+              selectedTags={selectedTags}
+              onTagToggle={onTagToggle}
+              colors={colors}
+              selectedColors={selectedColors}
+              onColorToggle={onColorToggle}
+              getCategoryColor={getCategoryColor}
+              showSearchLabel={showSearchLabel}
+              tagsLabel={tagsLabel}
+              isMobile={false}
+            />
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onClearFilters}
+                  className="w-full"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear Filters ({activeFilterCount})
+                </Button>
+
+                {/* Results count */}
+                {totalCount !== undefined && filteredCount !== undefined && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Showing {filteredCount} of {totalCount}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </aside>
+      )}
     </>
   )
 }

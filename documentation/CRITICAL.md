@@ -81,6 +81,51 @@ python manage.py sync_calendars
 
 ---
 
+## Printify Publish/Unpublish Architecture (RESOLVED Jan 6, 2026)
+
+### The Problem
+
+Printify's API `unpublish` endpoint (`POST /products/{id}/unpublish.json`) returns "Operation failed" for custom API integrations. This is because:
+
+1. **Printify's publish workflow is designed for traditional sales channels** (Shopify, Etsy, WooCommerce)
+2. When you "publish" in Printify, it notifies your connected store
+3. The "unpublish" endpoint is meant for stores to notify Printify that a product was removed from THEIR platform
+4. For custom API integrations (like ours), there's no traditional "store" to unpublish from
+
+### The Solution
+
+**Control visibility through our local database, not Printify's API.**
+
+| Action | Old Approach (Broken) | New Approach (Working) |
+|--------|----------------------|------------------------|
+| Publish | Call Printify publish API | Set `Product.is_active = True` |
+| Unpublish | Call Printify unpublish API | Set `Product.is_active = False` |
+| Check Status | Use Printify's `visible` flag | Use local `is_active` field |
+
+### Key Files Changed
+
+- `backend/apps/payments/views.py`:
+  - `PrintifyPublishView` - Sets `is_active=True` on local Product
+  - `PrintifyUnpublishView` - Sets `is_active=False` on local Product
+  - `PrintifyProductsView` - Returns local `is_active` as `visible` in response
+
+### How It Works Now
+
+1. **Products must be synced first** - Use "Sync to local" button to import from Printify
+2. **Publish** - Marks product active in our database (shows on store)
+3. **Unpublish** - Marks product inactive (hides from store)
+4. **Printify orders still work** - Products remain in Printify for order fulfillment
+5. **We control visibility** - Independent of Printify's internal state
+
+### Why This Is Better
+
+- No dependency on Printify's publish state machine
+- No "locked product" issues during publish workflow
+- Faster toggle (local DB update vs. API call)
+- Clear separation: Printify = fulfillment, Our DB = store visibility
+
+---
+
 ## mobile nav
  - [x] underline text for navigation links not their container *(Fixed Dec 9 - wrapped text in span)*
  - [x] match sign in button styling from the site header *(Fixed Dec 9 - changed to ghost variant)*

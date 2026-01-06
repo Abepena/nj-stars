@@ -8,8 +8,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Contact form notification recipient
-CONTACT_EMAIL = 'contact@leag.app'
+
+def get_contact_email():
+    """Get the contact email from settings, with fallback."""
+    from .models import IntegrationSettings
+    try:
+        settings_instance = IntegrationSettings.get_instance()
+        return settings_instance.contact_email or 'contact@leag.app'
+    except Exception:
+        return 'contact@leag.app'
 
 
 def send_contact_notification(submission):
@@ -53,13 +60,14 @@ View in admin: {settings.BACKEND_URL}/django-admin/core/contactsubmission/{submi
         html_content = None
 
     try:
+        contact_email = get_contact_email()
         if html_content:
             # Send multipart email (HTML + plain text)
             email = EmailMultiAlternatives(
                 subject=subject,
                 body=text_content,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[CONTACT_EMAIL],
+                to=[contact_email],
                 reply_to=[submission.email],
             )
             email.attach_alternative(html_content, "text/html")
@@ -70,7 +78,7 @@ View in admin: {settings.BACKEND_URL}/django-admin/core/contactsubmission/{submi
                 subject=subject,
                 message=text_content,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[CONTACT_EMAIL],
+                recipient_list=[contact_email],
                 fail_silently=False,
             )
 
