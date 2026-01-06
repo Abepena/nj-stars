@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -43,6 +43,8 @@ export function Hero({
   ctaUrl,
 }: HeroProps) {
   const [nextTryout, setNextTryout] = useState<NextTryout | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Fetch next upcoming tryout
   useEffect(() => {
@@ -80,23 +82,23 @@ export function Hero({
     <section className="min-h-screen max-h-[900px] lg:max-h-[1000px] flex flex-col relative overflow-hidden">
       {/* Video Background - object-position keeps player centered */}
       <div className="absolute inset-0 z-0">
+        {/* Dark background shown while video loads */}
+        <div className="absolute inset-0 bg-[hsl(var(--bg-primary))]" />
+
         {USE_HERO_VIDEO ? (
           <video
+            ref={videoRef}
             autoPlay
             muted
             loop
             playsInline
-            preload="metadata"
-            poster={HERO_IMAGE_URL}
-            className="w-full h-full object-cover object-[center_20%]"
+            preload="auto"
+            onCanPlay={() => setVideoReady(true)}
+            className={`w-full h-full object-cover object-[center_20%] transition-opacity duration-700 ${
+              videoReady ? "opacity-100" : "opacity-0"
+            }`}
           >
             <source src={HERO_VIDEO_URL} type="video/mp4" />
-            {/* Fallback for browsers without video support */}
-            <img
-              src={HERO_IMAGE_URL}
-              alt="NJ Stars Elite Basketball"
-              className="w-full h-full object-cover object-[center_20%]"
-            />
           </video>
         ) : (
           <img
