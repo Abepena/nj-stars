@@ -63,34 +63,23 @@ export function PremiumIconCard({
 
   const content = (
     <>
-      {/* Radial gradient overlay for hover effect (subtle glow) */}
-      <div
-        className={cn(
-          "absolute top-0 right-0 w-32 h-32 pointer-events-none transition-opacity duration-300 opacity-0 group-hover:opacity-100",
-          "bg-gradient-to-b from-primary/6 to-transparent rounded-full blur-2xl"
-        )}
-      />
-
-      {/* Content */}
-      <div className="relative z-10 text-left">
-        {/* Icon badge - single, non-changing icon */}
-        <div className="w-12 h-12 bg-card border border-border/60 rounded-lg flex items-center justify-center mb-4">
-          <Icon
-            size={24}
-            className="text-text-secondary"
-          />
-        </div>
-
-        {/* Title */}
-        <h3 className="text-lg font-semibold mb-2 text-foreground">
-          {title}
-        </h3>
-
-        {/* Description */}
-        <p className="text-sm text-text-secondary leading-relaxed">
-          {description}
-        </p>
+      {/* Icon badge */}
+      <div className="w-12 h-12 bg-card border border-border/60 rounded-lg flex items-center justify-center mb-4 mx-auto">
+        <Icon
+          size={24}
+          className="text-text-secondary"
+        />
       </div>
+
+      {/* Title */}
+      <h3 className="text-lg font-semibold mb-2 text-foreground">
+        {title}
+      </h3>
+
+      {/* Description */}
+      <p className="text-sm text-text-secondary leading-relaxed text-left">
+        {description}
+      </p>
     </>
   )
 
@@ -101,7 +90,7 @@ export function PremiumIconCard({
       "hover:translate-y-[-4px] hover:shadow-[0_0_40px_hsl(var(--neon-pink)/0.2)]",
       className
     )
-    const innerClasses = "card-merch-style-inner px-5 pb-5 pt-5 flex flex-col"
+    const innerClasses = "card-merch-style-inner px-5 pb-5 pt-5 text-center"
 
     if (href) {
       return (

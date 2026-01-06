@@ -2,8 +2,7 @@ import { NewsFeed } from "@/components/news-feed";
 import { Hero } from "@/components/hero";
 import { LayoutShell } from "@/components/layout-shell";
 import { NewsletterSignup } from "@/components/newsletter-signup";
-import { FeaturedMerch } from "@/components/featured-merch";
-import { MerchDropHype } from "@/components/merch-drop-hype";
+import { LockerRoomSection } from "@/components/locker-room-section";
 import { FadeInSection } from "@/components/fade-in-section";
 import { AboutPreview } from "@/components/about-preview";
 import { ProgramsSection } from "@/components/programs-section";
@@ -14,6 +13,11 @@ export default function Home() {
   return (
     <LayoutShell background="gradient-grid">
       <Hero />
+
+      {/* The Locker Room - Merch Drop Hype (during countdown) OR Featured Merch (after) */}
+      <FadeInSection direction="up" delay={0}>
+        <LockerRoomSection />
+      </FadeInSection>
 
       {/* About Preview - Team intro and core values */}
       <FadeInSection direction="up" delay={0}>
@@ -28,17 +32,6 @@ export default function Home() {
       {/* The Schedule - Event Types */}
       <FadeInSection direction="up" delay={0}>
         <ScheduleSection />
-      </FadeInSection>
-
-      {/* The Locker Room - Merch Drop Hype (when active) or Featured Merch */}
-      <FadeInSection direction="up" delay={0}>
-        <MerchDropHype
-          sectionTitle="The Locker Room"
-          showSectionHeader
-        />
-      </FadeInSection>
-      <FadeInSection direction="up" delay={0}>
-        <FeaturedMerch limit={6} showSeeMore wrapInSection />
       </FadeInSection>
 
       {/* The Huddle - News Feed */}

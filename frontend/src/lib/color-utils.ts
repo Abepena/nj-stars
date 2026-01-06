@@ -14,6 +14,14 @@ const COLOR_HEX_OVERRIDES: Record<string, string> = {
   'dark heather': '#4b5563',
   'athletic heather': '#9ca3af',
   'sport grey': '#9ca3af',
+  // Military/earth tones
+  'army': '#4b5320',
+  'olive': '#556b2f',
+  'military green': '#4b5320',
+  'khaki': '#c3b091',
+  // Additional colors
+  'navy blazer': '#1e3a5f',
+  'heather navy': '#2c3e50',
 }
 
 // Group similar colors together (maps variant name → display name)

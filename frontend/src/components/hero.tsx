@@ -93,8 +93,9 @@ export function Hero({
             loop
             playsInline
             preload="auto"
-            onCanPlay={() => setVideoReady(true)}
-            className={`w-full h-full object-cover object-[center_20%] transition-opacity duration-700 ${
+            poster={HERO_IMAGE_URL}
+            onPlaying={() => setVideoReady(true)}
+            className={`w-full h-full object-cover object-[center_20%] transition-opacity duration-500 ${
               videoReady ? "opacity-100" : "opacity-0"
             }`}
           >
