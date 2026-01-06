@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { isMerchDropAnnouncementActive } from "@/lib/merch-drop"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -62,12 +63,11 @@ export function MerchDropHype({
     if (!settings?.drop_date) return null
 
     const dropTime = new Date(settings.drop_date).getTime()
+    if (Number.isNaN(dropTime)) return null
     const now = new Date().getTime()
     const difference = dropTime - now
 
-    if (difference <= 0) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0 }
-    }
+    if (difference <= 0) return null
 
     return {
       days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -79,20 +79,21 @@ export function MerchDropHype({
 
   // Update countdown every second
   useEffect(() => {
-    if (!settings?.is_countdown_active) return
+    if (!settings?.drop_date) return
 
+    const intervalMs = settings.is_countdown_active ? 1000 : 30000
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft())
-    }, 1000)
+    }, intervalMs)
 
     // Initial calculation
     setTimeLeft(calculateTimeLeft())
 
     return () => clearInterval(timer)
-  }, [settings?.is_countdown_active, calculateTimeLeft])
+  }, [settings?.drop_date, settings?.is_countdown_active, calculateTimeLeft])
 
   // Don't render if not active or still loading
-  if (loading || !settings?.is_active) {
+  if (loading || !isMerchDropAnnouncementActive(settings)) {
     return null
   }
 

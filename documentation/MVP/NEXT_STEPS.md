@@ -1282,6 +1282,76 @@ PRINTIFY_WEBHOOK_SECRET=optional-webhook-secret
 
 ---
 
+### 4.13 Instagram API Enhancements (Post-MVP) 🟡 MEDIUM
+
+**Time:** 1-2 weeks (when needed)
+
+**Goal:** Enable advanced Instagram features beyond basic post fetching.
+
+**Context:** For MVP, we only need to read posts from the NJ Stars Instagram account. These features can be added later as the platform grows or new use cases emerge.
+
+| Feature | What It Enables | When to Implement |
+|---------|-----------------|-------------------|
+| **Messaging Permissions** | Send/receive DMs via platform, auto-replies | When building coach-client chat feature |
+| **Webhooks** | Real-time notifications when new posts are published | When we want instant feed updates instead of scheduled sync |
+| **Instagram Business Login (OAuth)** | Let other orgs connect their Instagram accounts | When LEAG goes multi-tenant |
+| **App Review** | Access accounts beyond your own, go public | When LEAG has multiple tenants needing Instagram |
+
+#### Messaging Permissions
+**Permissions needed:** `instagram_business_basic`, `instagram_manage_comments`, `instagram_business_manage_messages`
+
+**Use cases:**
+- Auto-reply to DMs with booking links
+- Coach inbox management through platform
+- Comment moderation from admin panel
+
+#### Webhooks Setup
+**Callback URL:** `https://api.njstarselite.com/api/instagram/webhook/`
+
+**Events to subscribe:**
+- `messages` - New DMs received
+- `comments` - New comments on posts
+- `mentions` - When account is mentioned
+
+**Implementation:**
+- [ ] Create webhook endpoint in Django
+- [ ] Verify webhook with Meta's challenge
+- [ ] Handle incoming events (queue for processing)
+- [ ] Update feed in real-time on new posts
+
+#### Instagram Business Login (OAuth Flow)
+**When:** Required for multi-tenant LEAG platform
+
+**Flow:**
+1. Tenant admin clicks "Connect Instagram" in their dashboard
+2. Redirects to Meta OAuth consent screen
+3. Admin approves permissions for their Instagram account
+4. Platform receives auth code → exchanges for access token
+5. Token stored per-tenant, used for that org's feed
+
+**Implementation:**
+- [ ] Add OAuth callback endpoint
+- [ ] Create `InstagramAccount` model (per-tenant)
+- [ ] Build "Connect Instagram" UI in tenant settings
+- [ ] Token refresh automation
+
+#### App Review Process
+**Required for:** Public distribution, accessing non-owned accounts
+
+**Permissions to request:**
+- `instagram_basic` - Read profile info and media
+- `pages_read_engagement` - Required for business accounts
+
+**Review requirements:**
+- Privacy policy URL
+- App purpose description
+- Screencast demo of functionality
+- Business verification (for some permissions)
+
+**Timeline:** 2-5 business days for basic permissions
+
+---
+
 ### 4.11 Nice-to-Have Features 🟢 LOW
 
 #### Social Features

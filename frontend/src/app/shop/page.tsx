@@ -12,6 +12,7 @@ import { FilterSidebar, type FilterCategory, type FilterTag, type FilterColor, t
 import { Button } from "@/components/ui/button"
 import { MerchDropHype } from "@/components/merch-drop-hype"
 import { getCategoryColor } from "@/lib/category-colors"
+import { isMerchDropAnnouncementActive } from "@/lib/merch-drop"
 import { shouldSkipImageOptimization } from "@/lib/utils"
 import { normalizeColors, productMatchesColorFilter, getColorHex } from "@/lib/color-utils"
 
@@ -246,6 +247,7 @@ function ProductCard({ product, onClick, onTagClick, onCategoryClick, selectedTa
 interface MerchDropSettings {
   is_active: boolean
   has_dropped: boolean
+  drop_date?: string | null
 }
 
 export default function ShopPage() {
@@ -268,8 +270,8 @@ export default function ShopPage() {
         const response = await fetch(`${API_BASE}/api/payments/merch-drop/`)
         if (response.ok) {
           const data: MerchDropSettings = await response.json()
-          // Hide locker room if merch hype is active but hasn't dropped yet
-          setMerchHypeActive(data.is_active && !data.has_dropped)
+          // Hide locker room only while the announcement is still active
+          setMerchHypeActive(isMerchDropAnnouncementActive(data))
         }
       } catch {
         // Silently fail - show regular shop content

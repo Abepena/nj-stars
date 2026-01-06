@@ -1,5 +1,145 @@
 from django.contrib import admin
-from .models import Coach, InstagramPost, NewsletterSubscriber
+from django.utils.html import format_html
+from django.urls import reverse
+from django.http import HttpResponseRedirect
+from django.contrib import messages
+from .models import Coach, InstagramPost, NewsletterSubscriber, InstagramCredential
+
+
+@admin.register(InstagramCredential)
+class InstagramCredentialAdmin(admin.ModelAdmin):
+    list_display = [
+        'account_name',
+        'instagram_username',
+        'is_active',
+        'is_primary',
+        'token_status_display',
+        'last_sync_at',
+    ]
+    list_filter = ['is_active', 'is_primary']
+    search_fields = ['account_name', 'instagram_username']
+    readonly_fields = [
+        'token_status_display',
+        'days_until_expiry_display',
+        'token_issued_at',
+        'last_refreshed_at',
+        'last_sync_at',
+        'last_error',
+        'created_at',
+        'updated_at',
+    ]
+    ordering = ['-is_primary', 'account_name']
+
+    fieldsets = (
+        ('Account', {
+            'fields': ('account_name', 'instagram_username', 'instagram_user_id')
+        }),
+        ('Token Status', {
+            'fields': (
+                'token_status_display',
+                'days_until_expiry_display',
+                'token_issued_at',
+                'last_refreshed_at',
+            ),
+            'description': 'Current token health. Tokens expire after 60 days.'
+        }),
+        ('Access Token', {
+            'fields': ('access_token', 'token_expires_at'),
+            'description': 'The Instagram API access token. App credentials (META_APP_ID, META_APP_SECRET) are read from .env for security.',
+            'classes': ('collapse',)
+        }),
+        ('Status', {
+            'fields': ('is_active', 'is_primary')
+        }),
+        ('Sync Info', {
+            'fields': ('last_sync_at', 'last_error'),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    actions = ['refresh_tokens', 'sync_posts', 'verify_tokens']
+
+    def token_status_display(self, obj):
+        """Display token status with color coding"""
+        status = obj.token_status
+        if '❌' in status:
+            return format_html('<span style="color: #dc3545;">{}</span>', status)
+        elif '⚠️' in status:
+            return format_html('<span style="color: #ffc107;">{}</span>', status)
+        else:
+            return format_html('<span style="color: #28a745;">{}</span>', status)
+    token_status_display.short_description = 'Token Status'
+
+    def days_until_expiry_display(self, obj):
+        """Display days until expiry"""
+        days = obj.days_until_expiry
+        if days == 0:
+            return format_html('<span style="color: #dc3545;">Expired</span>')
+        elif days < 7:
+            return format_html('<span style="color: #ffc107;">{} days</span>', days)
+        else:
+            return format_html('<span style="color: #28a745;">{} days</span>', days)
+    days_until_expiry_display.short_description = 'Days Until Expiry'
+
+    @admin.action(description='🔄 Refresh selected tokens')
+    def refresh_tokens(self, request, queryset):
+        from apps.core.services import refresh_instagram_token
+        refreshed = 0
+        failed = 0
+        for credential in queryset:
+            if credential.can_refresh:
+                success, message = refresh_instagram_token(credential)
+                if success:
+                    refreshed += 1
+                else:
+                    failed += 1
+                    messages.warning(request, f'@{credential.instagram_username}: {message}')
+            else:
+                failed += 1
+                if credential.is_expired:
+                    messages.error(request, f'@{credential.instagram_username}: Token expired, needs re-auth')
+                else:
+                    messages.warning(request, f'@{credential.instagram_username}: Missing app credentials')
+
+        if refreshed:
+            messages.success(request, f'Successfully refreshed {refreshed} token(s)')
+        if failed:
+            messages.error(request, f'Failed to refresh {failed} token(s)')
+
+    @admin.action(description='📥 Sync posts from selected accounts')
+    def sync_posts(self, request, queryset):
+        from django.core.management import call_command
+        from io import StringIO
+        synced = 0
+        for credential in queryset.filter(is_active=True):
+            if not credential.is_expired:
+                try:
+                    out = StringIO()
+                    call_command(
+                        'sync_instagram',
+                        account=credential.instagram_username,
+                        verbosity=0,
+                        stdout=out
+                    )
+                    synced += 1
+                except Exception as e:
+                    messages.error(request, f'@{credential.instagram_username}: {str(e)}')
+        if synced:
+            messages.success(request, f'Synced posts from {synced} account(s)')
+
+    @admin.action(description='✅ Verify selected tokens')
+    def verify_tokens(self, request, queryset):
+        from apps.core.services import verify_token
+        for credential in queryset:
+            valid, message = verify_token(credential)
+            if valid:
+                messages.success(request, f'@{credential.instagram_username}: {message}')
+            else:
+                messages.error(request, f'@{credential.instagram_username}: {message}')
 
 
 @admin.register(Coach)

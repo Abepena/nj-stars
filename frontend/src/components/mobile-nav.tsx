@@ -34,22 +34,15 @@ const userMenuItems = [
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const { data: session, status } = useSession()
 
-  // Only render this nav on small screens to avoid off-canvas overflow on desktop
+  // Track mounted state for theme toggle hydration
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
-    handleResize()
     setMounted(true)
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
   }, [])
-
-  if (!isMobile) return null
 
   // Get user initials for avatar fallback
   const getUserInitials = () => {
