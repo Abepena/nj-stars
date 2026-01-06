@@ -45,9 +45,9 @@ const EVENT_TYPE_COLORS: Record<string, { hex: string; label: string }> = {
 
 // NJ Stars Practice Facility - 75 Stivers Street, Cresskill, NJ
 const HOME_BASE = {
-  lat: 40.9415,
-  lng: -73.9585,
-  name: "NJ Stars Practice Facility",
+  lat: 40.9418,
+  lng: -73.9594,
+  name: "NJ Stars Training Center",
   address: "75 Stivers Street, Cresskill, NJ",
 }
 
@@ -295,7 +295,7 @@ export function EventMap({
                   <span>{HOME_BASE.address}</span>
                 </div>
                 <a
-                  href={"https://www.google.com/maps/dir/?api=1&destination=" + HOME_BASE.lat + "," + HOME_BASE.lng}
+                  href={"https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(HOME_BASE.address)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-2 flex items-center justify-center gap-1.5 w-full py-1.5 px-2 bg-pink-500 hover:bg-pink-600 text-white text-xs font-medium rounded transition-colors"
