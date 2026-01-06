@@ -262,6 +262,7 @@ export default function ShopPage() {
   const [sortBy, setSortBy] = useState<SortOption>("featured")
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null)
   const [merchHypeActive, setMerchHypeActive] = useState(false)
+  const [merchHypeChecked, setMerchHypeChecked] = useState(false)
 
   // Fetch merch drop settings to control visibility
   useEffect(() => {
@@ -276,6 +277,8 @@ export default function ShopPage() {
       } catch {
         // Silently fail - show regular shop content
         setMerchHypeActive(false)
+      } finally {
+        setMerchHypeChecked(true)
       }
     }
     fetchMerchDropSettings()
@@ -471,10 +474,19 @@ export default function ShopPage() {
     setSearchQuery("")
   }
 
+  // Don't render anything until we know if merch hype is active (prevents flash)
+  if (!merchHypeChecked) {
+    return (
+      <LayoutShell background="gradient-grid">
+        {/* Empty shell while checking merch drop status */}
+      </LayoutShell>
+    )
+  }
+
   return (
     <LayoutShell background="gradient-grid">
       {/* Merch Drop Hype Section - Full viewport when active */}
-      <MerchDropHype fullHeight />
+      {merchHypeActive && <MerchDropHype fullHeight />}
 
       {/* Only show Locker Room content when merch hype is NOT active */}
       {!merchHypeActive && (
