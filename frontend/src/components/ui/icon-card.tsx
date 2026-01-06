@@ -85,7 +85,7 @@ export function IconCard({
       "hover:translate-y-[-4px] hover:shadow-[0_0_40px_hsl(var(--neon-pink)/0.2)]",
       className
     )
-    const innerClasses = "card-merch-style-inner p-6 text-center h-full"
+    const innerClasses = "card-merch-style-inner p-6 text-center flex flex-col"
 
     if (href) {
       return (

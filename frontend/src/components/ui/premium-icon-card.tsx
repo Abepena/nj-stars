@@ -101,7 +101,7 @@ export function PremiumIconCard({
       "hover:translate-y-[-4px] hover:shadow-[0_0_40px_hsl(var(--neon-pink)/0.2)]",
       className
     )
-    const innerClasses = "card-merch-style-inner px-5 pb-5 pt-4 h-full"
+    const innerClasses = "card-merch-style-inner px-5 pb-5 pt-5 flex flex-col"
 
     if (href) {
       return (
