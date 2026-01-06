@@ -478,7 +478,7 @@ export default function ShopPage() {
   if (!merchHypeChecked) {
     return (
       <LayoutShell background="gradient-grid">
-        {/* Empty shell while checking merch drop status */}
+        <div className="min-h-[50vh]" />
       </LayoutShell>
     )
   }
