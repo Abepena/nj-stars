@@ -385,7 +385,7 @@ function ProductCard({ product, onClick }: ProductCardProps) {
       {/* Content - flat layout */}
       <div className="flex flex-col pt-3 space-y-1">
         {/* Product name */}
-        <h3 className="text-sm font-medium truncate group-hover:text-primary transition-colors" title={product.name}>
+        <h3 className="text-sm font-medium truncate group-hover:text-foreground transition-colors" title={product.name}>
           {product.name}
         </h3>
 
