@@ -14,14 +14,14 @@ export default function Home() {
     <LayoutShell background="gradient-grid">
       <Hero />
 
-      {/* The Locker Room - Merch Drop Hype (during countdown) OR Featured Merch (after) */}
-      <FadeInSection direction="up" delay={0}>
-        <LockerRoomSection />
-      </FadeInSection>
-
       {/* About Preview - Team intro and core values */}
       <FadeInSection direction="up" delay={0}>
         <AboutPreview />
+      </FadeInSection>
+
+      {/* The Locker Room - Merch Drop Hype (during countdown) OR Featured Merch (after) */}
+      <FadeInSection direction="up" delay={0}>
+        <LockerRoomSection />
       </FadeInSection>
 
       {/* Programs & Training */}

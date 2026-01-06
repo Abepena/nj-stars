@@ -16,7 +16,6 @@ import {
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
   MessageSquare,
@@ -29,7 +28,6 @@ import {
   Settings,
   AlertTriangle,
   MessageCircle,
-  ChevronDown,
 } from "lucide-react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -147,17 +145,17 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
   // Compact mode for homepage
   if (compact) {
     const compactContent = (
-      <Card className="max-w-2xl mx-auto">
-        <CardContent className="pt-6">
+      <div className="max-w-2xl mx-auto rounded-2xl p-[1px] bg-gradient-to-br from-[hsl(var(--neon-pink)/0.4)] via-[hsl(var(--neon-pink)/0.2)] to-[hsl(var(--neon-pink)/0.05)]">
+        <div className="rounded-2xl bg-gradient-to-b from-bg-secondary/80 to-bg-primary/90 backdrop-blur-xl p-6">
           <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             {/* Header row: Title + Category Dropdown */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="text-lg font-semibold flex items-center gap-2 text-white">
                   <Mail className="h-5 w-5 text-primary" />
                   Get in Touch
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/60">
                   Questions? We&apos;re here to help.
                 </p>
               </div>
@@ -180,35 +178,23 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
               </div>
             </div>
 
-            {/* Collapsible Trigger */}
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full justify-between hover:bg-muted/50 -mx-2 px-2"
-              >
-                <span className="text-sm text-muted-foreground">
-                  {isOpen ? "Hide form" : "Show contact form"}
-                </span>
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-              </Button>
-            </CollapsibleTrigger>
-
-            {/* Collapsible Form Content */}
+            {/* Collapsible Form Content - opens when category selected */}
             <CollapsibleContent className="pt-4">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="compact-name">Name *</Label>
+                    <Label htmlFor="compact-name" className="text-white">Name *</Label>
                     <Input
                       id="compact-name"
                       value={formData.name}
                       onChange={(e) => handleChange("name", e.target.value)}
                       placeholder="Your name"
                       required
+                      className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="compact-email">Email *</Label>
+                    <Label htmlFor="compact-email" className="text-white">Email *</Label>
                     <Input
                       id="compact-email"
                       type="email"
@@ -216,23 +202,25 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
                       onChange={(e) => handleChange("email", e.target.value)}
                       placeholder="you@example.com"
                       required
+                      className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="compact-subject">Subject *</Label>
+                  <Label htmlFor="compact-subject" className="text-white">Subject *</Label>
                   <Input
                     id="compact-subject"
                     value={formData.subject}
                     onChange={(e) => handleChange("subject", e.target.value)}
                     placeholder="Brief description of your inquiry"
                     required
+                    className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="compact-message">Message *</Label>
+                  <Label htmlFor="compact-message" className="text-white">Message *</Label>
                   <Textarea
                     id="compact-message"
                     value={formData.message}
@@ -240,6 +228,7 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
                     placeholder="Please provide as much detail as possible..."
                     rows={4}
                     required
+                    className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                   />
                 </div>
 
@@ -252,7 +241,7 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
                 <Button
                   type="submit"
                   disabled={isSubmitting || !formData.category}
-                  className="w-full"
+                  className="w-full h-12 text-base font-semibold bg-primary/30 hover:bg-primary/50 text-white border-2 border-primary backdrop-blur-sm disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -269,8 +258,8 @@ export function ContactForm({ wrapInSection = false, compact = false, initialCat
               </form>
             </CollapsibleContent>
           </Collapsible>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
 
     if (wrapInSection) {
