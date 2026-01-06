@@ -1384,6 +1384,104 @@ DEFAULT_FROM_EMAIL=orders@njstarselite.com
 
 ---
 
+### 4.17 Events Page Styling 🔴 CRITICAL (Pre-Launch)
+
+**Time:** 2-4 hours
+
+**Goal:** Style the events page to match the overall site design and provide a clean, intuitive experience for viewing and registering for events.
+
+#### Current State
+- [ ] Audit current `/events` page layout and styling
+- [ ] Identify inconsistencies with site design system
+
+#### Design Requirements
+
+**Events List View:**
+- [ ] Card-based layout matching shop product cards
+- [ ] Event image/banner display
+- [ ] Event date prominently displayed
+- [ ] Event type badges (Tryout, Practice, Game, Camp)
+- [ ] Location with map link
+- [ ] Registration status indicator (Open, Closed, Full)
+- [ ] Mobile-responsive grid (1 col mobile, 2 col tablet, 3 col desktop)
+
+**Event Detail Page:**
+- [ ] Hero section with event image
+- [ ] Clear event details (date, time, location, cost)
+- [ ] Registration CTA button
+- [ ] Event description
+- [ ] Add to calendar button (Google, iCal)
+- [ ] Share buttons (optional)
+
+**Filtering & Sorting:**
+- [ ] Filter by event type
+- [ ] Filter by date range (upcoming, past)
+- [ ] Sort by date (soonest first default)
+
+**Styling Consistency:**
+- [ ] Use existing color tokens (no hot pink accents in admin areas)
+- [ ] Match card hover states with shop
+- [ ] Consistent button styling
+- [ ] Dark mode support
+
+#### Implementation Tasks
+- [ ] Update `/events/page.tsx` with new layout
+- [ ] Update `/events/[slug]/page.tsx` detail page
+- [ ] Add event type badges component
+- [ ] Add registration status badges
+- [ ] Ensure mobile filter drawer matches shop filter drawer
+- [ ] Test calendar integration links
+
+---
+
+### 4.16 Launch Announcement Emails 🔴 CRITICAL (Launch Day)
+
+**Time:** 1-2 days
+
+**Goal:** Send announcement emails to newsletter subscribers and existing users when the site launches.
+
+#### Email Types
+
+| Email | Recipients | Trigger | Content |
+|-------|------------|---------|---------|
+| **Site Launch** | Newsletter subscribers | Manual send on launch day | Welcome, shop is live, browse products |
+| **Welcome Back** | Existing registered users | Manual send on launch day | Your account is ready, check out new features |
+| **Shop Now** | All contacts | 1-2 days post-launch | Featured products, special launch offers |
+
+#### Implementation Tasks
+
+**Backend:**
+- [ ] Create email templates in `backend/templates/emails/`:
+  - `launch_announcement.html` - Main launch email
+  - `welcome_back_user.html` - For existing users
+  - `shop_promo.html` - Product showcase email
+- [ ] Create management command `send_launch_emails`:
+  ```bash
+  python manage.py send_launch_emails --type=launch --dry-run
+  python manage.py send_launch_emails --type=launch --send
+  ```
+- [ ] Add unsubscribe link handling
+- [ ] Track email open/click rates (optional)
+
+**Email Content Checklist:**
+- [ ] NJ Stars branding (logo, colors)
+- [ ] Clear CTA buttons ("Shop Now", "View Orders")
+- [ ] Mobile-responsive design
+- [ ] Social media links
+- [ ] Unsubscribe option (legally required)
+
+**SendGrid/Email Setup:**
+- [ ] Verify sender domain (njstarselite.com)
+- [ ] Create email templates in SendGrid (optional)
+- [ ] Set up tracking (opens, clicks)
+
+#### Launch Day Email Schedule
+1. **Morning (9 AM):** Send to newsletter subscribers
+2. **Afternoon (2 PM):** Send to registered users
+3. **Day 2-3:** Follow-up promo email
+
+---
+
 ### 4.15 Payment Security - Wallet Integration 🔴 CRITICAL (Pre-Launch)
 
 **Time:** 2-3 days
