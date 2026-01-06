@@ -72,6 +72,8 @@ interface FeaturedMerchProps {
   title?: string
   subtitle?: string
   wrapInSection?: boolean
+  /** Return null instead of skeleton while loading (to avoid spoiling reveals) */
+  hideSkeleton?: boolean
 }
 
 export function FeaturedMerch({
@@ -79,7 +81,8 @@ export function FeaturedMerch({
   showSeeMore = false,
   title = "The Locker Room",
   subtitle = "Rep NJ Stars with official team gear",
-  wrapInSection = false
+  wrapInSection = false,
+  hideSkeleton = false
 }: FeaturedMerchProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -121,8 +124,9 @@ export function FeaturedMerch({
     return null
   }
 
-  // Show skeleton while loading
+  // Show skeleton while loading (or nothing if hideSkeleton)
   if (loading) {
+    if (hideSkeleton) return null
     const skeletonContent = (
       <div role="status" aria-label="Loading featured products" className="space-y-8">
         <span className="sr-only">Loading featured products...</span>

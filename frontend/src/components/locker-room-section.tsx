@@ -56,5 +56,5 @@ export function LockerRoomSection() {
   }
 
   // Otherwise show the featured merch
-  return <FeaturedMerch limit={6} showSeeMore wrapInSection />
+  return <FeaturedMerch limit={6} showSeeMore wrapInSection hideSkeleton />
 }
