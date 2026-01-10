@@ -5,18 +5,30 @@ Fetches posts from Instagram Business accounts and stores them
 in the InstagramPost model for display in the news feed.
 
 Usage:
-    python manage.py sync_instagram
+    # Single tenant (recommended for most deployments)
+    python manage.py sync_instagram --use-env --limit 25
+
+    # Multi-tenant: sync all active accounts from database
+    python manage.py sync_instagram --all-accounts --limit 25
+
+    # Other options
     python manage.py sync_instagram --limit 10
     python manage.py sync_instagram --verbose
     python manage.py sync_instagram --account njstarselite_aau
-    python manage.py sync_instagram --all-accounts
     python manage.py sync_instagram --if-empty  # For deployment: only sync if no posts exist
 
-Setup:
-    1. Add Instagram credentials via Django Admin → Instagram Credentials
-    2. Or use environment variables (legacy):
-       - INSTAGRAM_ACCESS_TOKEN
-       - INSTAGRAM_BUSINESS_ACCOUNT_ID
+Credential Sources:
+    --use-env (Single Tenant):
+        Uses environment variables. Simple setup for single Instagram account.
+        Required env vars: INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_BUSINESS_ACCOUNT_ID
+
+    --all-accounts (Multi-Tenant):
+        Uses InstagramCredential records from database. Designed for multi-tenancy
+        where each tenant may have their own Instagram account managed via Django Admin.
+        Add credentials at: Django Admin → Instagram Credentials
+
+    Default (no flag):
+        Uses primary database credential, falls back to env vars if none found.
 """
 
 import requests
@@ -72,12 +84,12 @@ class Command(BaseCommand):
         parser.add_argument(
             '--all-accounts',
             action='store_true',
-            help='Sync all active accounts',
+            help='Sync all active accounts from database (for multi-tenancy)',
         )
         parser.add_argument(
             '--use-env',
             action='store_true',
-            help='Use environment variables instead of database credentials (legacy)',
+            help='Use environment variables for single-tenant setup (INSTAGRAM_ACCESS_TOKEN)',
         )
         parser.add_argument(
             '--if-empty',
